@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 
 const FABRICA_ALLOWED = ['/admin/produccion', '/admin/stock']
 // Categorías solo admin — no hace falta agregar aquí; el guard bloquea todo lo que no esté en FABRICA_ALLOWED
@@ -19,8 +18,8 @@ function requireAdmin(to, from, next) {
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    // Ecommerce público
-    { path: '/',             name: 'home',     component: HomeView },
+    // Redirigir raíz al panel admin
+    { path: '/',             redirect: '/admin' },
     { path: '/tienda',       name: 'shop',     component: () => import('../views/ShopView.vue') },
     { path: '/producto/:id', name: 'product',  component: () => import('../views/ProductView.vue') },
     { path: '/carrito',      name: 'cart',     component: () => import('../views/CartView.vue') },

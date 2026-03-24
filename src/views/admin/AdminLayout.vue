@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#0F1E1B] flex pt-20">
+  <div class="min-h-screen bg-[#0F1E1B] flex">
 
     <!-- Overlay mobile -->
     <div
@@ -10,7 +10,7 @@
 
     <!-- Sidebar -->
     <aside
-      class="fixed top-20 left-0 bottom-0 z-40 w-64 bg-[#162421] border-r border-white/10 flex flex-col
+      class="fixed top-0 left-0 bottom-0 z-40 w-64 bg-[#162421] border-r border-white/10 flex flex-col
              transform transition-transform duration-300 ease-in-out
              lg:relative lg:top-auto lg:bottom-auto lg:z-auto lg:translate-x-0"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
