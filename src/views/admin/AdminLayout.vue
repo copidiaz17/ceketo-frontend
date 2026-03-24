@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#EBF2EC] flex">
+  <div class="min-h-screen bg-[#FEF0EB] flex">
 
     <!-- Overlay mobile -->
     <div
