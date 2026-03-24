@@ -2,8 +2,8 @@
   <div class="p-8">
     <!-- Header -->
     <div class="mb-8">
-      <h1 class="font-display text-3xl font-bold text-white">Registrar Venta</h1>
-      <p class="font-body text-white/50 mt-1">Venta en el local mediante código de barras o selector</p>
+      <h1 class="font-display text-3xl font-bold text-gray-900">Registrar Venta</h1>
+      <p class="font-body text-gray-500 mt-1">Venta en el local mediante código de barras o selector</p>
     </div>
 
     <div class="grid lg:grid-cols-2 gap-8">
@@ -11,11 +11,11 @@
       <div class="space-y-4">
 
         <!-- Scanner de código de barras -->
-        <div class="bg-[#162421] border border-white/10 rounded-2xl p-6">
-          <h2 class="font-display text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <div class="bg-white border border-gray-200 rounded-2xl p-6">
+          <h2 class="font-display text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <span>🔫</span> Lector de código de barras
           </h2>
-          <p class="font-body text-xs text-white/40 mb-3">
+          <p class="font-body text-xs text-gray-400 mb-3">
             Hacé click en el campo y pasá el producto por el lector
           </p>
           <div class="flex gap-3">
@@ -25,21 +25,21 @@
               @keydown.enter.prevent="buscarPorBarcode"
               type="text"
               placeholder="*BYM-001*"
-              class="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm
+              class="flex-1 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-mono text-sm
                      focus:outline-none focus:border-teal transition-colors"
               autofocus
             />
             <button
               @click="buscarPorBarcode"
-              class="px-5 py-3 bg-teal text-white rounded-xl font-body text-sm hover:bg-teal/80 transition-colors"
+              class="px-5 py-3 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-colors"
             >Buscar</button>
           </div>
           <p v-if="barcodeError" class="text-red-400 text-xs mt-2 font-body">{{ barcodeError }}</p>
         </div>
 
         <!-- Selector manual -->
-        <div class="bg-[#162421] border border-white/10 rounded-2xl p-6">
-          <h2 class="font-display text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <div class="bg-white border border-gray-200 rounded-2xl p-6">
+          <h2 class="font-display text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <span>📋</span> Seleccionar producto
           </h2>
           <div class="mb-4">
@@ -51,12 +51,12 @@
 
           <div class="flex gap-3 items-end">
             <div class="flex-1">
-              <label class="block font-body text-xs text-white/40 mb-1">Cantidad</label>
+              <label class="block font-body text-xs text-gray-400 mb-1">Cantidad</label>
               <input
                 v-model.number="cantidadVenta"
                 type="number"
                 min="1"
-                class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-body
+                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
                        focus:outline-none focus:border-teal transition-colors"
               />
             </div>
@@ -64,7 +64,7 @@
               @click="agregarDesdeSelector"
               :disabled="!selectedId"
               class="px-5 py-3 bg-teal/20 border border-teal text-teal rounded-xl font-body text-sm
-                     hover:bg-teal hover:text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                     hover:bg-teal hover:text-gray-900 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               + Agregar
             </button>
@@ -72,28 +72,28 @@
         </div>
 
         <!-- Tipo de venta -->
-        <div class="bg-[#162421] border border-white/10 rounded-2xl p-6">
-          <h2 class="font-display text-base font-semibold text-white mb-3">Tipo de venta</h2>
+        <div class="bg-white border border-gray-200 rounded-2xl p-6">
+          <h2 class="font-display text-base font-semibold text-gray-900 mb-3">Tipo de venta</h2>
           <div class="flex gap-3">
             <button
               @click="tipoVenta = 'local'"
               class="flex-1 py-2 rounded-xl font-body text-sm border-2 transition-all duration-200"
-              :class="tipoVenta === 'local' ? 'bg-teal border-teal text-white' : 'border-white/10 text-white/50 hover:border-teal/50'"
+              :class="tipoVenta === 'local' ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >Local</button>
             <button
               @click="tipoVenta = 'online'"
               class="flex-1 py-2 rounded-xl font-body text-sm border-2 transition-all duration-200"
-              :class="tipoVenta === 'online' ? 'bg-teal border-teal text-white' : 'border-white/10 text-white/50 hover:border-teal/50'"
+              :class="tipoVenta === 'online' ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >Online</button>
           </div>
         </div>
       </div>
 
       <!-- Panel derecho: carrito de venta -->
-      <div class="bg-[#162421] border border-white/10 rounded-2xl p-6 flex flex-col">
-        <h2 class="font-display text-lg font-semibold text-white mb-5">Ticket de venta</h2>
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Ticket de venta</h2>
 
-        <div v-if="carrito.length === 0" class="flex-1 flex items-center justify-center text-white/30 font-body text-sm">
+        <div v-if="carrito.length === 0" class="flex-1 flex items-center justify-center text-gray-400 font-body text-sm">
           Sin productos en la venta
         </div>
 
@@ -101,29 +101,29 @@
           <div
             v-for="(item, i) in carrito"
             :key="i"
-            class="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3"
+            class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3"
           >
             <div class="flex-1">
-              <p class="font-body text-sm text-white leading-tight">{{ item.nombre }}</p>
-              <p class="font-body text-xs text-white/40 font-mono">{{ item.codigo }}</p>
+              <p class="font-body text-sm text-gray-900 leading-tight">{{ item.nombre }}</p>
+              <p class="font-body text-xs text-gray-400 font-mono">{{ item.codigo }}</p>
             </div>
             <div class="flex items-center gap-2 ml-4">
               <button @click="item.cantidad > 1 ? item.cantidad-- : carrito.splice(i,1)"
-                class="w-7 h-7 rounded-full bg-white/10 text-white/60 hover:bg-white/20 flex items-center justify-center text-sm transition-colors">−</button>
-              <span class="font-body text-white w-6 text-center">{{ item.cantidad }}</span>
+                class="w-7 h-7 rounded-full bg-gray-100 text-gray-500 hover:bg-white/20 flex items-center justify-center text-sm transition-colors">−</button>
+              <span class="font-body text-gray-900 w-6 text-center">{{ item.cantidad }}</span>
               <button @click="item.cantidad++"
-                class="w-7 h-7 rounded-full bg-white/10 text-white/60 hover:bg-white/20 flex items-center justify-center text-sm transition-colors">+</button>
+                class="w-7 h-7 rounded-full bg-gray-100 text-gray-500 hover:bg-white/20 flex items-center justify-center text-sm transition-colors">+</button>
               <span class="font-body text-teal text-sm font-bold w-20 text-right">
                 ${{ (item.precio * item.cantidad).toLocaleString('es-AR') }}
               </span>
-              <button @click="carrito.splice(i,1)" class="text-white/20 hover:text-red-400 transition-colors ml-1">✕</button>
+              <button @click="carrito.splice(i,1)" class="text-gray-300 hover:text-red-400 transition-colors ml-1">✕</button>
             </div>
           </div>
         </div>
 
-        <div v-if="carrito.length > 0" class="border-t border-white/10 pt-4">
+        <div v-if="carrito.length > 0" class="border-t border-gray-200 pt-4">
           <div class="flex justify-between items-center mb-4">
-            <span class="font-body text-white/60">Total</span>
+            <span class="font-body text-gray-500">Total</span>
             <span class="font-display text-2xl font-bold text-teal">
               ${{ totalCarrito.toLocaleString('es-AR') }}
             </span>
@@ -132,7 +132,7 @@
           <button
             @click="abrirModalPago"
             :disabled="enviandoVenta"
-            class="w-full py-4 bg-keto-orange text-white font-body font-semibold rounded-xl
+            class="w-full py-4 bg-keto-orange text-gray-800 font-body font-semibold rounded-xl
                    hover:bg-keto-orange/80 transition-all duration-300 text-lg
                    disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -147,9 +147,9 @@
 
     <!-- Modal método de pago -->
     <div v-if="modalPago" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="bg-[#162421] border border-white/10 rounded-2xl p-8 w-full max-w-md">
-        <h2 class="font-display text-xl font-bold text-white mb-2">Método de pago</h2>
-        <p class="font-body text-white/50 text-sm mb-6">
+      <div class="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-md">
+        <h2 class="font-display text-xl font-bold text-gray-900 mb-2">Método de pago</h2>
+        <p class="font-body text-gray-500 text-sm mb-6">
           Total: <span class="text-teal font-bold text-lg">${{ totalCarrito.toLocaleString('es-AR') }}</span>
         </p>
         <div class="grid grid-cols-2 gap-3 mb-6">
@@ -159,8 +159,8 @@
             @click="metodoPagoSeleccionado = metodo.value"
             class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 font-body text-sm transition-all duration-200"
             :class="metodoPagoSeleccionado === metodo.value
-              ? 'bg-teal border-teal text-white'
-              : 'border-white/10 text-white/50 hover:border-teal/50 hover:text-white'"
+              ? 'bg-teal border-teal text-gray-900'
+              : 'border-gray-200 text-gray-500 hover:border-teal/50 hover:text-gray-900'"
           >
             <span class="text-2xl">{{ metodo.icon }}</span>
             {{ metodo.label }}
@@ -169,12 +169,12 @@
         <div class="flex gap-3">
           <button
             @click="modalPago = false"
-            class="flex-1 py-3 rounded-xl border border-white/20 text-white/60 font-body text-sm hover:border-white/40 transition-colors"
+            class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors"
           >Cancelar</button>
           <button
             @click="confirmarVenta"
             :disabled="!metodoPagoSeleccionado || enviandoVenta"
-            class="flex-1 py-3 bg-keto-orange text-white font-body font-semibold rounded-xl
+            class="flex-1 py-3 bg-keto-orange text-gray-800 font-body font-semibold rounded-xl
                    hover:bg-keto-orange/80 transition-all duration-200
                    disabled:opacity-40 disabled:cursor-not-allowed"
           >{{ enviandoVenta ? 'Procesando...' : 'Confirmar' }}</button>
@@ -183,13 +183,13 @@
     </div>
 
     <!-- Historial de ventas del día -->
-    <div class="mt-8 bg-[#162421] border border-white/10 rounded-2xl p-6">
-      <h2 class="font-display text-lg font-semibold text-white mb-5">Ventas del día</h2>
-      <div v-if="historialVentas.length === 0" class="text-white/30 font-body text-sm">Sin ventas registradas hoy</div>
+    <div class="mt-8 bg-white border border-gray-200 rounded-2xl p-6">
+      <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Ventas del día</h2>
+      <div v-if="historialVentas.length === 0" class="text-gray-400 font-body text-sm">Sin ventas registradas hoy</div>
       <div v-else class="overflow-x-auto">
         <table class="w-full font-body text-sm">
           <thead>
-            <tr class="text-white/40 border-b border-white/10">
+            <tr class="text-gray-400 border-b border-gray-200">
               <th class="text-left pb-3 pr-4">#</th>
               <th class="text-left pb-3 pr-4">Hora</th>
               <th class="text-left pb-3 pr-4">Tipo</th>
@@ -202,9 +202,9 @@
             <tr
               v-for="v in historialVentas"
               :key="v.id"
-              class="border-b border-white/5 text-white/70 hover:text-white transition-colors"
+              class="border-b border-gray-100 text-gray-600 hover:text-gray-900 transition-colors"
             >
-              <td class="py-3 pr-4 text-white/30">#{{ v.id }}</td>
+              <td class="py-3 pr-4 text-gray-400">#{{ v.id }}</td>
               <td class="py-3 pr-4">{{ formatHora(v.fecha) }}</td>
               <td class="py-3 pr-4">
                 <span class="px-2 py-0.5 rounded-full text-xs"
@@ -214,10 +214,10 @@
               </td>
               <td class="py-3 pr-4">{{ v.items?.length || 0 }} item(s)</td>
               <td class="py-3 pr-4">
-                <span v-if="v.metodo_pago" class="px-2 py-0.5 rounded-full text-xs bg-white/10 text-white/70">
+                <span v-if="v.metodo_pago" class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
                   {{ metodosPago.find(m => m.value === v.metodo_pago)?.label || v.metodo_pago }}
                 </span>
-                <span v-else class="text-white/20">—</span>
+                <span v-else class="text-gray-300">—</span>
               </td>
               <td class="py-3 text-right font-bold text-teal">${{ parseFloat(v.total).toLocaleString('es-AR') }}</td>
             </tr>

@@ -2,18 +2,18 @@
   <div class="p-8">
     <!-- Header -->
     <div class="mb-8">
-      <h1 class="font-display text-3xl font-bold text-white">Carga de Producción</h1>
-      <p class="font-body text-white/50 mt-1">Registrá los productos que llegan de fábrica al negocio</p>
+      <h1 class="font-display text-3xl font-bold text-gray-900">Carga de Producción</h1>
+      <p class="font-body text-gray-500 mt-1">Registrá los productos que llegan de fábrica al negocio</p>
     </div>
 
     <div class="grid lg:grid-cols-2 gap-8">
       <!-- Formulario de carga -->
-      <div class="bg-[#162421] border border-white/10 rounded-2xl p-6">
-        <h2 class="font-display text-lg font-semibold text-white mb-5">Agregar ítem</h2>
+      <div class="bg-white border border-gray-200 rounded-2xl p-6">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Agregar ítem</h2>
 
         <!-- Selector de producto -->
         <div class="mb-4">
-          <label class="block font-body text-sm text-white/60 mb-2">Producto</label>
+          <label class="block font-body text-sm text-gray-500 mb-2">Producto</label>
           <ProductSelect
             v-model="selectedId"
             :grupos="categoriasConProductos"
@@ -22,13 +22,13 @@
 
         <!-- Cantidad -->
         <div class="mb-4">
-          <label class="block font-body text-sm text-white/60 mb-2">Cantidad</label>
+          <label class="block font-body text-sm text-gray-500 mb-2">Cantidad</label>
           <input
             v-model.number="cantidad"
             type="number"
             min="1"
             placeholder="0"
-            class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-body
+            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
                    focus:outline-none focus:border-teal transition-colors"
           />
         </div>
@@ -36,7 +36,7 @@
         <button
           @click="agregarItem"
           :disabled="!selectedId || !cantidad"
-          class="w-full py-3 bg-teal text-white font-body font-medium rounded-xl
+          class="w-full py-3 bg-teal text-gray-800 font-body font-medium rounded-xl
                  hover:bg-teal/80 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           + Agregar al lote
@@ -44,13 +44,13 @@
       </div>
 
       <!-- Lote actual -->
-      <div class="bg-[#162421] border border-white/10 rounded-2xl p-6">
-        <h2 class="font-display text-lg font-semibold text-white mb-5">
+      <div class="bg-white border border-gray-200 rounded-2xl p-6">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">
           Lote del día
-          <span class="ml-2 text-sm font-body text-white/40">{{ hoy }}</span>
+          <span class="ml-2 text-sm font-body text-gray-400">{{ hoy }}</span>
         </h2>
 
-        <div v-if="lote.length === 0" class="text-center py-10 text-white/30 font-body">
+        <div v-if="lote.length === 0" class="text-center py-10 text-gray-400 font-body">
           Sin productos agregados todavía
         </div>
 
@@ -58,17 +58,17 @@
           <div
             v-for="(item, i) in lote"
             :key="i"
-            class="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3"
+            class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3"
           >
             <div>
-              <p class="font-body text-sm text-white">{{ item.nombre }}</p>
-              <p class="font-body text-xs text-white/40">{{ item.codigo }}</p>
+              <p class="font-body text-sm text-gray-900">{{ item.nombre }}</p>
+              <p class="font-body text-xs text-gray-400">{{ item.codigo }}</p>
             </div>
             <div class="flex items-center gap-4">
               <span class="font-display text-xl font-bold text-teal">×{{ item.cantidad }}</span>
               <button
                 @click="lote.splice(i, 1)"
-                class="text-white/30 hover:text-red-400 transition-colors text-lg"
+                class="text-gray-400 hover:text-red-400 transition-colors text-lg"
               >✕</button>
             </div>
           </div>
@@ -80,14 +80,14 @@
             v-model="nota"
             rows="2"
             placeholder="Nota opcional..."
-            class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-body text-sm
-                   focus:outline-none focus:border-teal transition-colors mb-4 resize-none placeholder-white/30"
+            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm
+                   focus:outline-none focus:border-teal transition-colors mb-4 resize-none placeholder-gray-400"
           ></textarea>
 
           <button
             @click="confirmarProduccion"
             :disabled="enviando"
-            class="w-full py-3 bg-keto-orange text-white font-body font-semibold rounded-xl
+            class="w-full py-3 bg-keto-orange text-gray-800 font-body font-semibold rounded-xl
                    hover:bg-keto-orange/80 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ enviando ? 'Guardando...' : '✓ Confirmar producción' }}
@@ -100,13 +100,13 @@
     </div>
 
     <!-- Historial reciente -->
-    <div class="mt-8 bg-[#162421] border border-white/10 rounded-2xl p-6">
-      <h2 class="font-display text-lg font-semibold text-white mb-5">Historial reciente</h2>
-      <div v-if="historial.length === 0" class="text-white/30 font-body text-sm">Sin registros</div>
+    <div class="mt-8 bg-white border border-gray-200 rounded-2xl p-6">
+      <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Historial reciente</h2>
+      <div v-if="historial.length === 0" class="text-gray-400 font-body text-sm">Sin registros</div>
       <div v-else class="overflow-x-auto">
         <table class="w-full font-body text-sm">
           <thead>
-            <tr class="text-white/40 border-b border-white/10">
+            <tr class="text-gray-400 border-b border-gray-200">
               <th class="text-left pb-3 pr-4">Fecha</th>
               <th class="text-left pb-3 pr-4">Código</th>
               <th class="text-left pb-3 pr-4">Producto</th>
@@ -117,7 +117,7 @@
             <tr
               v-for="r in historial"
               :key="r.id"
-              class="border-b border-white/5 text-white/70 hover:text-white transition-colors"
+              class="border-b border-gray-100 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <td class="py-3 pr-4">{{ r.fecha }}</td>
               <td class="py-3 pr-4 text-teal font-mono text-xs">{{ r.producto?.codigo }}</td>

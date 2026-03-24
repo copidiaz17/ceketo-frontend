@@ -3,12 +3,12 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
       <div>
-        <h1 class="font-display text-3xl font-bold text-white">Gastos</h1>
-        <p class="font-body text-white/50 mt-1">Registro de costos operativos</p>
+        <h1 class="font-display text-3xl font-bold text-gray-900">Gastos</h1>
+        <p class="font-body text-gray-500 mt-1">Registro de costos operativos</p>
       </div>
       <button
         @click="abrirModal()"
-        class="flex items-center gap-2 bg-teal text-white px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-teal-dark transition-colors"
+        class="flex items-center gap-2 bg-teal text-gray-900 px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-teal-dark transition-colors"
       >
         + Registrar gasto
       </button>
@@ -19,31 +19,31 @@
       <div
         v-for="cat in resumenCards"
         :key="cat.nombre"
-        class="bg-[#162421] border border-white/10 rounded-2xl p-4 flex flex-col gap-1"
+        class="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col gap-1"
       >
         <span class="text-xl">{{ cat.icon }}</span>
-        <p class="font-body text-xs text-white/40 uppercase tracking-wider leading-tight">{{ cat.nombre }}</p>
+        <p class="font-body text-xs text-gray-400 uppercase tracking-wider leading-tight">{{ cat.nombre }}</p>
         <p class="font-display text-lg font-bold text-teal">${{ formatNum(cat.total) }}</p>
       </div>
     </div>
 
     <!-- Total del mes -->
-    <div class="bg-[#162421] border border-teal/20 rounded-2xl p-5 mb-8 flex items-center justify-between flex-wrap gap-3">
+    <div class="bg-white border border-teal/20 rounded-2xl p-5 mb-8 flex items-center justify-between flex-wrap gap-3">
       <div>
-        <p class="font-body text-xs text-white/40 uppercase tracking-wider">Total gastos — {{ mesLabel }}</p>
-        <p class="font-display text-3xl font-bold text-white mt-1">${{ formatNum(totalMes) }}</p>
+        <p class="font-body text-xs text-gray-400 uppercase tracking-wider">Total gastos — {{ mesLabel }}</p>
+        <p class="font-display text-3xl font-bold text-gray-900 mt-1">${{ formatNum(totalMes) }}</p>
       </div>
       <!-- Filtros -->
       <div class="flex gap-3 flex-wrap">
         <input
           v-model="filtroMes"
           type="month"
-          class="bg-white/5 border border-white/10 text-white text-sm rounded-xl px-4 py-2 font-body focus:outline-none focus:border-teal"
+          class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl px-4 py-2 font-body focus:outline-none focus:border-teal"
           @change="cargarDatos"
         />
         <select
           v-model="filtroCategoria"
-          class="bg-white/5 border border-white/10 text-white text-sm rounded-xl px-4 py-2 font-body focus:outline-none focus:border-teal"
+          class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl px-4 py-2 font-body focus:outline-none focus:border-teal"
           @change="cargarGastos"
         >
           <option value="">Todas las categorías</option>
@@ -53,35 +53,35 @@
     </div>
 
     <!-- Tabla -->
-    <div class="bg-[#162421] border border-white/10 rounded-2xl overflow-hidden">
-      <div v-if="loading" class="text-center py-16 text-white/30 font-body">Cargando...</div>
-      <div v-else-if="!gastos.length" class="text-center py-16 text-white/30 font-body">
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div v-if="loading" class="text-center py-16 text-gray-400 font-body">Cargando...</div>
+      <div v-else-if="!gastos.length" class="text-center py-16 text-gray-400 font-body">
         No hay gastos registrados para este período.
       </div>
       <table v-else class="w-full">
         <thead>
-          <tr class="border-b border-white/10">
-            <th class="text-left px-6 py-4 font-body text-xs text-white/40 uppercase tracking-wider">Fecha</th>
-            <th class="text-left px-6 py-4 font-body text-xs text-white/40 uppercase tracking-wider">Categoría</th>
-            <th class="text-left px-6 py-4 font-body text-xs text-white/40 uppercase tracking-wider">Descripción</th>
-            <th class="text-left px-6 py-4 font-body text-xs text-white/40 uppercase tracking-wider">Proveedor</th>
-            <th class="text-right px-6 py-4 font-body text-xs text-white/40 uppercase tracking-wider">Monto</th>
-            <th class="text-center px-6 py-4 font-body text-xs text-white/40 uppercase tracking-wider">Comprobante</th>
-            <th class="text-center px-6 py-4 font-body text-xs text-white/40 uppercase tracking-wider">Acciones</th>
+          <tr class="border-b border-gray-200">
+            <th class="text-left px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Fecha</th>
+            <th class="text-left px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Categoría</th>
+            <th class="text-left px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Descripción</th>
+            <th class="text-left px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Proveedor</th>
+            <th class="text-right px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Monto</th>
+            <th class="text-center px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Comprobante</th>
+            <th class="text-center px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="g in gastos"
             :key="g.id"
-            class="border-b border-white/5 hover:bg-white/5 transition-colors"
+            class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
           >
-            <td class="px-6 py-4 font-body text-sm text-white/70 whitespace-nowrap">{{ formatFecha(g.fecha) }}</td>
+            <td class="px-6 py-4 font-body text-sm text-gray-600 whitespace-nowrap">{{ formatFecha(g.fecha) }}</td>
             <td class="px-6 py-4">
               <span :class="['badge', badgeClass(g.categoria)]">{{ g.categoria }}</span>
             </td>
-            <td class="px-6 py-4 font-body text-sm text-white max-w-xs">{{ g.descripcion }}</td>
-            <td class="px-6 py-4 font-body text-sm text-white/50">{{ g.proveedor || '—' }}</td>
+            <td class="px-6 py-4 font-body text-sm text-gray-900 max-w-xs">{{ g.descripcion }}</td>
+            <td class="px-6 py-4 font-body text-sm text-gray-500">{{ g.proveedor || '—' }}</td>
             <td class="px-6 py-4 font-display text-sm font-bold text-teal text-right whitespace-nowrap">
               ${{ formatNum(g.monto) }}
             </td>
@@ -95,18 +95,18 @@
               >
                 <span>{{ g.comprobante.endsWith('.pdf') ? '📄' : '🖼️' }}</span> Ver
               </a>
-              <span v-else class="text-white/20 text-xs font-body">—</span>
+              <span v-else class="text-gray-300 text-xs font-body">—</span>
             </td>
             <td class="px-6 py-4 text-center">
               <div class="flex items-center justify-center gap-2">
                 <button
                   @click="abrirModal(g)"
-                  class="text-white/40 hover:text-white transition-colors text-sm px-2 py-1 rounded-lg hover:bg-white/10"
+                  class="text-gray-400 hover:text-gray-900 transition-colors text-sm px-2 py-1 rounded-lg hover:bg-gray-100"
                   title="Editar"
                 >✏️</button>
                 <button
                   @click="eliminar(g)"
-                  class="text-white/40 hover:text-red-400 transition-colors text-sm px-2 py-1 rounded-lg hover:bg-red-400/10"
+                  class="text-gray-400 hover:text-red-400 transition-colors text-sm px-2 py-1 rounded-lg hover:bg-red-400/10"
                   title="Eliminar"
                 >🗑️</button>
               </div>
@@ -114,8 +114,8 @@
           </tr>
         </tbody>
         <tfoot>
-          <tr class="border-t border-white/10 bg-white/5">
-            <td colspan="4" class="px-6 py-4 font-body text-sm text-white/50 font-medium">
+          <tr class="border-t border-gray-200 bg-gray-50">
+            <td colspan="4" class="px-6 py-4 font-body text-sm text-gray-500 font-medium">
               {{ gastos.length }} gasto(s) filtrados
             </td>
             <td class="px-6 py-4 font-display text-base font-bold text-teal text-right whitespace-nowrap">
@@ -134,8 +134,8 @@
         class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         @click.self="cerrarModal"
       >
-        <div class="bg-[#162421] border border-white/10 rounded-3xl p-8 w-full max-w-lg shadow-2xl">
-          <h2 class="font-display text-xl font-bold text-white mb-6">
+        <div class="bg-white border border-gray-200 rounded-3xl p-8 w-full max-w-lg shadow-2xl">
+          <h2 class="font-display text-xl font-bold text-gray-900 mb-6">
             {{ modal.id ? 'Editar gasto' : 'Registrar gasto' }}
           </h2>
 
@@ -143,7 +143,7 @@
             <!-- Fecha + Categoría -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-body text-xs text-white/50 uppercase tracking-wider mb-2">Fecha *</label>
+                <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Fecha *</label>
                 <input
                   v-model="modal.fecha"
                   type="date"
@@ -151,7 +151,7 @@
                 />
               </div>
               <div>
-                <label class="block font-body text-xs text-white/50 uppercase tracking-wider mb-2">Categoría *</label>
+                <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Categoría *</label>
                 <select v-model="modal.categoria" class="input-field w-full">
                   <option value="">Seleccionar...</option>
                   <option v-for="c in categorias" :key="c" :value="c">{{ c }}</option>
@@ -161,7 +161,7 @@
 
             <!-- Descripción -->
             <div>
-              <label class="block font-body text-xs text-white/50 uppercase tracking-wider mb-2">Descripción *</label>
+              <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Descripción *</label>
               <input
                 v-model="modal.descripcion"
                 type="text"
@@ -173,7 +173,7 @@
             <!-- Monto + Proveedor -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-body text-xs text-white/50 uppercase tracking-wider mb-2">Monto $ *</label>
+                <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Monto $ *</label>
                 <input
                   v-model="modal.monto"
                   type="number"
@@ -184,7 +184,7 @@
                 />
               </div>
               <div>
-                <label class="block font-body text-xs text-white/50 uppercase tracking-wider mb-2">Proveedor</label>
+                <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Proveedor</label>
                 <input
                   v-model="modal.proveedor"
                   type="text"
@@ -196,29 +196,29 @@
 
             <!-- Comprobante -->
             <div>
-              <label class="block font-body text-xs text-white/50 uppercase tracking-wider mb-2">
-                Comprobante <span class="text-white/30 normal-case">(JPG, PNG, PDF — máx. 10MB)</span>
+              <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">
+                Comprobante <span class="text-gray-400 normal-case">(JPG, PNG, PDF — máx. 10MB)</span>
               </label>
               <!-- Preview del comprobante existente -->
-              <div v-if="modal.comprobante_actual && !modal.archivo" class="mb-2 flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3">
+              <div v-if="modal.comprobante_actual && !modal.archivo" class="mb-2 flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
                 <span>{{ modal.comprobante_actual.endsWith('.pdf') ? '📄' : '🖼️' }}</span>
                 <a :href="modal.comprobante_actual" target="_blank" class="text-teal text-sm hover:underline font-body truncate">
                   Ver comprobante actual
                 </a>
-                <button @click="modal.comprobante_actual = null" class="ml-auto text-white/30 hover:text-red-400 text-xs">✕</button>
+                <button @click="modal.comprobante_actual = null" class="ml-auto text-gray-400 hover:text-red-400 text-xs">✕</button>
               </div>
               <div
-                class="border-2 border-dashed border-white/10 rounded-xl p-5 text-center cursor-pointer hover:border-teal/50 transition-colors"
+                class="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center cursor-pointer hover:border-teal/50 transition-colors"
                 @click="$refs.fileInput.click()"
                 @dragover.prevent
                 @drop.prevent="onDrop"
               >
                 <div v-if="modal.archivo">
                   <p class="text-teal text-sm font-body">✓ {{ modal.archivo.name }}</p>
-                  <p class="text-white/30 text-xs mt-1 font-body">{{ (modal.archivo.size / 1024).toFixed(0) }} KB</p>
+                  <p class="text-gray-400 text-xs mt-1 font-body">{{ (modal.archivo.size / 1024).toFixed(0) }} KB</p>
                 </div>
                 <div v-else>
-                  <p class="text-white/40 text-sm font-body">Arrastrá o hacé click para subir</p>
+                  <p class="text-gray-400 text-sm font-body">Arrastrá o hacé click para subir</p>
                 </div>
               </div>
               <input
@@ -236,13 +236,13 @@
             <button
               @click="guardar"
               :disabled="modal.guardando || !modal.fecha || !modal.categoria || !modal.descripcion || !modal.monto"
-              class="flex-1 bg-teal text-white py-3 rounded-xl font-body font-medium text-sm hover:bg-teal-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              class="flex-1 bg-teal text-gray-900 py-3 rounded-xl font-body font-medium text-sm hover:bg-teal-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {{ modal.guardando ? 'Guardando...' : (modal.id ? 'Guardar cambios' : 'Registrar gasto') }}
             </button>
             <button
               @click="cerrarModal"
-              class="px-6 py-3 rounded-xl border border-white/10 text-white/50 hover:text-white hover:bg-white/5 font-body text-sm transition-colors"
+              class="px-6 py-3 rounded-xl border border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50 font-body text-sm transition-colors"
             >
               Cancelar
             </button>
@@ -323,9 +323,9 @@ function badgeClass(cat) {
     'Sueldos':       'bg-blue-500/15 text-blue-300 border border-blue-500/20',
     'Mantenimiento': 'bg-orange-500/15 text-orange-300 border border-orange-500/20',
     'Packaging':     'bg-pink-500/15 text-pink-300 border border-pink-500/20',
-    'Otros':         'bg-white/10 text-white/60',
+    'Otros':         'bg-gray-100 text-gray-500',
   }
-  return map[cat] || 'bg-white/10 text-white/60'
+  return map[cat] || 'bg-gray-100 text-gray-500'
 }
 
 // ── Data ─────────────────────────────────────────────────────────

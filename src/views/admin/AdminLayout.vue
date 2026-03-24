@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#0F1E1B] flex">
+  <div class="min-h-screen bg-[#EBF2EC] flex">
 
     <!-- Overlay mobile -->
     <div
@@ -10,18 +10,18 @@
 
     <!-- Sidebar -->
     <aside
-      class="fixed top-0 left-0 bottom-0 z-40 w-64 bg-[#162421] border-r border-white/10 flex flex-col
+      class="fixed top-0 left-0 bottom-0 z-40 w-64 bg-brand-green border-r border-white/20 flex flex-col
              transform transition-transform duration-300 ease-in-out
              lg:relative lg:top-auto lg:bottom-auto lg:z-auto lg:translate-x-0"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
     >
       <!-- Brand -->
-      <div class="p-6 border-b border-white/10">
+      <div class="p-6 border-b border-white/20">
         <span class="font-display text-2xl font-bold text-white tracking-widest">CEKETO</span>
-        <p class="font-body text-xs text-teal mt-1 uppercase tracking-wider">
+        <p class="font-body text-xs text-white/80 mt-1 uppercase tracking-wider">
           {{ rolLabel }}
         </p>
-        <p class="font-body text-xs text-white/30 mt-0.5">{{ usuarioActual }}</p>
+        <p class="font-body text-xs text-white/50 mt-0.5">{{ usuarioActual }}</p>
       </div>
 
       <!-- Nav -->
@@ -31,7 +31,7 @@
           :key="link.to"
           :to="link.to"
           class="flex items-center gap-3 px-4 py-3 rounded-xl font-body text-sm transition-all duration-200"
-          :class="isActive(link.to) ? 'bg-teal text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'"
+          :class="isActive(link.to) ? 'bg-white/20 text-white font-semibold' : 'text-white/80 hover:bg-white/15 hover:text-white'"
           @click="sidebarOpen = false"
         >
           <span class="text-lg flex-shrink-0">{{ link.icon }}</span>
@@ -45,17 +45,17 @@
       </nav>
 
       <!-- Footer -->
-      <div class="p-4 border-t border-white/10 space-y-1">
+      <div class="p-4 border-t border-white/20 space-y-1">
         <RouterLink
           to="/"
-          class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-body text-sm text-white/40 hover:text-teal hover:bg-teal/10 transition-all duration-200"
+          class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-body text-sm text-white/60 hover:text-white hover:bg-white/15 transition-all duration-200"
         >
           <span class="text-lg">🌐</span>
           Ver tienda
         </RouterLink>
         <button
           @click="logout"
-          class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-body text-sm text-white/40 hover:text-red-400 hover:bg-red-400/10 transition-all duration-200"
+          class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-body text-sm text-white/60 hover:text-red-300 hover:bg-red-400/20 transition-all duration-200"
         >
           <span class="text-lg">🚪</span>
           Cerrar sesión
@@ -66,7 +66,7 @@
     <!-- Content -->
     <main class="flex-1 overflow-y-auto min-w-0">
       <!-- Barra superior mobile con hamburger -->
-      <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-[#162421] border-b border-white/10 sticky top-0 z-20">
+      <div class="lg:hidden flex items-center gap-3 px-4 py-3 bg-brand-green border-b border-white/20 sticky top-0 z-20">
         <button
           @click="sidebarOpen = true"
           class="text-white/60 hover:text-white p-1 transition-colors"

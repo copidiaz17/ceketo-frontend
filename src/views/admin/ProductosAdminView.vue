@@ -2,19 +2,19 @@
   <div class="p-8">
     <div class="mb-8 flex items-center justify-between">
       <div>
-        <h1 class="font-display text-3xl font-bold text-white">Gestión de Productos</h1>
-        <p class="font-body text-white/50 mt-1">Crear, editar y eliminar productos</p>
+        <h1 class="font-display text-3xl font-bold text-gray-900">Gestión de Productos</h1>
+        <p class="font-body text-gray-500 mt-1">Crear, editar y eliminar productos</p>
       </div>
       <div class="flex gap-3">
         <button
           @click="abrirModalNuevo"
-          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-white rounded-xl font-body text-sm hover:bg-teal/80 transition-all"
+          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-all"
         >
           + Nuevo producto
         </button>
         <button
           @click="exportarCSV"
-          class="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 text-white/70 rounded-xl font-body text-sm hover:bg-white/10 transition-all"
+          class="flex items-center gap-2 px-5 py-2.5 bg-gray-50 border border-gray-200 text-gray-600 rounded-xl font-body text-sm hover:bg-gray-100 transition-all"
         >
           ⬇ CSV
         </button>
@@ -29,24 +29,24 @@
         @click="filtroCategoria = f === 'Todos' ? '' : f"
         class="badge py-1.5 px-4 text-xs font-medium border transition-all"
         :class="(filtroCategoria === '' && f === 'Todos') || filtroCategoria === f
-          ? 'bg-teal border-teal text-white'
-          : 'bg-white/5 border-white/10 text-white/50 hover:border-teal'"
+          ? 'bg-teal border-teal text-gray-900'
+          : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal'"
       >{{ f }}</button>
       <input
         v-model="busqueda"
         type="text"
         placeholder="Buscar..."
-        class="ml-auto px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white text-sm font-body
-               focus:outline-none focus:border-teal transition-colors placeholder-white/30"
+        class="ml-auto px-4 py-2 rounded-full bg-gray-50 border border-gray-200 text-gray-900 text-sm font-body
+               focus:outline-none focus:border-teal transition-colors placeholder-gray-400"
       />
     </div>
 
     <!-- Tabla -->
-    <div class="bg-[#162421] border border-white/10 rounded-2xl overflow-hidden">
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full font-body text-sm">
           <thead>
-            <tr class="text-white/40 border-b border-white/10 bg-white/5">
+            <tr class="text-gray-400 border-b border-gray-200 bg-gray-50">
               <th class="text-left px-4 py-4 w-16">Imagen</th>
               <th class="text-left px-4 py-4">Producto</th>
               <th class="text-left px-4 py-4">Categoría</th>
@@ -60,23 +60,23 @@
             <tr
               v-for="p in productosFiltrados"
               :key="p.id"
-              class="border-b border-white/5 hover:bg-white/5 transition-colors"
+              class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
             >
               <!-- Imagen -->
               <td class="px-4 py-3">
-                <div class="w-10 h-10 rounded-lg overflow-hidden bg-white/5 flex items-center justify-center">
+                <div class="w-10 h-10 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
                   <img v-if="p.imagen" :src="p.imagen" class="w-full h-full object-cover" :alt="p.nombre" />
-                  <span v-else class="text-white/20 text-lg">📷</span>
+                  <span v-else class="text-gray-300 text-lg">📷</span>
                 </div>
               </td>
               <!-- Nombre + código -->
               <td class="px-4 py-3">
-                <p class="text-white">{{ p.nombre }}</p>
-                <p class="text-white/30 font-mono text-xs">{{ p.codigo }}</p>
-                <p v-if="p.codigo_barras" class="text-white/20 font-mono text-xs">{{ p.codigo_barras }}</p>
+                <p class="text-gray-900">{{ p.nombre }}</p>
+                <p class="text-gray-400 font-mono text-xs">{{ p.codigo }}</p>
+                <p v-if="p.codigo_barras" class="text-gray-300 font-mono text-xs">{{ p.codigo_barras }}</p>
               </td>
-              <td class="px-4 py-3 text-white/50">{{ p.categoria?.nombre }}</td>
-              <td class="px-4 py-3 text-right text-white/70">
+              <td class="px-4 py-3 text-gray-500">{{ p.categoria?.nombre }}</td>
+              <td class="px-4 py-3 text-right text-gray-600">
                 ${{ parseFloat(p.precio).toLocaleString('es-AR') }}
               </td>
               <!-- Stock -->
@@ -89,7 +89,7 @@
                 <button
                   @click="toggleActivo(p)"
                   class="w-10 h-5 rounded-full transition-all duration-300 relative"
-                  :class="p.activo ? 'bg-teal' : 'bg-white/10'"
+                  :class="p.activo ? 'bg-teal' : 'bg-gray-100'"
                 >
                   <span class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all duration-300"
                     :class="p.activo ? 'left-5' : 'left-0.5'"></span>
@@ -101,16 +101,16 @@
                   <button
                     @click="abrirModalEditar(p)"
                     title="Editar producto"
-                    class="px-3 py-1 bg-white/5 text-white/60 rounded-lg text-xs hover:bg-teal/20 hover:text-teal transition-colors"
+                    class="px-3 py-1 bg-gray-50 text-gray-500 rounded-lg text-xs hover:bg-teal/20 hover:text-teal transition-colors"
                   >✏ Editar</button>
-                  <label title="Cambiar imagen" class="px-3 py-1 bg-white/5 text-white/60 rounded-lg text-xs hover:bg-white/10 transition-colors cursor-pointer">
+                  <label title="Cambiar imagen" class="px-3 py-1 bg-gray-50 text-gray-500 rounded-lg text-xs hover:bg-gray-100 transition-colors cursor-pointer">
                     📷 Imagen
                     <input type="file" accept="image/*" class="hidden" @change="uploadImagen($event, p)" />
                   </label>
                   <button
                     @click="confirmarEliminar(p)"
                     title="Eliminar producto"
-                    class="px-3 py-1 bg-white/5 text-white/60 rounded-lg text-xs hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                    class="px-3 py-1 bg-gray-50 text-gray-500 rounded-lg text-xs hover:bg-red-500/20 hover:text-red-400 transition-colors"
                   >🗑 Eliminar</button>
                 </div>
               </td>
@@ -122,38 +122,38 @@
 
     <!-- Modal crear / editar -->
     <div v-if="modal.abierto" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="bg-[#162421] border border-white/10 rounded-2xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <h2 class="font-display text-xl font-bold text-white mb-6">
+      <div class="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <h2 class="font-display text-xl font-bold text-gray-900 mb-6">
           {{ modal.modo === 'crear' ? 'Nuevo producto' : 'Editar producto' }}
         </h2>
 
         <div class="space-y-4">
           <!-- Nombre -->
           <div>
-            <label class="block font-body text-xs text-white/50 mb-1">Nombre <span class="text-red-400">*</span></label>
+            <label class="block font-body text-xs text-gray-500 mb-1">Nombre <span class="text-red-400">*</span></label>
             <input v-model="modal.form.nombre" type="text" placeholder="Budín de Chocolate"
-              class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-body text-sm focus:outline-none focus:border-teal transition-colors" />
+              class="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors" />
           </div>
 
           <!-- Código + Código de barras -->
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-body text-xs text-white/50 mb-1">Código <span class="text-red-400">*</span></label>
+              <label class="block font-body text-xs text-gray-500 mb-1">Código <span class="text-red-400">*</span></label>
               <input v-model="modal.form.codigo" type="text" placeholder="BYM-001"
-                class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm focus:outline-none focus:border-teal transition-colors" />
+                class="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-mono text-sm focus:outline-none focus:border-teal transition-colors" />
             </div>
             <div>
-              <label class="block font-body text-xs text-white/50 mb-1">Código de barras</label>
+              <label class="block font-body text-xs text-gray-500 mb-1">Código de barras</label>
               <input v-model="modal.form.codigo_barras" type="text" placeholder="*BYM-001*"
-                class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-mono text-sm focus:outline-none focus:border-teal transition-colors" />
+                class="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-mono text-sm focus:outline-none focus:border-teal transition-colors" />
             </div>
           </div>
 
           <!-- Categoría -->
           <div>
-            <label class="block font-body text-xs text-white/50 mb-1">Categoría</label>
+            <label class="block font-body text-xs text-gray-500 mb-1">Categoría</label>
             <select v-model="modal.form.categoria_id"
-              class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-body text-sm focus:outline-none focus:border-teal transition-colors">
+              class="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors">
               <option value="">Sin categoría</option>
               <option v-for="c in categoriasLista" :key="c.id" :value="c.id">{{ c.nombre }} ({{ c.codigo }})</option>
             </select>
@@ -162,14 +162,14 @@
           <!-- Precio + Stock -->
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-body text-xs text-white/50 mb-1">Precio ($)</label>
+              <label class="block font-body text-xs text-gray-500 mb-1">Precio ($)</label>
               <input v-model.number="modal.form.precio" type="number" min="0" step="0.01" placeholder="0"
-                class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-body text-sm focus:outline-none focus:border-teal transition-colors" />
+                class="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors" />
             </div>
             <div>
-              <label class="block font-body text-xs text-white/50 mb-1">Stock inicial</label>
+              <label class="block font-body text-xs text-gray-500 mb-1">Stock inicial</label>
               <input v-model.number="modal.form.stock" type="number" min="0" placeholder="0"
-                class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-body text-sm focus:outline-none focus:border-teal transition-colors" />
+                class="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors" />
             </div>
           </div>
 
@@ -178,12 +178,12 @@
             <button
               @click="modal.form.activo = !modal.form.activo"
               class="w-10 h-5 rounded-full transition-all duration-300 relative flex-shrink-0"
-              :class="modal.form.activo ? 'bg-teal' : 'bg-white/10'"
+              :class="modal.form.activo ? 'bg-teal' : 'bg-gray-100'"
             >
               <span class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all duration-300"
                 :class="modal.form.activo ? 'left-5' : 'left-0.5'"></span>
             </button>
-            <span class="font-body text-sm text-white/60">Producto activo (visible en tienda)</span>
+            <span class="font-body text-sm text-gray-500">Producto activo (visible en tienda)</span>
           </div>
 
           <p v-if="modal.error" class="text-red-400 text-sm font-body">{{ modal.error }}</p>
@@ -191,11 +191,11 @@
 
         <div class="flex gap-3 mt-6">
           <button @click="modal.abierto = false"
-            class="flex-1 py-3 rounded-xl border border-white/20 text-white/60 font-body text-sm hover:border-white/40 transition-colors">
+            class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors">
             Cancelar
           </button>
           <button @click="guardarModal" :disabled="modal.guardando"
-            class="flex-1 py-3 bg-teal text-white font-body font-semibold rounded-xl hover:bg-teal/80 transition-all disabled:opacity-50">
+            class="flex-1 py-3 bg-teal text-gray-800 font-body font-semibold rounded-xl hover:bg-teal/80 transition-all disabled:opacity-50">
             {{ modal.guardando ? 'Guardando...' : (modal.modo === 'crear' ? 'Crear producto' : 'Guardar cambios') }}
           </button>
         </div>
@@ -204,19 +204,19 @@
 
     <!-- Modal confirmar eliminar -->
     <div v-if="eliminarModal.abierto" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="bg-[#162421] border border-red-500/30 rounded-2xl p-8 w-full max-w-sm text-center">
+      <div class="bg-white border border-red-500/30 rounded-2xl p-8 w-full max-w-sm text-center">
         <p class="text-4xl mb-4">🗑️</p>
-        <h2 class="font-display text-xl font-bold text-white mb-2">Eliminar producto</h2>
-        <p class="font-body text-white/60 text-sm mb-1">¿Estás seguro que querés eliminar?</p>
-        <p class="font-body text-white font-semibold mb-6">{{ eliminarModal.producto?.nombre }}</p>
+        <h2 class="font-display text-xl font-bold text-gray-900 mb-2">Eliminar producto</h2>
+        <p class="font-body text-gray-500 text-sm mb-1">¿Estás seguro que querés eliminar?</p>
+        <p class="font-body text-gray-900 font-semibold mb-6">{{ eliminarModal.producto?.nombre }}</p>
         <p class="font-body text-yellow-400 text-xs mb-6">Esta acción no se puede deshacer.</p>
         <div class="flex gap-3">
           <button @click="eliminarModal.abierto = false"
-            class="flex-1 py-3 rounded-xl border border-white/20 text-white/60 font-body text-sm hover:border-white/40 transition-colors">
+            class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors">
             Cancelar
           </button>
           <button @click="eliminarProducto" :disabled="eliminarModal.cargando"
-            class="flex-1 py-3 bg-red-500 text-white font-body font-semibold rounded-xl hover:bg-red-600 transition-all disabled:opacity-50">
+            class="flex-1 py-3 bg-red-500 text-gray-800 font-body font-semibold rounded-xl hover:bg-red-600 transition-all disabled:opacity-50">
             {{ eliminarModal.cargando ? 'Eliminando...' : 'Eliminar' }}
           </button>
         </div>
@@ -225,7 +225,7 @@
 
     <!-- Toast -->
     <Transition name="fade">
-      <div v-if="toast" class="fixed bottom-6 right-6 bg-teal text-white px-5 py-3 rounded-xl font-body text-sm shadow-xl">
+      <div v-if="toast" class="fixed bottom-6 right-6 bg-teal text-gray-900 px-5 py-3 rounded-xl font-body text-sm shadow-xl">
         {{ toast }}
       </div>
     </Transition>

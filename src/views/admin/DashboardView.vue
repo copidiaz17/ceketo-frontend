@@ -1,8 +1,8 @@
 <template>
   <div class="p-8">
     <div class="mb-8">
-      <h1 class="font-display text-3xl font-bold text-white">Dashboard</h1>
-      <p class="font-body text-white/50 mt-1">{{ fechaHoy }}</p>
+      <h1 class="font-display text-3xl font-bold text-gray-900">Dashboard</h1>
+      <p class="font-body text-gray-500 mt-1">{{ fechaHoy }}</p>
     </div>
 
     <!-- Métricas principales -->
@@ -10,27 +10,27 @@
       <div
         v-for="m in metricas"
         :key="m.label"
-        class="bg-[#162421] border border-white/10 rounded-2xl p-5 flex flex-col gap-2"
+        class="bg-white border border-gray-200 shadow-sm rounded-2xl p-5 flex flex-col gap-2"
       >
         <span class="text-2xl">{{ m.icon }}</span>
-        <p class="font-body text-xs text-white/40 uppercase tracking-wider">{{ m.label }}</p>
+        <p class="font-body text-xs text-gray-400 uppercase tracking-wider">{{ m.label }}</p>
         <p class="font-display text-2xl font-bold" :class="m.color">{{ m.valor }}</p>
       </div>
     </div>
 
     <div class="grid lg:grid-cols-3 gap-6 mb-6">
       <!-- Gráfico ventas 7 días -->
-      <div class="lg:col-span-2 bg-[#162421] border border-white/10 rounded-2xl p-6">
-        <h2 class="font-display text-lg font-semibold text-white mb-5">Ventas últimos 7 días</h2>
+      <div class="lg:col-span-2 bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Ventas últimos 7 días</h2>
         <div class="relative h-48">
           <canvas ref="chartCanvas"></canvas>
         </div>
       </div>
 
       <!-- Top productos -->
-      <div class="bg-[#162421] border border-white/10 rounded-2xl p-6">
-        <h2 class="font-display text-lg font-semibold text-white mb-5">Más vendidos</h2>
-        <div v-if="!data" class="text-white/30 text-sm font-body">Cargando...</div>
+      <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Más vendidos</h2>
+        <div v-if="!data" class="text-gray-400 text-sm font-body">Cargando...</div>
         <div v-else class="space-y-3">
           <div
             v-for="(p, i) in data.topProductos"
@@ -38,20 +38,20 @@
             class="flex items-center justify-between"
           >
             <div class="flex items-center gap-3">
-              <span class="font-display text-sm text-white/20 w-4">{{ i + 1 }}</span>
-              <p class="font-body text-sm text-white/80 leading-tight">{{ p.nombre }}</p>
+              <span class="font-display text-sm text-gray-300 w-4">{{ i + 1 }}</span>
+              <p class="font-body text-sm text-gray-700 leading-tight">{{ p.nombre }}</p>
             </div>
             <span class="font-body text-xs text-teal font-bold flex-shrink-0 ml-2">{{ p.total_vendido }} u.</span>
           </div>
-          <p v-if="!data.topProductos?.length" class="text-white/30 text-sm font-body">Sin ventas aún</p>
+          <p v-if="!data.topProductos?.length" class="text-gray-400 text-sm font-body">Sin ventas aún</p>
         </div>
       </div>
     </div>
 
     <div class="grid lg:grid-cols-3 gap-6">
       <!-- Stock bajo -->
-      <div class="bg-[#162421] border border-white/10 rounded-2xl p-6">
-        <h2 class="font-display text-lg font-semibold text-white mb-5 flex items-center gap-2">
+      <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-5 flex items-center gap-2">
           <span>⚠️</span> Stock bajo
           <span v-if="data?.stockBajo?.length" class="ml-auto bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full font-body">
             {{ data.stockBajo.length }} producto(s)
@@ -62,11 +62,11 @@
           <div
             v-for="p in data.stockBajo"
             :key="p.id"
-            class="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5"
+            class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5"
           >
             <div>
-              <p class="font-body text-sm text-white">{{ p.nombre }}</p>
-              <p class="font-body text-xs text-white/30 font-mono">{{ p.codigo }}</p>
+              <p class="font-body text-sm text-gray-900">{{ p.nombre }}</p>
+              <p class="font-body text-xs text-gray-400 font-mono">{{ p.codigo }}</p>
             </div>
             <span
               class="font-display text-lg font-bold"
@@ -77,52 +77,52 @@
       </div>
 
       <!-- Gastos del mes -->
-      <div class="bg-[#162421] border border-white/10 rounded-2xl p-6">
-        <h2 class="font-display text-lg font-semibold text-white mb-5 flex items-center gap-2">
+      <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-5 flex items-center gap-2">
           <span>💸</span> Gastos del mes
           <RouterLink to="/admin/gastos" class="ml-auto text-xs text-teal/60 hover:text-teal font-body transition-colors">
             Ver todos →
           </RouterLink>
         </h2>
-        <div v-if="!gastosResumen" class="text-white/30 text-sm font-body">Cargando...</div>
+        <div v-if="!gastosResumen" class="text-gray-400 text-sm font-body">Cargando...</div>
         <div v-else class="space-y-3">
           <div
             v-for="(total, cat) in gastosResumen.totales"
             :key="cat"
             class="flex items-center justify-between"
           >
-            <p class="font-body text-sm text-white/70">{{ cat }}</p>
-            <span class="font-body text-sm font-bold text-white/80">${{ total.toLocaleString('es-AR', { minimumFractionDigits: 2 }) }}</span>
+            <p class="font-body text-sm text-gray-600">{{ cat }}</p>
+            <span class="font-body text-sm font-bold text-gray-700">${{ total.toLocaleString('es-AR', { minimumFractionDigits: 2 }) }}</span>
           </div>
-          <div v-if="!Object.keys(gastosResumen.totales || {}).length" class="text-white/30 text-sm font-body">
+          <div v-if="!Object.keys(gastosResumen.totales || {}).length" class="text-gray-400 text-sm font-body">
             Sin gastos registrados este mes
           </div>
-          <div class="border-t border-white/10 pt-3 flex items-center justify-between">
-            <p class="font-body text-xs text-white/40 uppercase tracking-wider">Total</p>
+          <div class="border-t border-gray-200 pt-3 flex items-center justify-between">
+            <p class="font-body text-xs text-gray-400 uppercase tracking-wider">Total</p>
             <span class="font-display text-lg font-bold text-red-400">${{ (gastosResumen.totalMes || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 }) }}</span>
           </div>
         </div>
       </div>
 
       <!-- Últimas ventas -->
-      <div class="bg-[#162421] border border-white/10 rounded-2xl p-6">
-        <h2 class="font-display text-lg font-semibold text-white mb-5">Últimas ventas</h2>
-        <div v-if="!data?.ultimasVentas?.length" class="text-white/30 text-sm font-body">Sin ventas registradas</div>
+      <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Últimas ventas</h2>
+        <div v-if="!data?.ultimasVentas?.length" class="text-gray-400 text-sm font-body">Sin ventas registradas</div>
         <div v-else class="space-y-3">
           <div
             v-for="v in data.ultimasVentas"
             :key="v.id"
-            class="flex items-center justify-between border-b border-white/5 pb-3"
+            class="flex items-center justify-between border-b border-gray-100 pb-3"
           >
             <div>
-              <p class="font-body text-sm text-white">
+              <p class="font-body text-sm text-gray-900">
                 Venta #{{ v.id }}
                 <span class="ml-2 text-xs px-1.5 py-0.5 rounded-full"
                   :class="v.tipo === 'online' ? 'bg-purple-500/20 text-purple-300' : 'bg-teal/20 text-teal'">
                   {{ v.tipo }}
                 </span>
               </p>
-              <p class="font-body text-xs text-white/30">{{ formatFecha(v.fecha) }} · {{ v.items?.length }} item(s)</p>
+              <p class="font-body text-xs text-gray-400">{{ formatFecha(v.fecha) }} · {{ v.items?.length }} item(s)</p>
             </div>
             <span class="font-display font-bold text-teal">${{ parseFloat(v.total).toLocaleString('es-AR') }}</span>
           </div>
@@ -149,13 +149,13 @@ const fechaHoy = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 
 const metricas = computed(() => {
   if (!data.value) return [
     { icon: '💰', label: 'Ventas hoy', valor: '—', color: 'text-teal' },
-    { icon: '🛒', label: 'Transacciones', valor: '—', color: 'text-white' },
+    { icon: '🛒', label: 'Transacciones', valor: '—', color: 'text-gray-900' },
     { icon: '📦', label: 'Pedidos online', valor: '—', color: 'text-purple-400' },
     { icon: '⚠️', label: 'Stock bajo', valor: '—', color: 'text-yellow-400' },
   ]
   return [
     { icon: '💰', label: 'Ventas hoy',     valor: `$${data.value.hoy.total.toLocaleString('es-AR')}`, color: 'text-teal' },
-    { icon: '🛒', label: 'Transacciones',  valor: data.value.hoy.cantidad, color: 'text-white' },
+    { icon: '🛒', label: 'Transacciones',  valor: data.value.hoy.cantidad, color: 'text-gray-900' },
     { icon: '📦', label: 'Pedidos online', valor: data.value.pedidosPendientes, color: 'text-purple-400' },
     { icon: '⚠️', label: 'Stock bajo',     valor: data.value.stockBajo.length, color: data.value.stockBajo.length > 0 ? 'text-yellow-400' : 'text-teal' },
   ]
@@ -199,8 +199,8 @@ function buildChart(ventasSemana) {
         callbacks: { label: ctx => `$${ctx.raw.toLocaleString('es-AR')}` },
       }},
       scales: {
-        x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 11 } }, grid: { display: false } },
-        y: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 11 }, callback: v => `$${v.toLocaleString('es-AR')}` }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        x: { ticks: { color: 'rgba(0,0,0,0.4)', font: { size: 11 } }, grid: { display: false } },
+        y: { ticks: { color: 'rgba(0,0,0,0.4)', font: { size: 11 }, callback: v => `$${v.toLocaleString('es-AR')}` }, grid: { color: 'rgba(0,0,0,0.05)' } },
       },
     },
   })

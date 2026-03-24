@@ -1,47 +1,47 @@
 <template>
-  <div class="min-h-screen bg-[#0F1E1B] flex items-center justify-center px-4">
+  <div class="min-h-screen bg-[#EBF2EC] flex items-center justify-center px-4">
     <div class="w-full max-w-sm">
       <!-- Logo -->
       <div class="text-center mb-10">
-        <span class="font-display text-4xl font-bold text-white tracking-widest">CEKETO</span>
-        <p class="font-body text-teal text-sm mt-1 tracking-wider uppercase">Panel Administrativo</p>
+        <span class="font-display text-4xl font-bold text-brand-green tracking-widest">CEKETO</span>
+        <p class="font-body text-brand-green/70 text-sm mt-1 tracking-wider uppercase">Panel Administrativo</p>
       </div>
 
       <!-- Card -->
-      <div class="bg-[#162421] border border-white/10 rounded-3xl p-8 shadow-2xl">
-        <h1 class="font-display text-2xl font-semibold text-white mb-6">Iniciar sesión</h1>
+      <div class="bg-white border border-gray-200 rounded-3xl p-8 shadow-lg">
+        <h1 class="font-display text-2xl font-semibold text-gray-900 mb-6">Iniciar sesión</h1>
 
         <form @submit.prevent="login" class="space-y-4">
           <div>
-            <label class="block font-body text-sm text-white/60 mb-2">Usuario</label>
+            <label class="block font-body text-sm text-gray-500 mb-2">Usuario</label>
             <input
               v-model="form.usuario"
               type="text"
               required
               autocomplete="username"
-              class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-body
-                     focus:outline-none focus:border-teal transition-colors"
+              class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
+                     focus:outline-none focus:border-brand-green transition-colors"
             />
           </div>
           <div>
-            <label class="block font-body text-sm text-white/60 mb-2">Contraseña</label>
+            <label class="block font-body text-sm text-gray-500 mb-2">Contraseña</label>
             <input
               v-model="form.password"
               type="password"
               required
               autocomplete="current-password"
-              class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-body
-                     focus:outline-none focus:border-teal transition-colors"
+              class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
+                     focus:outline-none focus:border-brand-green transition-colors"
             />
           </div>
 
-          <p v-if="error" class="text-red-400 text-sm font-body">{{ error }}</p>
+          <p v-if="error" class="text-red-500 text-sm font-body">{{ error }}</p>
 
           <button
             type="submit"
             :disabled="loading"
-            class="w-full py-3 bg-teal text-white font-body font-medium rounded-xl
-                   hover:bg-teal/80 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full py-3 bg-brand-green text-white font-body font-medium rounded-xl
+                   hover:bg-brand-green/80 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ loading ? 'Ingresando...' : 'Ingresar' }}
           </button>
