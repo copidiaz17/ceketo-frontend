@@ -104,6 +104,11 @@
           >
             Ver Tienda
           </RouterLink>
+          <RouterLink
+            to="/admin/login"
+            class="text-center text-gray-400 text-sm py-2 hover:text-brand-orange transition-colors"
+            @click="mobileOpen = false"
+          >⚙️ Panel Admin</RouterLink>
         </div>
       </div>
     </Transition>
