@@ -1,9 +1,26 @@
 <template>
   <div class="p-8">
     <!-- Header -->
-    <div class="mb-8">
-      <h1 class="font-display text-3xl font-bold text-gray-900">Registrar Venta</h1>
-      <p class="font-body text-gray-500 mt-1">Venta en el local mediante código de barras o selector</p>
+    <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h1 class="font-display text-3xl font-bold text-gray-900">Registrar Venta</h1>
+        <p class="font-body text-gray-500 mt-1">Venta en el local mediante código de barras o selector</p>
+      </div>
+      <!-- Estado impresora -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 font-body text-sm">
+          <span :class="impresoraConectada ? 'bg-teal' : 'bg-gray-300'" class="w-2.5 h-2.5 rounded-full"></span>
+          <span :class="impresoraConectada ? 'text-teal' : 'text-gray-400'">
+            {{ impresoraConectada ? 'Impresora conectada' : 'Impresora desconectada' }}
+          </span>
+        </div>
+        <button
+          v-if="!impresoraConectada"
+          @click="conectar"
+          class="px-4 py-2 bg-brand-green text-white font-body text-sm rounded-xl hover:bg-brand-green/80 transition-colors"
+        >Conectar impresora</button>
+      </div>
+      <p v-if="impresoraError" class="w-full text-red-400 text-xs font-body">{{ impresoraError }}</p>
     </div>
 
     <div class="grid lg:grid-cols-2 gap-8">
@@ -354,6 +371,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import ProductSelect from '@/components/admin/ProductSelect.vue'
+import { conectarImpresora, imprimirTicketESCPOS } from '@/utils/printer.js'
 
 const productos        = ref([])
 const barcodeRaw       = ref('')
@@ -374,6 +392,8 @@ const cantidadBarcode       = ref(1)
 const modalPago             = ref(false)
 const ultimaVenta           = ref(null)
 const ventaDetalle          = ref(null)
+const impresoraConectada    = ref(false)
+const impresoraError        = ref('')
 const metodoPagoSeleccionado = ref('')
 const descuentoPct           = ref(0)
 
@@ -516,6 +536,59 @@ async function confirmarVenta() {
   }
 }
 
+async function conectar() {
+  impresoraError.value = ''
+  try {
+    await conectarImpresora()
+    impresoraConectada.value = true
+  } catch (e) {
+    impresoraError.value = e.message
+    impresoraConectada.value = false
+  }
+}
+
+async function imprimirTicket() {
+  const v = ultimaVenta.value
+  if (!v) return
+  try {
+    await imprimirTicketESCPOS({
+      id:          v.id,
+      items:       v.items,
+      total:       v.total,
+      descuento:   v.descuento,
+      metodo_pago: v.metodo_pago,
+      fecha:       v.fecha,
+    })
+    impresoraConectada.value = true
+  } catch (e) {
+    impresoraError.value = e.message
+    imprimirTicketFallback(v)
+  }
+}
+
+async function imprimirTicketHistorial(v) {
+  try {
+    await imprimirTicketESCPOS({
+      id:          v.id,
+      items:       v.items?.map(i => ({
+        nombre:     i.producto?.nombre,
+        categoria:  i.producto?.categoria?.nombre || 'Otros',
+        precio_unit: i.precio_unit,
+        cantidad:   i.cantidad,
+        subtotal:   i.subtotal,
+      })),
+      total:       v.total,
+      descuento:   v.descuento || 0,
+      metodo_pago: v.metodo_pago,
+      fecha:       v.fecha,
+    })
+    impresoraConectada.value = true
+  } catch (e) {
+    impresoraError.value = e.message
+    imprimirTicketFallbackHistorial(v)
+  }
+}
+
 function itemsAgrupados(items) {
   const grupos = {}
   for (const item of (items || [])) {
@@ -530,7 +603,7 @@ function abrirDetalleVenta(v) {
   ventaDetalle.value = v
 }
 
-function imprimirTicketHistorial(v) {
+function imprimirTicketFallbackHistorial(v) {
   const metodoLabel = metodosPago.find(m => m.value === v.metodo_pago)?.label || v.metodo_pago || '—'
   const fecha = new Date(v.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
   const hora  = new Date(v.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
@@ -609,23 +682,20 @@ function imprimirTicketHistorial(v) {
   setTimeout(() => { win.print(); win.close() }, 400)
 }
 
-function imprimirTicket() {
-  const v = ultimaVenta.value
-  if (!v) return
-
+function imprimirTicketFallback(v) {
   const metodoLabel = metodosPago.find(m => m.value === v.metodo_pago)?.label || v.metodo_pago
   const fecha = v.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
   const hora  = v.fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
 
   // Agrupar items por categoría
   const grupos = {}
-  for (const item of v.items) {
+  for (const item of (v.items || [])) {
     const cat = item.categoria || 'Otros'
     if (!grupos[cat]) grupos[cat] = []
     grupos[cat].push(item)
   }
 
-  const subtotalOriginal = v.items.reduce((acc, i) => acc + i.precio * i.cantidad, 0)
+  const subtotalOriginal = (v.items || []).reduce((acc, i) => acc + i.precio * i.cantidad, 0)
 
   let itemsHtml = ''
   for (const [cat, items] of Object.entries(grupos)) {
