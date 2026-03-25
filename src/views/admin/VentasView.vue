@@ -36,6 +36,34 @@
             >Buscar</button>
           </div>
           <p v-if="barcodeError" class="text-red-400 text-xs mt-2 font-body">{{ barcodeError }}</p>
+
+          <!-- Producto encontrado por barcode -->
+          <div v-if="productoEscaneado" class="mt-4 bg-teal/10 border border-teal/30 rounded-xl p-4">
+            <p class="font-body text-sm font-semibold text-gray-900 mb-1">{{ productoEscaneado.nombre }}</p>
+            <p class="font-body text-xs text-gray-400 mb-3">{{ productoEscaneado.codigo }} · ${{ parseFloat(productoEscaneado.precio).toLocaleString('es-AR') }}</p>
+            <div class="flex gap-3 items-center">
+              <div class="flex-1">
+                <label class="block font-body text-xs text-gray-400 mb-1">Cantidad</label>
+                <input
+                  ref="cantidadBarcodeInput"
+                  v-model.number="cantidadBarcode"
+                  type="number"
+                  min="1"
+                  @keydown.enter.prevent="agregarDesdeBarcode"
+                  class="w-full px-4 py-2 rounded-xl bg-white border border-teal/40 text-gray-800 font-body
+                         focus:outline-none focus:border-teal transition-colors"
+                />
+              </div>
+              <button
+                @click="agregarDesdeBarcode"
+                class="px-5 py-2 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors mt-5"
+              >+ Agregar</button>
+              <button
+                @click="productoEscaneado = null; barcodeInput?.focus()"
+                class="px-3 py-2 text-gray-400 hover:text-red-400 transition-colors mt-5 text-lg"
+              >✕</button>
+            </div>
+          </div>
         </div>
 
         <!-- Selector manual -->
@@ -265,7 +293,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import ProductSelect from '@/components/admin/ProductSelect.vue'
 
@@ -282,6 +310,9 @@ const ventaErr         = ref('')
 const historialVentas       = ref([])
 const barcodeInput          = ref(null)
 const barcodeTimer          = ref(null)
+const cantidadBarcodeInput  = ref(null)
+const productoEscaneado     = ref(null)
+const cantidadBarcode       = ref(1)
 const modalPago             = ref(false)
 const ultimaVenta           = ref(null)
 const metodoPagoSeleccionado = ref('')
@@ -335,13 +366,24 @@ async function buscarPorBarcode() {
   if (!codigo) return
   try {
     const { data } = await axios.get(`/api/productos/barcode/${codigo}`)
-    agregarAlCarrito(data, 1)
+    productoEscaneado.value = data
+    cantidadBarcode.value   = 1
     barcodeRaw.value = ''
-    barcodeInput.value?.focus()
+    await nextTick()
+    cantidadBarcodeInput.value?.focus()
+    cantidadBarcodeInput.value?.select()
   } catch {
     barcodeError.value = `Código "${codigo}" no encontrado`
     setTimeout(() => { barcodeError.value = '' }, 3000)
   }
+}
+
+function agregarDesdeBarcode() {
+  if (!productoEscaneado.value || !cantidadBarcode.value) return
+  agregarAlCarrito(productoEscaneado.value, cantidadBarcode.value)
+  productoEscaneado.value = null
+  cantidadBarcode.value   = 1
+  barcodeInput.value?.focus()
 }
 
 function agregarDesdeSelector() {
