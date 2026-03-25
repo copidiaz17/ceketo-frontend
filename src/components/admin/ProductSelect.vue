@@ -4,14 +4,14 @@
     <button
       type="button"
       @click="open = !open"
-      class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border text-left font-body text-sm transition-colors"
-      :class="open ? 'border-teal text-white' : 'border-white/10 text-white/70 hover:border-white/30'"
+      class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gray-50 border text-left font-body text-sm transition-colors"
+      :class="open ? 'border-brand-green text-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'"
     >
-      <span :class="selectedProduct ? 'text-white' : 'text-white/30'">
+      <span :class="selectedProduct ? 'text-gray-900' : 'text-gray-400'">
         {{ selectedProduct ? `${selectedProduct.codigo} — ${selectedProduct.nombre}` : placeholder }}
       </span>
       <svg
-        class="h-4 w-4 text-white/40 transition-transform duration-200 flex-shrink-0 ml-2"
+        class="h-4 w-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ml-2"
         :class="open ? 'rotate-180' : ''"
         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
       >
@@ -23,17 +23,17 @@
     <Transition name="dropdown">
       <div
         v-if="open"
-        class="absolute z-50 left-0 right-0 mt-2 bg-[#1A2E2A] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+        class="absolute z-50 left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
       >
         <!-- Buscador -->
-        <div class="p-2 border-b border-white/10">
+        <div class="p-2 border-b border-gray-200">
           <input
             v-model="search"
             ref="searchInput"
             type="text"
             placeholder="Buscar producto..."
-            class="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm font-body
-                   focus:outline-none focus:border-teal transition-colors placeholder-white/30"
+            class="w-full px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-gray-800 text-sm font-body
+                   focus:outline-none focus:border-brand-green transition-colors placeholder-gray-400"
           />
         </div>
 
@@ -41,7 +41,7 @@
         <div class="max-h-64 overflow-y-auto">
           <template v-for="cat in filteredGroups" :key="cat.codigo">
             <!-- Grupo -->
-            <div class="px-3 py-1.5 text-xs font-body font-semibold text-white/30 uppercase tracking-wider bg-white/5 sticky top-0">
+            <div class="px-3 py-1.5 text-xs font-body font-semibold text-gray-400 uppercase tracking-wider bg-gray-50 sticky top-0">
               {{ cat.nombre }}
             </div>
             <!-- Items -->
@@ -50,15 +50,15 @@
               :key="p.id"
               type="button"
               @click="select(p)"
-              class="w-full flex items-center justify-between px-4 py-2.5 text-left font-body text-sm transition-colors hover:bg-teal/20"
-              :class="modelValue === p.id ? 'bg-teal/10 text-teal' : 'text-white/80'"
+              class="w-full flex items-center justify-between px-4 py-2.5 text-left font-body text-sm transition-colors hover:bg-brand-green/10"
+              :class="modelValue === p.id ? 'bg-brand-green/10 text-brand-green' : 'text-gray-700'"
             >
               <span>{{ p.nombre }}</span>
-              <span class="text-xs text-white/30 font-mono ml-2 flex-shrink-0">{{ p.codigo }}</span>
+              <span class="text-xs text-gray-400 font-mono ml-2 flex-shrink-0">{{ p.codigo }}</span>
             </button>
           </template>
 
-          <div v-if="filteredGroups.length === 0" class="px-4 py-6 text-center text-white/30 text-sm font-body">
+          <div v-if="filteredGroups.length === 0" class="px-4 py-6 text-center text-gray-400 text-sm font-body">
             Sin resultados
           </div>
         </div>
