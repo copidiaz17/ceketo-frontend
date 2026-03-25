@@ -142,6 +142,12 @@
 
           <p v-if="ventaOk" class="text-teal text-sm text-center mt-3 font-body">{{ ventaOk }}</p>
           <p v-if="ventaErr" class="text-red-400 text-sm text-center mt-3 font-body">{{ ventaErr }}</p>
+          <button
+            v-if="ultimaVenta && ventaOk"
+            @click="imprimirTicket"
+            class="w-full mt-2 py-2 border border-gray-200 text-gray-600 font-body text-sm rounded-xl
+                   hover:border-gray-400 hover:text-gray-900 transition-colors"
+          >🖨️ Imprimir ticket</button>
         </div>
       </div>
     </div>
@@ -277,6 +283,7 @@ const historialVentas       = ref([])
 const barcodeInput          = ref(null)
 const barcodeTimer          = ref(null)
 const modalPago             = ref(false)
+const ultimaVenta           = ref(null)
 const metodoPagoSeleccionado = ref('')
 const descuentoPct           = ref(0)
 
@@ -357,6 +364,7 @@ function agregarAlCarrito(prod, cant) {
       codigo:      prod.codigo,
       precio:      parseFloat(prod.precio),
       cantidad:    cant,
+      categoria:   prod.categoria?.nombre || 'Otros',
     })
   }
 }
@@ -385,6 +393,14 @@ async function confirmarVenta() {
         precio_unit: i.precio,
       })),
     }, { headers: { Authorization: `Bearer ${token}` } })
+    ultimaVenta.value = {
+      id:          data.venta_id,
+      items:       [...carrito.value],
+      total:       data.total,
+      descuento:   descuentoPct.value,
+      metodo_pago: metodoPagoSeleccionado.value,
+      fecha:       new Date(),
+    }
     modalPago.value = false
     ventaOk.value = `✓ Venta #${data.venta_id} registrada — Total $${data.total.toLocaleString('es-AR')}`
     carrito.value = []
@@ -397,6 +413,115 @@ async function confirmarVenta() {
   } finally {
     enviandoVenta.value = false
   }
+}
+
+function imprimirTicket() {
+  const v = ultimaVenta.value
+  if (!v) return
+
+  const metodoLabel = metodosPago.find(m => m.value === v.metodo_pago)?.label || v.metodo_pago
+  const fecha = v.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  const hora  = v.fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+
+  // Agrupar items por categoría
+  const grupos = {}
+  for (const item of v.items) {
+    const cat = item.categoria || 'Otros'
+    if (!grupos[cat]) grupos[cat] = []
+    grupos[cat].push(item)
+  }
+
+  const subtotalOriginal = v.items.reduce((acc, i) => acc + i.precio * i.cantidad, 0)
+
+  let itemsHtml = ''
+  for (const [cat, items] of Object.entries(grupos)) {
+    itemsHtml += `<tr><td colspan="2" class="cat">${cat.toUpperCase()}</td></tr>`
+    for (const item of items) {
+      const subtotal = item.precio * item.cantidad
+      itemsHtml += `
+        <tr>
+          <td class="prod-nombre">${item.nombre}</td>
+          <td class="prod-precio">$${subtotal.toLocaleString('es-AR')}</td>
+        </tr>
+        <tr>
+          <td class="prod-detalle">${item.cantidad}x $${item.precio.toLocaleString('es-AR')}</td>
+          <td></td>
+        </tr>`
+    }
+  }
+
+  const descuentoHtml = v.descuento > 0 ? `
+    <tr class="descuento-row">
+      <td>Descuento (${v.descuento}%)</td>
+      <td>- $${(subtotalOriginal * v.descuento / 100).toLocaleString('es-AR')}</td>
+    </tr>` : ''
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    width: 72mm;
+    padding: 4mm 3mm;
+    color: #000;
+  }
+  .header { text-align: center; margin-bottom: 6px; }
+  .header .nombre { font-size: 16px; font-weight: bold; letter-spacing: 1px; }
+  .header .dir { font-size: 10px; margin-top: 2px; }
+  .divider { border-top: 1px dashed #000; margin: 5px 0; }
+  .info { font-size: 10px; margin-bottom: 2px; }
+  .info span { font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  td { padding: 1px 0; vertical-align: top; }
+  .cat { font-weight: bold; font-size: 10px; padding-top: 6px; padding-bottom: 2px; text-decoration: underline; }
+  .prod-nombre { font-size: 10px; width: 65%; }
+  .prod-precio { text-align: right; font-size: 10px; font-weight: bold; }
+  .prod-detalle { font-size: 9px; color: #444; padding-left: 4px; }
+  .descuento-row td { font-size: 10px; }
+  .descuento-row td:last-child { text-align: right; }
+  .total-row td { font-size: 13px; font-weight: bold; padding-top: 4px; }
+  .total-row td:last-child { text-align: right; }
+  .footer { text-align: center; font-size: 10px; margin-top: 8px; }
+  @media print {
+    body { width: 72mm; }
+    @page { margin: 0; size: 80mm auto; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="nombre">CEKETO</div>
+    <div class="dir">Independencia 663, Santiago del Estero</div>
+    <div class="dir">Santiago del Estero, Argentina</div>
+  </div>
+  <div class="divider"></div>
+  <div class="info">Pedido #${v.id}</div>
+  <div class="info">Fecha: ${fecha} - ${hora} hs</div>
+  <div class="info">Forma de pago: <span>${metodoLabel}</span></div>
+  <div class="divider"></div>
+  <table>
+    ${itemsHtml}
+    <tr><td colspan="2"><div class="divider"></div></td></tr>
+    ${descuentoHtml}
+    <tr class="total-row">
+      <td>TOTAL</td>
+      <td>$${Number(v.total).toLocaleString('es-AR')}</td>
+    </tr>
+  </table>
+  <div class="divider"></div>
+  <div class="footer">¡Gracias por tu compra!</div>
+</body>
+</html>`
+
+  const win = window.open('', '_blank', 'width=350,height=600')
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print(); win.close() }, 400)
 }
 
 async function cargarProductos() {
