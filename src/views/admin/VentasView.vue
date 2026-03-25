@@ -306,10 +306,16 @@
               </td>
               <td class="py-3 text-right font-bold text-teal">${{ parseFloat(v.total).toLocaleString('es-AR') }}</td>
               <td class="py-3 pl-4 text-right">
-                <button
-                  @click="abrirDetalleVenta(v)"
-                  class="px-3 py-1 rounded-lg border border-gray-200 text-gray-500 text-xs font-body hover:border-teal hover:text-teal transition-colors"
-                >Ver</button>
+                <div class="flex gap-2 justify-end">
+                  <button
+                    @click="abrirDetalleVenta(v)"
+                    class="px-3 py-1 rounded-lg border border-gray-200 text-gray-500 text-xs font-body hover:border-teal hover:text-teal transition-colors"
+                  >Ver</button>
+                  <button
+                    @click="confirmarAnulacion(v)"
+                    class="px-3 py-1 rounded-lg border border-red-200 text-red-400 text-xs font-body hover:bg-red-50 transition-colors"
+                  >Anular</button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -357,11 +363,43 @@
           </div>
         </div>
 
-        <button
-          @click="imprimirTicketHistorial(ventaDetalle)"
-          class="w-full mt-5 py-3 border border-gray-300 text-gray-700 font-body text-sm font-medium rounded-xl
-                 hover:border-teal hover:text-teal transition-colors"
-        >🖨️ Reimprimir ticket</button>
+        <div class="flex gap-3 mt-5">
+          <button
+            @click="imprimirTicketHistorial(ventaDetalle)"
+            class="flex-1 py-3 border border-gray-300 text-gray-700 font-body text-sm font-medium rounded-xl
+                   hover:border-teal hover:text-teal transition-colors"
+          >🖨️ Reimprimir</button>
+          <button
+            @click="confirmarAnulacion(ventaDetalle); ventaDetalle = null"
+            class="flex-1 py-3 border border-red-200 text-red-400 font-body text-sm font-medium rounded-xl
+                   hover:bg-red-50 transition-colors"
+          >Anular venta</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal confirmación anulación -->
+    <div v-if="ventaAAnular" class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4">
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm">
+        <h2 class="font-display text-lg font-bold text-gray-900 mb-2">Anular venta #{{ ventaAAnular.id }}</h2>
+        <p class="font-body text-sm text-gray-500 mb-1">
+          Total: <span class="font-bold text-gray-900">${{ parseFloat(ventaAAnular.total).toLocaleString('es-AR') }}</span>
+        </p>
+        <p class="font-body text-sm text-red-400 mb-6">
+          Se revertirá el stock de {{ ventaAAnular.items?.length || 0 }} producto(s). Esta acción no se puede deshacer.
+        </p>
+        <div class="flex gap-3">
+          <button
+            @click="ventaAAnular = null"
+            class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors"
+          >Cancelar</button>
+          <button
+            @click="anularVenta"
+            :disabled="anulando"
+            class="flex-1 py-3 bg-red-500 text-white font-body text-sm font-semibold rounded-xl
+                   hover:bg-red-600 transition-colors disabled:opacity-50"
+          >{{ anulando ? 'Anulando...' : 'Confirmar anulación' }}</button>
+        </div>
       </div>
     </div>
   </div>
@@ -394,6 +432,8 @@ const ultimaVenta           = ref(null)
 const ventaDetalle          = ref(null)
 const impresoraConectada    = ref(false)
 const impresoraError        = ref('')
+const ventaAAnular          = ref(null)
+const anulando              = ref(false)
 const metodoPagoSeleccionado = ref('')
 const descuentoPct           = ref(0)
 
@@ -601,6 +641,31 @@ function itemsAgrupados(items) {
 
 function abrirDetalleVenta(v) {
   ventaDetalle.value = v
+}
+
+function confirmarAnulacion(v) {
+  ventaAAnular.value = v
+}
+
+async function anularVenta() {
+  if (!ventaAAnular.value) return
+  anulando.value = true
+  try {
+    const token = localStorage.getItem('ceketo_token')
+    await axios.delete(`/api/ventas/${ventaAAnular.value.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    ventaAAnular.value = null
+    await cargarHistorial()
+    await cargarProductos()
+    ventaOk.value = '✓ Venta anulada y stock revertido'
+    setTimeout(() => { ventaOk.value = '' }, 5000)
+  } catch (err) {
+    ventaErr.value = err.response?.data?.error || 'Error al anular la venta'
+    setTimeout(() => { ventaErr.value = '' }, 5000)
+  } finally {
+    anulando.value = false
+  }
 }
 
 function imprimirTicketFallbackHistorial(v) {
