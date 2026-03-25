@@ -19,7 +19,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     // Redirigir raíz al panel admin
-    { path: '/',             redirect: '/tienda' },
+    { path: '/',             name: 'home',     component: () => import('../views/HomeView.vue') },
     { path: '/tienda',       name: 'shop',     component: () => import('../views/ShopView.vue') },
     { path: '/producto/:id', name: 'product',  component: () => import('../views/ProductView.vue') },
     { path: '/carrito',      name: 'cart',     component: () => import('../views/CartView.vue') },
