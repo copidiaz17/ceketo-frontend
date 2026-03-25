@@ -148,10 +148,8 @@
     <!-- Modal método de pago -->
     <div v-if="modalPago" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
       <div class="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-md">
-        <h2 class="font-display text-xl font-bold text-gray-900 mb-2">Método de pago</h2>
-        <p class="font-body text-gray-500 text-sm mb-6">
-          Total: <span class="text-teal font-bold text-lg">${{ totalCarrito.toLocaleString('es-AR') }}</span>
-        </p>
+        <h2 class="font-display text-xl font-bold text-gray-900 mb-6">Método de pago</h2>
+
         <div class="grid grid-cols-2 gap-3 mb-6">
           <button
             v-for="metodo in metodosPago"
@@ -166,6 +164,37 @@
             {{ metodo.label }}
           </button>
         </div>
+
+        <!-- Descuento -->
+        <div class="mb-4">
+          <label class="block font-body text-sm text-gray-500 mb-2">Descuento (%)</label>
+          <input
+            v-model.number="descuentoPct"
+            type="number"
+            min="0"
+            max="100"
+            placeholder="0"
+            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
+                   focus:outline-none focus:border-teal transition-colors"
+          />
+        </div>
+
+        <!-- Resumen de montos -->
+        <div class="bg-gray-50 rounded-xl px-4 py-3 mb-6 space-y-2">
+          <div class="flex justify-between font-body text-sm text-gray-500">
+            <span>Subtotal</span>
+            <span>${{ totalCarrito.toLocaleString('es-AR') }}</span>
+          </div>
+          <div v-if="descuentoPct > 0" class="flex justify-between font-body text-sm text-red-400">
+            <span>Descuento ({{ descuentoPct }}%)</span>
+            <span>− ${{ montoDescuento.toLocaleString('es-AR') }}</span>
+          </div>
+          <div class="flex justify-between font-body font-bold text-gray-900 border-t border-gray-200 pt-2">
+            <span>Total a cobrar</span>
+            <span class="text-teal text-lg">${{ totalFinal.toLocaleString('es-AR') }}</span>
+          </div>
+        </div>
+
         <div class="flex gap-3">
           <button
             @click="modalPago = false"
@@ -247,6 +276,7 @@ const historialVentas       = ref([])
 const barcodeInput          = ref(null)
 const modalPago             = ref(false)
 const metodoPagoSeleccionado = ref('')
+const descuentoPct           = ref(0)
 
 const metodosPago = [
   { value: 'efectivo',      label: 'Efectivo',      icon: '💵' },
@@ -268,6 +298,14 @@ const categoriasConProductos = computed(() => {
 
 const totalCarrito = computed(() =>
   carrito.value.reduce((acc, i) => acc + i.precio * i.cantidad, 0)
+)
+
+const montoDescuento = computed(() =>
+  Math.round(totalCarrito.value * (descuentoPct.value || 0) / 100)
+)
+
+const totalFinal = computed(() =>
+  totalCarrito.value - montoDescuento.value
 )
 
 function formatHora(fecha) {
@@ -316,6 +354,7 @@ function agregarAlCarrito(prod, cant) {
 function abrirModalPago() {
   if (!carrito.value.length) return
   metodoPagoSeleccionado.value = ''
+  descuentoPct.value = 0
   modalPago.value = true
 }
 
@@ -329,6 +368,7 @@ async function confirmarVenta() {
     const { data } = await axios.post('/api/ventas', {
       tipo:        tipoVenta.value,
       metodo_pago: metodoPagoSeleccionado.value,
+      descuento:   descuentoPct.value || 0,
       items: carrito.value.map(i => ({
         producto_id: i.producto_id,
         cantidad:    i.cantidad,
