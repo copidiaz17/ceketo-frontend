@@ -804,5 +804,12 @@ async function cargarHistorial() {
 onMounted(async () => {
   await cargarProductos()
   await cargarHistorial()
+  // Intentar reconectar impresora automáticamente si ya fue autorizada antes
+  try {
+    const devices = await navigator.usb?.getDevices()
+    if (devices?.length) {
+      await conectar()
+    }
+  } catch {}
 })
 </script>
