@@ -168,14 +168,17 @@
             {{ enviandoVenta ? 'Procesando...' : '✓ Confirmar venta' }}
           </button>
 
-          <p v-if="ventaOk" class="text-teal text-sm text-center mt-3 font-body">{{ ventaOk }}</p>
           <p v-if="ventaErr" class="text-red-400 text-sm text-center mt-3 font-body">{{ ventaErr }}</p>
+        </div>
+
+        <!-- Botón imprimir — fuera del bloque carrito para que persista tras la venta -->
+        <div v-if="ultimaVenta" class="border-t border-gray-200 pt-4 mt-2">
+          <p v-if="ventaOk" class="text-teal text-sm text-center mb-2 font-body">{{ ventaOk }}</p>
           <button
-            v-if="ultimaVenta && ventaOk"
             @click="imprimirTicket"
-            class="w-full mt-2 py-2 border border-gray-200 text-gray-600 font-body text-sm rounded-xl
-                   hover:border-gray-400 hover:text-gray-900 transition-colors"
-          >🖨️ Imprimir ticket</button>
+            class="w-full py-3 border border-gray-300 text-gray-700 font-body text-sm font-medium rounded-xl
+                   hover:border-teal hover:text-teal transition-colors"
+          >🖨️ Imprimir ticket #{{ ultimaVenta.id }}</button>
         </div>
       </div>
     </div>
