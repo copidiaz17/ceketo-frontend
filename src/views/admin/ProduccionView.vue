@@ -112,64 +112,91 @@
       </div>
     </div>
 
-    <!-- Historial reciente -->
+    <!-- Historial de lotes -->
     <div class="mt-8 bg-white border border-gray-200 rounded-2xl p-6">
-      <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Historial reciente</h2>
-      <div v-if="historial.length === 0" class="text-gray-400 font-body text-sm">Sin registros</div>
-      <div v-else class="overflow-x-auto">
-        <table class="w-full font-body text-sm">
-          <thead>
-            <tr class="text-gray-400 border-b border-gray-200">
-              <th class="text-left pb-3 pr-4">Fecha</th>
-              <th class="text-left pb-3 pr-4">Código</th>
-              <th class="text-left pb-3 pr-4">Producto</th>
-              <th class="text-right pb-3 pr-4">Cantidad</th>
-              <th class="pb-3"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="r in historial"
-              :key="r.id"
-              class="border-b border-gray-100 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <td class="py-3 pr-4">{{ r.fecha }}</td>
-              <td class="py-3 pr-4 text-teal font-mono text-xs">{{ r.producto?.codigo }}</td>
-              <td class="py-3 pr-4">{{ r.producto?.nombre }}</td>
-              <td class="py-3 pr-4 text-right font-bold text-teal">+{{ r.cantidad }}</td>
-              <td class="py-3 text-right">
-                <button
-                  @click="confirmarEliminar(r)"
-                  class="px-3 py-1 rounded-lg border border-red-200 text-red-400 text-xs font-body hover:bg-red-50 transition-colors"
-                >Eliminar</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Historial de lotes</h2>
+      <div v-if="lotes.length === 0" class="text-gray-400 font-body text-sm">Sin registros</div>
+      <div v-else class="space-y-3">
+        <div
+          v-for="lote in lotes"
+          :key="lote.lote_id"
+          class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3"
+        >
+          <div>
+            <p class="font-body text-sm font-semibold text-gray-900">
+              Producción del {{ formatFecha(lote.fecha) }}
+            </p>
+            <p class="font-body text-xs text-gray-400">
+              {{ lote.items.length }} producto(s) · {{ lote.total_unidades }} unidades totales
+              <span v-if="lote.nota"> · {{ lote.nota }}</span>
+            </p>
+          </div>
+          <div class="flex gap-2">
+            <button
+              @click="abrirDetalleLote(lote)"
+              class="px-3 py-1 rounded-lg border border-gray-200 text-gray-500 text-xs font-body hover:border-teal hover:text-teal transition-colors"
+            >Ver</button>
+            <button
+              @click="confirmarEliminarLote(lote)"
+              class="px-3 py-1 rounded-lg border border-red-200 text-red-400 text-xs font-body hover:bg-red-50 transition-colors"
+            >Eliminar</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal confirmar eliminación -->
-  <div v-if="registroAEliminar" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+  <!-- Modal detalle de lote -->
+  <div v-if="loteDetalle" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <h2 class="font-display text-xl font-bold text-gray-900">Producción {{ formatFecha(loteDetalle.fecha) }}</h2>
+          <p class="font-body text-sm text-gray-400">{{ loteDetalle.items.length }} productos · {{ loteDetalle.total_unidades }} unidades</p>
+        </div>
+        <button @click="loteDetalle = null" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+      </div>
+
+      <div class="space-y-2 mb-4">
+        <div
+          v-for="item in loteDetalle.items"
+          :key="item.id"
+          class="flex justify-between items-center bg-gray-50 rounded-xl px-4 py-2"
+        >
+          <div>
+            <p class="font-body text-sm text-gray-900">{{ item.producto?.nombre }}</p>
+            <p class="font-body text-xs text-gray-400 font-mono">{{ item.producto?.codigo }}</p>
+          </div>
+          <span class="font-display text-lg font-bold text-teal">×{{ item.cantidad }}</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-4">
+        <button
+          @click="descargarPDFLote(loteDetalle)"
+          class="flex-1 py-2 border border-brand-green text-brand-green font-body text-sm rounded-xl hover:bg-brand-green hover:text-white transition-colors"
+        >⬇️ Descargar PDF</button>
+        <button
+          @click="confirmarEliminarLote(loteDetalle); loteDetalle = null"
+          class="flex-1 py-2 border border-red-200 text-red-400 font-body text-sm rounded-xl hover:bg-red-50 transition-colors"
+        >Eliminar lote</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmar eliminación de lote -->
+  <div v-if="loteAEliminar" class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4">
     <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm">
-      <h2 class="font-display text-lg font-bold text-gray-900 mb-2">Eliminar registro</h2>
-      <p class="font-body text-sm text-gray-600 mb-1">
-        <span class="font-semibold">{{ registroAEliminar.producto?.nombre }}</span>
-      </p>
+      <h2 class="font-display text-lg font-bold text-gray-900 mb-2">Eliminar lote</h2>
+      <p class="font-body text-sm text-gray-600 mb-1">Producción del <strong>{{ formatFecha(loteAEliminar.fecha) }}</strong></p>
       <p class="font-body text-sm text-red-400 mb-6">
-        Se revertirán <strong>{{ registroAEliminar.cantidad }}</strong> unidades del stock. Esta acción no se puede deshacer.
+        Se revertirán <strong>{{ loteAEliminar.total_unidades }}</strong> unidades del stock de {{ loteAEliminar.items.length }} producto(s). Esta acción no se puede deshacer.
       </p>
       <div class="flex gap-3">
-        <button
-          @click="registroAEliminar = null"
-          class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors"
-        >Cancelar</button>
-        <button
-          @click="eliminarRegistro"
-          :disabled="eliminando"
-          class="flex-1 py-3 bg-red-500 text-white font-body text-sm font-semibold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
-        >{{ eliminando ? 'Eliminando...' : 'Confirmar' }}</button>
+        <button @click="loteAEliminar = null" class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors">Cancelar</button>
+        <button @click="eliminarLote" :disabled="eliminando" class="flex-1 py-3 bg-red-500 text-white font-body text-sm font-semibold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50">
+          {{ eliminando ? 'Eliminando...' : 'Confirmar' }}
+        </button>
       </div>
     </div>
   </div>
@@ -186,14 +213,19 @@ const selectedId       = ref('')
 const cantidad         = ref(1)
 const nota             = ref('')
 const lote             = ref([])
-const historial        = ref([])
+const lotes            = ref([])
 const enviando         = ref(false)
-const mensajeOk          = ref('')
-const mensajeErr         = ref('')
-const registroAEliminar  = ref(null)
-const eliminando         = ref(false)
+const mensajeOk        = ref('')
+const mensajeErr       = ref('')
+const loteDetalle      = ref(null)
+const loteAEliminar    = ref(null)
+const eliminando       = ref(false)
 
 const hoy = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
+
+function formatFecha(f) {
+  return new Date(f + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
+}
 
 // Agrupar por categoría para el select
 const categoriasConProductos = computed(() => {
@@ -231,16 +263,18 @@ async function confirmarProduccion() {
   mensajeOk.value = ''
   mensajeErr.value = ''
   try {
-    const token = localStorage.getItem('ceketo_token')
+    const token   = localStorage.getItem('ceketo_token')
+    const lote_id = crypto.randomUUID()
     await axios.post('/api/produccion', {
+      lote_id,
       items: lote.value.map(i => ({ producto_id: i.producto_id, cantidad: i.cantidad })),
       nota: nota.value || undefined,
     }, { headers: { Authorization: `Bearer ${token}` } })
     mensajeOk.value = `✓ ${lote.value.length} producto(s) registrado(s) correctamente`
     lote.value  = []
     nota.value  = ''
-    cargarHistorial()
-    cargarProductos()  // refresca stock
+    cargarLotes()
+    cargarProductos()
   } catch (err) {
     mensajeErr.value = err.response?.data?.error || 'Error al guardar'
   } finally {
@@ -387,22 +421,21 @@ async function descargarPDF() {
   document.body.removeChild(el)
 }
 
-function confirmarEliminar(r) {
-  registroAEliminar.value = r
-}
+function abrirDetalleLote(l) { loteDetalle.value = l }
+function confirmarEliminarLote(l) { loteAEliminar.value = l }
 
-async function eliminarRegistro() {
-  if (!registroAEliminar.value) return
+async function eliminarLote() {
+  if (!loteAEliminar.value) return
   eliminando.value = true
   try {
     const token = localStorage.getItem('ceketo_token')
-    await axios.delete(`/api/produccion/${registroAEliminar.value.id}`, {
+    await axios.delete(`/api/produccion/lote/${loteAEliminar.value.lote_id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-    registroAEliminar.value = null
-    await cargarHistorial()
+    loteAEliminar.value = null
+    await cargarLotes()
     await cargarProductos()
-    mensajeOk.value = '✓ Registro eliminado y stock revertido'
+    mensajeOk.value = '✓ Lote eliminado y stock revertido'
     setTimeout(() => { mensajeOk.value = '' }, 4000)
   } catch (err) {
     mensajeErr.value = err.response?.data?.error || 'Error al eliminar'
@@ -412,20 +445,36 @@ async function eliminarRegistro() {
   }
 }
 
+function descargarPDFLote(l) {
+  // Simular lote temporal para reutilizar generarRemitoHTML
+  const loteBackup = lote.value
+  lote.value = l.items.map(i => ({
+    producto_id: i.producto_id,
+    nombre: i.producto?.nombre,
+    codigo: i.producto?.codigo,
+    cantidad: i.cantidad,
+  }))
+  const notaBackup = nota.value
+  nota.value = l.nota || ''
+  descargarPDF()
+  lote.value = loteBackup
+  nota.value = notaBackup
+}
+
 async function cargarProductos() {
   const { data } = await axios.get('/api/productos?limit=500')
   productos.value = data
 }
 
-async function cargarHistorial() {
+async function cargarLotes() {
   try {
-    const { data } = await axios.get('/api/produccion')
-    historial.value = data.slice(0, 30)
-  } catch { historial.value = [] }
+    const { data } = await axios.get('/api/produccion/lotes')
+    lotes.value = data
+  } catch { lotes.value = [] }
 }
 
 onMounted(async () => {
   await cargarProductos()
-  await cargarHistorial()
+  await cargarLotes()
 })
 </script>
