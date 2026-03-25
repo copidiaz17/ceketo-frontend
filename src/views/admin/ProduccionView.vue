@@ -93,6 +93,12 @@
             {{ enviando ? 'Guardando...' : '✓ Confirmar producción' }}
           </button>
 
+          <button
+            @click="exportarPDF"
+            class="w-full mt-3 py-3 border border-gray-200 text-gray-600 font-body text-sm font-medium rounded-xl
+                   hover:border-gray-400 hover:text-gray-900 transition-colors"
+          >🖨️ Imprimir remito (2 copias)</button>
+
           <p v-if="mensajeOk" class="text-teal text-sm text-center mt-3 font-body">{{ mensajeOk }}</p>
           <p v-if="mensajeErr" class="text-red-400 text-sm text-center mt-3 font-body">{{ mensajeErr }}</p>
         </div>
@@ -200,6 +206,132 @@ async function confirmarProduccion() {
     enviando.value = false
     setTimeout(() => { mensajeOk.value = ''; mensajeErr.value = '' }, 5000)
   }
+}
+
+function exportarPDF() {
+  if (!lote.value.length) return
+
+  // Agrupar por categoría
+  const grupos = {}
+  for (const item of lote.value) {
+    const prod = productos.value.find(p => p.id === item.producto_id)
+    const cat  = prod?.categoria?.nombre || 'Sin categoría'
+    if (!grupos[cat]) grupos[cat] = []
+    grupos[cat].push(item)
+  }
+
+  const totalItems = lote.value.reduce((acc, i) => acc + i.cantidad, 0)
+
+  function copiaHTML(titulo) {
+    let rows = ''
+    let n = 1
+    for (const [cat, items] of Object.entries(grupos)) {
+      rows += `<tr class="cat-row"><td colspan="4">${cat.toUpperCase()}</td></tr>`
+      for (const item of items) {
+        rows += `
+          <tr>
+            <td class="num">${n++}</td>
+            <td class="cod">${item.codigo}</td>
+            <td>${item.nombre}</td>
+            <td class="cant">${item.cantidad}</td>
+          </tr>`
+      }
+    }
+
+    return `
+      <div class="copia">
+        <div class="header">
+          <div class="left">
+            <div class="empresa">CEKETO</div>
+            <div class="sub">Independencia 663, Santiago del Estero</div>
+          </div>
+          <div class="right">
+            <div class="titulo">${titulo}</div>
+            <div class="fecha">Fecha: ${hoy}</div>
+          </div>
+        </div>
+        <div class="subtitulo">REMITO DE PRODUCCIÓN</div>
+        <table>
+          <thead>
+            <tr>
+              <th class="num">#</th>
+              <th class="cod">Código</th>
+              <th>Producto</th>
+              <th class="cant">Cant.</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="footer">
+          <div class="total">Total de unidades: <strong>${totalItems}</strong></div>
+          <div class="firmas">
+            <div class="firma">
+              <div class="linea"></div>
+              <div>Entregado por</div>
+            </div>
+            <div class="firma">
+              <div class="linea"></div>
+              <div>Recibido por</div>
+            </div>
+          </div>
+          ${nota.value ? `<div class="nota">Nota: ${nota.value}</div>` : ''}
+        </div>
+      </div>`
+  }
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #000; background: #fff; }
+
+  .copia { padding: 20mm 15mm; min-height: 48vh; display: flex; flex-direction: column; }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; border-bottom: 2px solid #058D76; padding-bottom: 10px; }
+  .empresa { font-size: 26px; font-weight: bold; color: #058D76; letter-spacing: 3px; }
+  .sub { font-size: 10px; color: #666; margin-top: 3px; }
+  .titulo { font-size: 14px; font-weight: bold; background: #058D76; color: white; padding: 4px 12px; border-radius: 4px; text-align: center; }
+  .fecha { font-size: 11px; color: #666; margin-top: 5px; text-align: right; }
+
+  .subtitulo { font-size: 13px; font-weight: bold; text-align: center; margin: 12px 0 10px; letter-spacing: 2px; color: #333; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+  th { background: #f5f5f5; border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 11px; }
+  td { border: 1px solid #eee; padding: 5px 8px; font-size: 11px; }
+  .cat-row td { background: #E8F5F0; font-weight: bold; font-size: 11px; color: #058D76; padding: 5px 8px; }
+  .num { width: 30px; text-align: center; }
+  .cod { width: 90px; font-family: monospace; }
+  .cant { width: 50px; text-align: center; font-weight: bold; }
+
+  .footer { margin-top: auto; }
+  .total { font-size: 12px; font-weight: bold; text-align: right; margin-bottom: 20px; }
+  .firmas { display: flex; justify-content: space-around; margin-top: 30px; }
+  .firma { text-align: center; font-size: 11px; color: #555; }
+  .linea { border-top: 1px solid #000; width: 120px; margin-bottom: 5px; }
+  .nota { margin-top: 12px; font-size: 11px; color: #555; border-top: 1px dashed #ccc; padding-top: 8px; }
+
+  .corte { border-top: 2px dashed #ccc; margin: 0 15mm; }
+
+  @media print {
+    @page { margin: 0; size: A4; }
+    .copia { min-height: 48vh; }
+    .corte { border-top: 2px dashed #ccc; }
+  }
+</style>
+</head>
+<body>
+  ${copiaHTML('COPIA LOCAL')}
+  <div class="corte"></div>
+  ${copiaHTML('COPIA FÁBRICA')}
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`
+
+  const win = window.open('', '_blank', 'width=800,height=900')
+  win.document.write(html)
+  win.document.close()
 }
 
 async function cargarProductos() {
