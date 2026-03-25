@@ -54,11 +54,10 @@
 
       <!-- Logo grande en hero -->
       <div class="mb-6 animate-fade-in">
-        <img
-          src="@/assets/images/logo.png"
-          alt="CEKETO"
-          class="h-28 md:h-36 w-auto mx-auto drop-shadow-2xl"
-        />
+        <span
+          class="font-display font-bold tracking-widest select-none"
+          style="font-size: clamp(5rem, 18vw, 14rem); color: rgba(246,82,29,0.18); letter-spacing: 0.15em; line-height: 1; text-shadow: none;"
+        >CEKETO</span>
       </div>
 
       <!-- Tagline -->
