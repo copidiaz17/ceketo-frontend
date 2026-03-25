@@ -60,10 +60,32 @@ const cardRefs = ref([])
 
 useScrollReveal([headerRef])
 
+const CATEGORIA_IMG = {
+  'BYM': new URL('@/assets/images/prod1.jpg', import.meta.url).href,
+  'CHY': new URL('@/assets/images/prod2.jpg', import.meta.url).href,
+  'DUK': new URL('@/assets/images/prod3.jpg', import.meta.url).href,
+  'PY0': new URL('@/assets/images/prod4.jpg', import.meta.url).href,
+  'PYE': new URL('@/assets/images/prod5.png', import.meta.url).href,
+  'PYT': new URL('@/assets/images/prod6.jpg', import.meta.url).href,
+}
+
+function adaptProduct(p) {
+  const cat = p.categoria?.codigo || ''
+  return {
+    id:          p.id,
+    name:        p.nombre,
+    description: p.categoria?.nombre || '',
+    price:       parseFloat(p.precio),
+    category:    cat,
+    stock:       p.stock,
+    image:       p.imagen || CATEGORIA_IMG[cat] || new URL('@/assets/images/prod1.jpg', import.meta.url).href,
+  }
+}
+
 onMounted(async () => {
   try {
-    const { data } = await axios.get('/api/productos?featured=true&limit=6')
-    products.value = data
+    const { data } = await axios.get('/api/productos?limit=6')
+    products.value = data.map(adaptProduct)
   } catch {
     products.value = featuredFallback
   } finally {
