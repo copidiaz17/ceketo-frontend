@@ -93,11 +93,18 @@
             {{ enviando ? 'Guardando...' : '✓ Confirmar producción' }}
           </button>
 
-          <button
-            @click="exportarPDF"
-            class="w-full mt-3 py-3 border border-gray-200 text-gray-600 font-body text-sm font-medium rounded-xl
-                   hover:border-gray-400 hover:text-gray-900 transition-colors"
-          >🖨️ Imprimir remito (2 copias)</button>
+          <div class="flex gap-2 mt-3">
+            <button
+              @click="exportarPDF"
+              class="flex-1 py-3 border border-gray-200 text-gray-600 font-body text-sm font-medium rounded-xl
+                     hover:border-gray-400 hover:text-gray-900 transition-colors"
+            >🖨️ Imprimir</button>
+            <button
+              @click="descargarPDF"
+              class="flex-1 py-3 border border-brand-green text-brand-green font-body text-sm font-medium rounded-xl
+                     hover:bg-brand-green hover:text-white transition-colors"
+            >⬇️ Descargar PDF</button>
+          </div>
 
           <p v-if="mensajeOk" class="text-teal text-sm text-center mt-3 font-body">{{ mensajeOk }}</p>
           <p v-if="mensajeErr" class="text-red-400 text-sm text-center mt-3 font-body">{{ mensajeErr }}</p>
@@ -171,6 +178,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import html2pdf from 'html2pdf.js'
 import ProductSelect from '@/components/admin/ProductSelect.vue'
 
 const productos        = ref([])
@@ -241,9 +249,7 @@ async function confirmarProduccion() {
   }
 }
 
-function exportarPDF() {
-  if (!lote.value.length) return
-
+function generarRemitoHTML(conScript = false) {
   // Agrupar por categoría
   const grupos = {}
   for (const item of lote.value) {
@@ -312,14 +318,9 @@ function exportarPDF() {
       </div>`
   }
 
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
+  const estilos = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Arial, sans-serif; font-size: 12px; color: #000; background: #fff; }
-
   .copia { padding: 20mm 15mm; min-height: 48vh; display: flex; flex-direction: column; }
 
   .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; border-bottom: 2px solid #058D76; padding-bottom: 10px; }
@@ -351,20 +352,39 @@ function exportarPDF() {
     @page { margin: 0; size: A4; }
     .copia { min-height: 48vh; }
     .corte { border-top: 2px dashed #ccc; }
-  }
-</style>
-</head>
-<body>
+  }`
+
+  const body = `
   ${copiaHTML('COPIA LOCAL')}
   <div class="corte"></div>
-  ${copiaHTML('COPIA FÁBRICA')}
-  <script>window.onload = function(){ window.print(); }<\/script>
-</body>
-</html>`
+  ${copiaHTML('COPIA FÁBRICA')}`
 
+  return { estilos, body }
+}
+
+function exportarPDF() {
+  if (!lote.value.length) return
+  const { estilos, body } = generarRemitoHTML()
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${estilos}</style></head><body>${body}<script>window.onload=function(){window.print()}<\/script></body></html>`
   const win = window.open('', '_blank', 'width=800,height=900')
   win.document.write(html)
   win.document.close()
+}
+
+async function descargarPDF() {
+  if (!lote.value.length) return
+  const { estilos, body } = generarRemitoHTML()
+  const el = document.createElement('div')
+  el.innerHTML = `<style>${estilos}</style>${body}`
+  el.style.width = '210mm'
+  document.body.appendChild(el)
+  await html2pdf().set({
+    margin: 0,
+    filename: `remito-produccion-${hoy}.pdf`,
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  }).from(el).save()
+  document.body.removeChild(el)
 }
 
 function confirmarEliminar(r) {
