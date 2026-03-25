@@ -116,7 +116,8 @@
               <th class="text-left pb-3 pr-4">Fecha</th>
               <th class="text-left pb-3 pr-4">Código</th>
               <th class="text-left pb-3 pr-4">Producto</th>
-              <th class="text-right pb-3">Cantidad</th>
+              <th class="text-right pb-3 pr-4">Cantidad</th>
+              <th class="pb-3"></th>
             </tr>
           </thead>
           <tbody>
@@ -128,10 +129,40 @@
               <td class="py-3 pr-4">{{ r.fecha }}</td>
               <td class="py-3 pr-4 text-teal font-mono text-xs">{{ r.producto?.codigo }}</td>
               <td class="py-3 pr-4">{{ r.producto?.nombre }}</td>
-              <td class="py-3 text-right font-bold text-teal">+{{ r.cantidad }}</td>
+              <td class="py-3 pr-4 text-right font-bold text-teal">+{{ r.cantidad }}</td>
+              <td class="py-3 text-right">
+                <button
+                  @click="confirmarEliminar(r)"
+                  class="px-3 py-1 rounded-lg border border-red-200 text-red-400 text-xs font-body hover:bg-red-50 transition-colors"
+                >Eliminar</button>
+              </td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmar eliminación -->
+  <div v-if="registroAEliminar" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm">
+      <h2 class="font-display text-lg font-bold text-gray-900 mb-2">Eliminar registro</h2>
+      <p class="font-body text-sm text-gray-600 mb-1">
+        <span class="font-semibold">{{ registroAEliminar.producto?.nombre }}</span>
+      </p>
+      <p class="font-body text-sm text-red-400 mb-6">
+        Se revertirán <strong>{{ registroAEliminar.cantidad }}</strong> unidades del stock. Esta acción no se puede deshacer.
+      </p>
+      <div class="flex gap-3">
+        <button
+          @click="registroAEliminar = null"
+          class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors"
+        >Cancelar</button>
+        <button
+          @click="eliminarRegistro"
+          :disabled="eliminando"
+          class="flex-1 py-3 bg-red-500 text-white font-body text-sm font-semibold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
+        >{{ eliminando ? 'Eliminando...' : 'Confirmar' }}</button>
       </div>
     </div>
   </div>
@@ -149,8 +180,10 @@ const nota             = ref('')
 const lote             = ref([])
 const historial        = ref([])
 const enviando         = ref(false)
-const mensajeOk        = ref('')
-const mensajeErr       = ref('')
+const mensajeOk          = ref('')
+const mensajeErr         = ref('')
+const registroAEliminar  = ref(null)
+const eliminando         = ref(false)
 
 const hoy = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
 
@@ -332,6 +365,31 @@ function exportarPDF() {
   const win = window.open('', '_blank', 'width=800,height=900')
   win.document.write(html)
   win.document.close()
+}
+
+function confirmarEliminar(r) {
+  registroAEliminar.value = r
+}
+
+async function eliminarRegistro() {
+  if (!registroAEliminar.value) return
+  eliminando.value = true
+  try {
+    const token = localStorage.getItem('ceketo_token')
+    await axios.delete(`/api/produccion/${registroAEliminar.value.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    registroAEliminar.value = null
+    await cargarHistorial()
+    await cargarProductos()
+    mensajeOk.value = '✓ Registro eliminado y stock revertido'
+    setTimeout(() => { mensajeOk.value = '' }, 4000)
+  } catch (err) {
+    mensajeErr.value = err.response?.data?.error || 'Error al eliminar'
+    setTimeout(() => { mensajeErr.value = '' }, 4000)
+  } finally {
+    eliminando.value = false
+  }
 }
 
 async function cargarProductos() {
