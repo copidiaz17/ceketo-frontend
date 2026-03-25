@@ -22,6 +22,7 @@
             <input
               ref="barcodeInput"
               v-model="barcodeRaw"
+              @input="onBarcodeInput"
               @keydown.enter.prevent="buscarPorBarcode"
               type="text"
               placeholder="*BYM-001*"
@@ -274,6 +275,7 @@ const ventaOk          = ref('')
 const ventaErr         = ref('')
 const historialVentas       = ref([])
 const barcodeInput          = ref(null)
+const barcodeTimer          = ref(null)
 const modalPago             = ref(false)
 const metodoPagoSeleccionado = ref('')
 const descuentoPct           = ref(0)
@@ -310,6 +312,14 @@ const totalFinal = computed(() =>
 
 function formatHora(fecha) {
   return new Date(fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function onBarcodeInput() {
+  clearTimeout(barcodeTimer.value)
+  if (!barcodeRaw.value.trim()) return
+  barcodeTimer.value = setTimeout(() => {
+    buscarPorBarcode()
+  }, 300)
 }
 
 async function buscarPorBarcode() {
