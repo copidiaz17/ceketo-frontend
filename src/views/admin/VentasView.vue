@@ -263,6 +263,7 @@
               <th class="text-left pb-3 pr-4">Items</th>
               <th class="text-left pb-3 pr-4">Pago</th>
               <th class="text-right pb-3">Total</th>
+              <th class="pb-3"></th>
             </tr>
           </thead>
           <tbody>
@@ -287,9 +288,63 @@
                 <span v-else class="text-gray-300">—</span>
               </td>
               <td class="py-3 text-right font-bold text-teal">${{ parseFloat(v.total).toLocaleString('es-AR') }}</td>
+              <td class="py-3 pl-4 text-right">
+                <button
+                  @click="abrirDetalleVenta(v)"
+                  class="px-3 py-1 rounded-lg border border-gray-200 text-gray-500 text-xs font-body hover:border-teal hover:text-teal transition-colors"
+                >Ver</button>
+              </td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Modal detalle de venta -->
+    <div v-if="ventaDetalle" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h2 class="font-display text-xl font-bold text-gray-900">Venta #{{ ventaDetalle.id }}</h2>
+            <p class="font-body text-sm text-gray-400">{{ formatHora(ventaDetalle.fecha) }} · {{ metodosPago.find(m => m.value === ventaDetalle.metodo_pago)?.label || '—' }}</p>
+          </div>
+          <button @click="ventaDetalle = null" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+        </div>
+
+        <!-- Items agrupados por categoría -->
+        <div class="space-y-1 mb-4">
+          <template v-for="(items, cat) in itemsAgrupados(ventaDetalle.items)" :key="cat">
+            <p class="font-body text-xs font-semibold text-gray-400 uppercase mt-3 mb-1">{{ cat }}</p>
+            <div
+              v-for="item in items"
+              :key="item.id"
+              class="flex justify-between items-center bg-gray-50 rounded-xl px-4 py-2"
+            >
+              <div>
+                <p class="font-body text-sm text-gray-900">{{ item.producto?.nombre }}</p>
+                <p class="font-body text-xs text-gray-400">{{ item.cantidad }}x ${{ parseFloat(item.precio_unit).toLocaleString('es-AR') }}</p>
+              </div>
+              <span class="font-body text-sm font-bold text-teal">${{ parseFloat(item.subtotal).toLocaleString('es-AR') }}</span>
+            </div>
+          </template>
+        </div>
+
+        <div class="border-t border-gray-200 pt-3 space-y-1">
+          <div v-if="ventaDetalle.descuento > 0" class="flex justify-between font-body text-sm text-red-400">
+            <span>Descuento ({{ ventaDetalle.descuento }}%)</span>
+            <span>aplicado</span>
+          </div>
+          <div class="flex justify-between font-body font-bold text-gray-900">
+            <span>Total</span>
+            <span class="text-teal text-lg">${{ parseFloat(ventaDetalle.total).toLocaleString('es-AR') }}</span>
+          </div>
+        </div>
+
+        <button
+          @click="imprimirTicketHistorial(ventaDetalle)"
+          class="w-full mt-5 py-3 border border-gray-300 text-gray-700 font-body text-sm font-medium rounded-xl
+                 hover:border-teal hover:text-teal transition-colors"
+        >🖨️ Reimprimir ticket</button>
       </div>
     </div>
   </div>
@@ -318,6 +373,7 @@ const productoEscaneado     = ref(null)
 const cantidadBarcode       = ref(1)
 const modalPago             = ref(false)
 const ultimaVenta           = ref(null)
+const ventaDetalle          = ref(null)
 const metodoPagoSeleccionado = ref('')
 const descuentoPct           = ref(0)
 
@@ -458,6 +514,99 @@ async function confirmarVenta() {
   } finally {
     enviandoVenta.value = false
   }
+}
+
+function itemsAgrupados(items) {
+  const grupos = {}
+  for (const item of (items || [])) {
+    const cat = item.producto?.categoria?.nombre || 'Otros'
+    if (!grupos[cat]) grupos[cat] = []
+    grupos[cat].push(item)
+  }
+  return grupos
+}
+
+function abrirDetalleVenta(v) {
+  ventaDetalle.value = v
+}
+
+function imprimirTicketHistorial(v) {
+  const metodoLabel = metodosPago.find(m => m.value === v.metodo_pago)?.label || v.metodo_pago || '—'
+  const fecha = new Date(v.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  const hora  = new Date(v.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+
+  const grupos = itemsAgrupados(v.items)
+  let itemsHtml = ''
+  for (const [cat, items] of Object.entries(grupos)) {
+    itemsHtml += `<tr><td colspan="2" class="cat">${cat.toUpperCase()}</td></tr>`
+    for (const item of items) {
+      const subtotal = parseFloat(item.subtotal)
+      itemsHtml += `
+        <tr>
+          <td class="prod-nombre">${item.producto?.nombre || '—'}</td>
+          <td class="prod-precio">$${subtotal.toLocaleString('es-AR')}</td>
+        </tr>
+        <tr>
+          <td class="prod-detalle">${item.cantidad}x $${parseFloat(item.precio_unit).toLocaleString('es-AR')}</td>
+          <td></td>
+        </tr>`
+    }
+  }
+
+  const descuentoHtml = v.descuento > 0 ? `
+    <tr class="descuento-row">
+      <td>Descuento (${v.descuento}%)</td>
+      <td>aplicado</td>
+    </tr>` : ''
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Courier New',monospace; font-size:10px; width:48mm; padding:2mm 1mm; color:#000; }
+  .header { text-align:center; margin-bottom:6px; }
+  .header .nombre { font-size:16px; font-weight:bold; letter-spacing:1px; }
+  .header .dir { font-size:10px; margin-top:2px; }
+  .divider { border-top:1px dashed #000; margin:5px 0; }
+  .info { font-size:10px; margin-bottom:2px; }
+  .info span { font-weight:bold; }
+  table { width:100%; border-collapse:collapse; margin-top:4px; }
+  td { padding:1px 0; vertical-align:top; }
+  .cat { font-weight:bold; font-size:10px; padding-top:6px; padding-bottom:2px; text-decoration:underline; }
+  .prod-nombre { font-size:10px; width:65%; }
+  .prod-precio { text-align:right; font-size:10px; font-weight:bold; }
+  .prod-detalle { font-size:9px; color:#444; padding-left:4px; }
+  .descuento-row td { font-size:10px; }
+  .descuento-row td:last-child { text-align:right; }
+  .total-row td { font-size:13px; font-weight:bold; padding-top:4px; }
+  .total-row td:last-child { text-align:right; }
+  .footer { text-align:center; font-size:10px; margin-top:8px; }
+  @media print { body { width:48mm; } @page { margin:0; size:58mm auto; } }
+</style></head><body>
+  <div class="header">
+    <div class="nombre">CEKETO</div>
+    <div class="dir">Independencia 663, Santiago del Estero</div>
+    <div class="dir">Santiago del Estero, Argentina</div>
+  </div>
+  <div class="divider"></div>
+  <div class="info">Pedido #${v.id}</div>
+  <div class="info">Fecha: ${fecha} - ${hora} hs</div>
+  <div class="info">Forma de pago: <span>${metodoLabel}</span></div>
+  <div class="divider"></div>
+  <table>
+    ${itemsHtml}
+    <tr><td colspan="2"><div class="divider"></div></td></tr>
+    ${descuentoHtml}
+    <tr class="total-row"><td>TOTAL</td><td>$${parseFloat(v.total).toLocaleString('es-AR')}</td></tr>
+  </table>
+  <div class="divider"></div>
+  <div class="footer">¡Gracias por tu compra!</div>
+</body></html>`
+
+  const win = window.open('', '_blank', 'width=350,height=600')
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print(); win.close() }, 400)
 }
 
 function imprimirTicket() {
