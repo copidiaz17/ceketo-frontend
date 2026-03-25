@@ -23,6 +23,14 @@
     <!-- Overlay -->
     <div class="absolute inset-0 hero-overlay z-10"></div>
 
+    <!-- CEKETO centrado sobre la imagen -->
+    <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none select-none">
+      <span
+        class="font-display font-bold tracking-widest"
+        style="font-size: clamp(5rem, 18vw, 14rem); color: rgba(246,82,29,0.62); letter-spacing: 0.15em; line-height: 1;"
+      >CEKETO</span>
+    </div>
+
     <!-- Elementos decorativos flotantes de fondo -->
     <div class="absolute inset-0 z-10 pointer-events-none overflow-hidden">
       <!-- Círculo top-right -->
@@ -53,12 +61,7 @@
     <div class="relative z-20 h-full flex flex-col items-center justify-center text-center px-6 pt-24">
 
       <!-- Logo grande en hero -->
-      <div class="mb-6 animate-fade-in">
-        <span
-          class="font-display font-bold tracking-widest select-none"
-          style="font-size: clamp(5rem, 18vw, 14rem); color: rgba(246,82,29,0.62); letter-spacing: 0.15em; line-height: 1; text-shadow: none;"
-        >CEKETO</span>
-      </div>
+      <div class="mb-6"></div>
 
       <!-- Tagline -->
       <p
