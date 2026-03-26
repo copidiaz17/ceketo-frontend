@@ -421,17 +421,18 @@ onMounted(async () => {
 
 <style scoped>
 .input-field {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
   padding: 0.625rem 1rem;
-  color: white;
+  color: #111827;
   font-size: 0.875rem;
   font-family: Inter, sans-serif;
   transition: border-color 0.2s;
+  width: 100%;
 }
 .input-field:focus { outline: none; border-color: #2A9D8F; }
-.input-field option { background: #162421; color: white; }
+.input-field option { background: #ffffff; color: #111827; }
 
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
