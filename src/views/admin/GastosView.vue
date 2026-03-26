@@ -66,6 +66,7 @@
             <th class="text-left px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Descripción</th>
             <th class="text-left px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Proveedor</th>
             <th class="text-right px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Monto</th>
+            <th class="text-right px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider hidden lg:table-cell">IVA</th>
             <th class="text-center px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Comprobante</th>
             <th class="text-center px-6 py-4 font-body text-xs text-gray-400 uppercase tracking-wider">Acciones</th>
           </tr>
@@ -84,6 +85,13 @@
             <td class="px-6 py-4 font-body text-sm text-gray-500">{{ g.proveedor || '—' }}</td>
             <td class="px-6 py-4 font-display text-sm font-bold text-teal text-right whitespace-nowrap">
               ${{ formatNum(g.monto) }}
+            </td>
+            <td class="px-6 py-4 text-right hidden lg:table-cell">
+              <span v-if="g.es_factura && g.iva_monto" class="font-body text-xs text-amber-600 font-medium">
+                ${{ formatNum(g.iva_monto) }}<br>
+                <span class="text-gray-400">({{ g.alicuota_iva }}%)</span>
+              </span>
+              <span v-else class="text-gray-300 text-xs">—</span>
             </td>
             <td class="px-6 py-4 text-center">
               <a
@@ -116,12 +124,17 @@
         <tfoot>
           <tr class="border-t border-gray-200 bg-gray-50">
             <td colspan="4" class="px-6 py-4 font-body text-sm text-gray-500 font-medium">
-              {{ gastos.length }} gasto(s) filtrados
+              {{ gastos.length }} gasto(s) — {{ gastosConFactura }} con factura
             </td>
             <td class="px-6 py-4 font-display text-base font-bold text-teal text-right whitespace-nowrap">
               ${{ formatNum(totalFiltrado) }}
             </td>
-            <td colspan="2"></td>
+            <td class="px-6 py-4 text-right hidden lg:table-cell">
+              <span v-if="totalIVA > 0" class="font-body text-xs text-amber-600 font-medium">
+                IVA: ${{ formatNum(totalIVA) }}
+              </span>
+            </td>
+            <td colspan="1"></td>
           </tr>
         </tfoot>
       </table>
@@ -229,6 +242,35 @@
                 @change="onFileChange"
               />
             </div>
+
+            <!-- Factura + IVA (solo si hay comprobante) -->
+            <div v-if="modal.archivo || modal.comprobante_actual" class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <label class="flex items-center gap-3 cursor-pointer mb-3">
+                <input
+                  v-model="modal.es_factura"
+                  type="checkbox"
+                  class="w-4 h-4 accent-teal rounded"
+                />
+                <span class="font-body text-sm font-medium text-gray-800">El comprobante es una <strong>factura</strong> (tiene IVA)</span>
+              </label>
+              <div v-if="modal.es_factura" class="grid grid-cols-2 gap-3 mt-2">
+                <div>
+                  <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Alícuota IVA</label>
+                  <select v-model="modal.alicuota_iva" class="input-field w-full">
+                    <option value="">Seleccionar...</option>
+                    <option value="21">21%</option>
+                    <option value="10.5">10.5%</option>
+                    <option value="27">27%</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">IVA incluido en el monto</label>
+                  <div class="input-field bg-gray-100 text-teal font-bold">
+                    ${{ modal.alicuota_iva && modal.monto ? formatNum(calcularIVA(modal.monto, modal.alicuota_iva)) : '0,00' }}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Botones -->
@@ -292,6 +334,17 @@ const mesLabel = computed(() => {
 const totalFiltrado = computed(() =>
   gastos.value.reduce((s, g) => s + Number(g.monto), 0)
 )
+const totalIVA = computed(() =>
+  gastos.value.reduce((s, g) => s + Number(g.iva_monto || 0), 0)
+)
+const gastosConFactura = computed(() =>
+  gastos.value.filter(g => g.es_factura).length
+)
+
+function calcularIVA(monto, alicuota) {
+  if (!monto || !alicuota) return 0
+  return (Number(monto) * Number(alicuota) / (100 + Number(alicuota)))
+}
 
 const ICONOS = {
   'Materia Prima': '🌾', 'Alquiler': '🏠', 'Servicios': '💡',
@@ -361,6 +414,8 @@ function abrirModal(g = null) {
       descripcion: g.descripcion, monto: g.monto,
       proveedor: g.proveedor || '',
       archivo: null, comprobante_actual: g.comprobante || null,
+      es_factura: g.es_factura || false,
+      alicuota_iva: g.alicuota_iva ? String(g.alicuota_iva) : '',
     }
   } else {
     const hoy = new Date().toISOString().split('T')[0]
@@ -368,6 +423,7 @@ function abrirModal(g = null) {
       visible: true, id: null, guardando: false,
       fecha: hoy, categoria: '', descripcion: '', monto: '', proveedor: '',
       archivo: null, comprobante_actual: null,
+      es_factura: false, alicuota_iva: '',
     }
   }
 }
@@ -382,11 +438,13 @@ async function guardar() {
   m.guardando = true
   try {
     const fd = new FormData()
-    fd.append('fecha',       m.fecha)
-    fd.append('categoria',   m.categoria)
-    fd.append('descripcion', m.descripcion)
-    fd.append('monto',       m.monto)
-    fd.append('proveedor',   m.proveedor || '')
+    fd.append('fecha',        m.fecha)
+    fd.append('categoria',    m.categoria)
+    fd.append('descripcion',  m.descripcion)
+    fd.append('monto',        m.monto)
+    fd.append('proveedor',    m.proveedor || '')
+    fd.append('es_factura',   m.es_factura ? 'true' : 'false')
+    fd.append('alicuota_iva', m.es_factura && m.alicuota_iva ? m.alicuota_iva : '')
     if (m.archivo) fd.append('comprobante', m.archivo)
 
     if (m.id) {
