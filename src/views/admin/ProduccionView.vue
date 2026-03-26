@@ -283,115 +283,119 @@ async function confirmarProduccion() {
   }
 }
 
-function generarRemitoHTML(conScript = false) {
-  // Agrupar por categoría
-  const grupos = {}
-  for (const item of lote.value) {
-    const prod = productos.value.find(p => p.id === item.producto_id)
-    const cat  = prod?.categoria?.nombre || 'Sin categoría'
-    if (!grupos[cat]) grupos[cat] = []
-    grupos[cat].push(item)
+function generarRemitoHTML() {
+  const ITEMS_POR_PAGINA = 10
+  const totalUnidades = lote.value.reduce((acc, i) => acc + i.cantidad, 0)
+
+  // Lista plana de items con número de fila global
+  const todosItems = lote.value.map((item, idx) => ({ ...item, n: idx + 1 }))
+
+  // Dividir en páginas de 10
+  const paginas = []
+  for (let i = 0; i < todosItems.length; i += ITEMS_POR_PAGINA) {
+    paginas.push(todosItems.slice(i, i + ITEMS_POR_PAGINA))
   }
+  if (paginas.length === 0) paginas.push([])
+  const totalPaginas = paginas.length
 
-  const totalItems = lote.value.reduce((acc, i) => acc + i.cantidad, 0)
-
-  function copiaHTML(titulo) {
-    let rows = ''
-    let n = 1
-    for (const [cat, items] of Object.entries(grupos)) {
-      rows += `<tr class="cat-row"><td colspan="4">${cat.toUpperCase()}</td></tr>`
-      for (const item of items) {
-        rows += `
-          <tr>
-            <td class="num">${n++}</td>
-            <td class="cod">${item.codigo}</td>
-            <td>${item.nombre}</td>
-            <td class="cant">${item.cantidad}</td>
-          </tr>`
-      }
-    }
+  function mitadHTML(titulo, items, pIdx) {
+    const esUltima = pIdx === totalPaginas - 1
+    const paginaLabel = totalPaginas > 1 ? ` (${pIdx + 1}/${totalPaginas})` : ''
+    let rows = items.map(item => `
+      <tr>
+        <td class="num">${item.n}</td>
+        <td class="cod">${item.codigo}</td>
+        <td>${item.nombre}</td>
+        <td class="cant">${item.cantidad}</td>
+      </tr>`).join('')
 
     return `
-      <div class="copia">
-        <div class="header">
-          <div class="left">
-            <div class="empresa">CEKETO</div>
-            <div class="sub">Independencia 663, Santiago del Estero</div>
-          </div>
-          <div class="right">
-            <div class="titulo">${titulo}</div>
-            <div class="fecha">Fecha: ${hoy}</div>
-          </div>
+    <div class="mitad">
+      <div class="header">
+        <div class="hleft">
+          <div class="empresa">CEKETO</div>
+          <div class="sub">Independencia 663, Santiago del Estero</div>
         </div>
-        <div class="subtitulo">REMITO DE PRODUCCIÓN</div>
-        <table>
-          <thead>
-            <tr>
-              <th class="num">#</th>
-              <th class="cod">Código</th>
-              <th>Producto</th>
-              <th class="cant">Cant.</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-        <div class="footer">
-          <div class="total">Total de unidades: <strong>${totalItems}</strong></div>
-          <div class="firmas">
-            <div class="firma">
-              <div class="linea"></div>
-              <div>Entregado por</div>
-            </div>
-            <div class="firma">
-              <div class="linea"></div>
-              <div>Recibido por</div>
-            </div>
-          </div>
-          ${nota.value ? `<div class="nota">Nota: ${nota.value}</div>` : ''}
+        <div class="hright">
+          <div class="titulo">${titulo}</div>
+          <div class="fecha">Fecha: ${hoy}${paginaLabel}</div>
         </div>
-      </div>`
+      </div>
+      <div class="subtitulo">REMITO DE PRODUCCIÓN</div>
+      <table>
+        <thead><tr>
+          <th class="num">#</th>
+          <th class="cod">Código</th>
+          <th>Producto</th>
+          <th class="cant">Cant.</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="spacer"></div>
+      ${esUltima ? `
+      <div class="footer">
+        <div class="total">Total de unidades: <strong>${totalUnidades}</strong></div>
+        ${nota.value ? `<div class="nota">Nota: ${nota.value}</div>` : ''}
+        <div class="firmas">
+          <div class="firma"><div class="linea"></div><div>Entregado por</div></div>
+          <div class="firma"><div class="linea"></div><div>Recibido por</div></div>
+        </div>
+      </div>` : `<div class="continua">Continúa en hoja ${pIdx + 2}...</div>`}
+    </div>`
+  }
+
+  let body = ''
+  for (let p = 0; p < totalPaginas; p++) {
+    const breakClass = p < totalPaginas - 1 ? ' page-break' : ''
+    body += `
+    <div class="pagina${breakClass}">
+      ${mitadHTML('ORIGINAL', paginas[p], p)}
+      <div class="corte"><span class="tijera">✂</span></div>
+      ${mitadHTML('DUPLICADO', paginas[p], p)}
+    </div>`
   }
 
   const estilos = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 12px; color: #000; background: #fff; }
-  .copia { padding: 20mm 15mm; min-height: 48vh; display: flex; flex-direction: column; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #000; background: #fff; }
 
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; border-bottom: 2px solid #058D76; padding-bottom: 10px; }
-  .empresa { font-size: 26px; font-weight: bold; color: #058D76; letter-spacing: 3px; }
-  .sub { font-size: 10px; color: #666; margin-top: 3px; }
-  .titulo { font-size: 14px; font-weight: bold; background: #058D76; color: white; padding: 4px 12px; border-radius: 4px; text-align: center; }
-  .fecha { font-size: 11px; color: #666; margin-top: 5px; text-align: right; }
+  .pagina { width: 210mm; height: 297mm; display: flex; flex-direction: column; overflow: hidden; }
+  .page-break { page-break-after: always; }
 
-  .subtitulo { font-size: 13px; font-weight: bold; text-align: center; margin: 12px 0 10px; letter-spacing: 2px; color: #333; }
+  .mitad { height: 148.5mm; padding: 8mm 15mm; display: flex; flex-direction: column; overflow: hidden; }
 
-  table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-  th { background: #f5f5f5; border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 11px; }
-  td { border: 1px solid #eee; padding: 5px 8px; font-size: 11px; }
-  .cat-row td { background: #E8F5F0; font-weight: bold; font-size: 11px; color: #058D76; padding: 5px 8px; }
-  .num { width: 30px; text-align: center; }
-  .cod { width: 90px; font-family: monospace; }
-  .cant { width: 50px; text-align: center; font-weight: bold; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 7px; border-bottom: 2px solid #058D76; padding-bottom: 7px; }
+  .empresa { font-size: 22px; font-weight: bold; color: #058D76; letter-spacing: 3px; }
+  .sub { font-size: 9px; color: #666; margin-top: 2px; }
+  .titulo { font-size: 11px; font-weight: bold; background: #058D76; color: white; padding: 3px 10px; border-radius: 3px; text-align: center; }
+  .fecha { font-size: 10px; color: #666; margin-top: 4px; text-align: right; }
 
-  .footer { margin-top: auto; }
-  .total { font-size: 12px; font-weight: bold; text-align: right; margin-bottom: 20px; }
-  .firmas { display: flex; justify-content: space-around; margin-top: 30px; }
-  .firma { text-align: center; font-size: 11px; color: #555; }
-  .linea { border-top: 1px solid #000; width: 120px; margin-bottom: 5px; }
-  .nota { margin-top: 12px; font-size: 11px; color: #555; border-top: 1px dashed #ccc; padding-top: 8px; }
+  .subtitulo { font-size: 11px; font-weight: bold; text-align: center; margin: 6px 0; letter-spacing: 2px; color: #333; }
 
-  .corte { border-top: 2px dashed #ccc; margin: 0 15mm; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f0f9f7; border: 1px solid #ddd; padding: 4px 6px; text-align: left; font-size: 10px; }
+  td { border: 1px solid #eee; padding: 3px 6px; font-size: 10px; }
+  .num { width: 26px; text-align: center; }
+  .cod { width: 80px; font-family: monospace; font-size: 9px; }
+  .cant { width: 42px; text-align: center; font-weight: bold; }
+
+  .spacer { flex: 1; }
+
+  .footer { }
+  .total { font-size: 11px; font-weight: bold; text-align: right; margin-bottom: 6px; }
+  .nota { font-size: 10px; color: #555; border-top: 1px dashed #ccc; padding: 5px 0; margin-bottom: 6px; }
+  .firmas { display: flex; justify-content: space-around; margin-top: 12px; }
+  .firma { text-align: center; font-size: 10px; color: #555; }
+  .linea { border-top: 1px solid #000; width: 110px; margin-bottom: 4px; }
+  .continua { font-size: 9px; color: #aaa; text-align: right; font-style: italic; }
+
+  .corte { height: 4px; border-top: 1.5px dashed #bbb; margin: 0; position: relative; display: flex; align-items: center; justify-content: flex-start; padding-left: 8mm; }
+  .tijera { font-size: 13px; color: #bbb; line-height: 1; }
 
   @media print {
-    @page { margin: 0; size: A4; }
-    .copia { min-height: 48vh; }
-    .corte { border-top: 2px dashed #ccc; }
+    @page { margin: 0; size: A4 portrait; }
+    .page-break { page-break-after: always; }
   }`
-
-  const body = `
-  ${copiaHTML('COPIA LOCAL')}
-  <div class="corte"></div>
-  ${copiaHTML('COPIA FÁBRICA')}`
 
   return { estilos, body }
 }
