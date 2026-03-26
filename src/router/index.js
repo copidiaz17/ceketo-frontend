@@ -43,6 +43,7 @@ const router = createRouter({
         { path: 'stock',       name: 'admin-stock',       component: () => import('../views/admin/StockView.vue') },
         { path: 'gastos',      name: 'admin-gastos',      component: () => import('../views/admin/GastosView.vue') },
         { path: 'categorias',  name: 'admin-categorias',  component: () => import('../views/admin/CategoriasView.vue') },
+        { path: 'cuentas',     name: 'admin-cuentas',     component: () => import('../views/admin/CuentasCorrientesView.vue') },
       ],
     },
   ],

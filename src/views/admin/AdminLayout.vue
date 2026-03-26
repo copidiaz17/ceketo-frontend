@@ -107,6 +107,7 @@ const ALL_LINKS = [
   { to: '/admin/movimientos',icon: '↕️', label: 'Movimientos',    roles: ['admin'] },
   { to: '/admin/stock',      icon: '🗃️', label: 'Stock',          roles: ['admin', 'fabrica'], badge: true },
   { to: '/admin/gastos',     icon: '💸', label: 'Gastos',         roles: ['admin'] },
+  { to: '/admin/cuentas',    icon: '🤝', label: 'Cta. Corriente',  roles: ['admin'] },
   { to: '/admin/categorias', icon: '🏷️', label: 'Categorías',     roles: ['admin'] },
 ]
 
