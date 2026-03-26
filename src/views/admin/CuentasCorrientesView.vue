@@ -196,13 +196,17 @@
   <!-- ── MODAL NUEVO MOVIMIENTO ─────────────────────────────── -->
   <Transition name="modal">
     <div v-if="modalMov.visible" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4" @click.self="modalMov.visible = false">
-      <div class="bg-white border border-gray-200 rounded-3xl p-8 w-full max-w-md shadow-2xl">
+      <div class="bg-white border border-gray-200 rounded-3xl p-8 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
         <h2 class="font-display text-xl font-bold text-gray-900 mb-1">
           {{ modalMov.tipo === 'cargo' ? (detalle?.cuenta.tipo === 'cliente' ? 'Nueva venta a cuenta' : 'Nueva compra a cuenta') : 'Registrar pago' }}
         </h2>
-        <p v-if="detalle?.cuenta.tipo === 'proveedor' && modalMov.tipo === 'pago'" class="font-body text-xs text-teal mb-4">
-          ✓ Se creará un gasto automáticamente en la sección Gastos
+        <p v-if="detalle?.cuenta.tipo === 'proveedor' && modalMov.tipo === 'pago'" class="font-body text-xs text-teal mb-2">
+          ✓ Se creará un gasto automáticamente en Gastos
         </p>
+        <p v-if="detalle?.cuenta.tipo === 'cliente' && modalMov.tipo === 'cargo'" class="font-body text-xs text-teal mb-2">
+          ✓ Se descontará el stock automáticamente
+        </p>
+
         <div class="space-y-4 mt-4">
           <div>
             <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Fecha *</label>
@@ -210,13 +214,58 @@
           </div>
           <div>
             <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Concepto *</label>
-            <input v-model="modalMov.concepto" type="text" :placeholder="modalMov.tipo === 'cargo' ? 'Ej: Productos varios, Pan keto...' : 'Ej: Abono parcial, Pago total...'" class="input-cc w-full" />
+            <input v-model="modalMov.concepto" type="text" :placeholder="modalMov.tipo === 'cargo' ? 'Ej: Pedido semanal, Pan keto...' : 'Ej: Abono parcial, Pago total...'" class="input-cc w-full" />
           </div>
-          <div>
-            <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Monto $ *</label>
+
+          <!-- Selector de productos (solo cargo de cliente) -->
+          <template v-if="detalle?.cuenta.tipo === 'cliente' && modalMov.tipo === 'cargo'">
+            <div>
+              <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Productos</label>
+              <div class="flex gap-2">
+                <select v-model="prodSelId" class="input-cc flex-1">
+                  <option value="">Seleccionar producto...</option>
+                  <optgroup v-for="cat in categoriasConProductos" :key="cat.codigo" :label="cat.nombre">
+                    <option v-for="p in cat.productos" :key="p.id" :value="p.id">
+                      {{ p.nombre }} — ${{ formatNum(p.precio) }}
+                    </option>
+                  </optgroup>
+                </select>
+                <input v-model.number="prodCant" type="number" min="1" placeholder="Cant." class="input-cc w-20 text-center" />
+                <button @click="agregarProducto" :disabled="!prodSelId || !prodCant" class="px-3 py-2 bg-teal text-gray-900 rounded-xl text-sm font-body disabled:opacity-40">+</button>
+              </div>
+            </div>
+
+            <!-- Lista de items -->
+            <div v-if="modalMov.items.length" class="space-y-2">
+              <div
+                v-for="(item, i) in modalMov.items" :key="i"
+                class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2"
+              >
+                <div>
+                  <p class="font-body text-sm text-gray-900">{{ item.nombre }}</p>
+                  <p class="font-body text-xs text-gray-400">×{{ item.cantidad }} — ${{ formatNum(item.precio_unit) }} c/u</p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="font-display font-bold text-sm text-teal">${{ formatNum(item.subtotal) }}</span>
+                  <button @click="modalMov.items.splice(i,1); recalcularTotal()" class="text-gray-300 hover:text-red-400 text-sm">✕</button>
+                </div>
+              </div>
+              <div class="flex justify-between items-center px-4 py-2 border-t border-gray-200">
+                <span class="font-body text-sm text-gray-500">Total</span>
+                <span class="font-display font-bold text-teal">${{ formatNum(modalMov.monto) }}</span>
+              </div>
+            </div>
+          </template>
+
+          <!-- Monto manual (proveedor cargo, o pagos, o cliente sin productos) -->
+          <div v-if="!(detalle?.cuenta.tipo === 'cliente' && modalMov.tipo === 'cargo') || !modalMov.items.length">
+            <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">
+              Monto $ {{ detalle?.cuenta.tipo === 'cliente' && modalMov.tipo === 'cargo' ? '(o ingresá manual si no usás productos)' : '*' }}
+            </label>
             <input v-model="modalMov.monto" type="number" min="0" step="0.01" placeholder="0.00" class="input-cc w-full" />
           </div>
         </div>
+
         <div class="flex gap-3 mt-6">
           <button @click="guardarMovimiento" :disabled="!modalMov.fecha || !modalMov.concepto || !modalMov.monto || guardandoMov" class="flex-1 bg-teal text-gray-900 py-3 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors disabled:opacity-40">
             {{ guardandoMov ? 'Guardando...' : 'Guardar' }}
@@ -232,11 +281,14 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
-const cuentas     = ref([])
-const loading     = ref(true)
-const tabActual   = ref('cliente')
-const detalle     = ref(null)
+const cuentas      = ref([])
+const productos    = ref([])
+const loading      = ref(true)
+const tabActual    = ref('cliente')
+const detalle      = ref(null)
 const guardandoMov = ref(false)
+const prodSelId    = ref('')
+const prodCant     = ref(1)
 
 const tabs = [
   { value: 'cliente',    label: 'Clientes' },
@@ -244,7 +296,43 @@ const tabs = [
 ]
 
 const modalCuenta = ref({ visible: false, id: null, tipo: 'cliente', nombre: '', telefono: '', notas: '' })
-const modalMov    = ref({ visible: false, tipo: 'cargo', fecha: '', concepto: '', monto: '' })
+const modalMov    = ref({ visible: false, tipo: 'cargo', fecha: '', concepto: '', monto: '', items: [] })
+
+const categoriasConProductos = computed(() => {
+  const mapa = {}
+  for (const p of productos.value) {
+    const key = p.categoria?.codigo || 'SIN'
+    if (!mapa[key]) mapa[key] = { codigo: key, nombre: p.categoria?.nombre || 'Sin categoría', productos: [] }
+    mapa[key].productos.push(p)
+  }
+  return Object.values(mapa)
+})
+
+function agregarProducto() {
+  if (!prodSelId.value || !prodCant.value) return
+  const prod = productos.value.find(p => p.id === prodSelId.value)
+  if (!prod) return
+  const existente = modalMov.value.items.find(i => i.producto_id === prodSelId.value)
+  if (existente) {
+    existente.cantidad += prodCant.value
+    existente.subtotal  = existente.cantidad * existente.precio_unit
+  } else {
+    modalMov.value.items.push({
+      producto_id: prod.id,
+      nombre:      prod.nombre,
+      cantidad:    prodCant.value,
+      precio_unit: Number(prod.precio),
+      subtotal:    prodCant.value * Number(prod.precio),
+    })
+  }
+  prodSelId.value = ''
+  prodCant.value  = 1
+  recalcularTotal()
+}
+
+function recalcularTotal() {
+  modalMov.value.monto = modalMov.value.items.reduce((a, i) => a + i.subtotal, 0)
+}
 
 function formatNum(n) { return Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 }) }
 function formatFecha(f) {
@@ -325,14 +413,21 @@ async function abrirDetalle(c) {
 
 function abrirModalMov(tipo) {
   const hoy = new Date().toISOString().split('T')[0]
-  modalMov.value = { visible: true, tipo, fecha: hoy, concepto: '', monto: '' }
+  modalMov.value = { visible: true, tipo, fecha: hoy, concepto: '', monto: '', items: [] }
+  prodSelId.value = ''
+  prodCant.value  = 1
 }
 
 async function guardarMovimiento() {
   if (!detalle.value) return
   guardandoMov.value = true
   try {
-    await axios.post(`/api/cuentas/${detalle.value.cuenta.id}/movimientos`, modalMov.value)
+    const payload = { ...modalMov.value }
+    // Solo enviar items si es cargo de cliente con productos
+    if (!(detalle.value.cuenta.tipo === 'cliente' && modalMov.value.tipo === 'cargo' && modalMov.value.items.length)) {
+      delete payload.items
+    }
+    await axios.post(`/api/cuentas/${detalle.value.cuenta.id}/movimientos`, payload)
     modalMov.value.visible = false
     await abrirDetalle(detalle.value.cuenta)
     await cargarCuentas()
@@ -350,7 +445,14 @@ async function eliminarMovimiento(m) {
   } catch { alert('Error al eliminar') }
 }
 
-onMounted(cargarCuentas)
+async function cargarProductos() {
+  try {
+    const { data } = await axios.get('/api/productos?limit=500')
+    productos.value = data
+  } catch {}
+}
+
+onMounted(() => { cargarCuentas(); cargarProductos() })
 </script>
 
 <style scoped>
