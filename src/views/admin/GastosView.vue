@@ -243,8 +243,8 @@
               />
             </div>
 
-            <!-- Factura + IVA (solo si hay comprobante) -->
-            <div v-if="modal.archivo || modal.comprobante_actual" class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <!-- Factura + IVA -->
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <label class="flex items-center gap-3 cursor-pointer mb-3">
                 <input
                   v-model="modal.es_factura"
