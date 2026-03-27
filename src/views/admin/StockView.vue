@@ -175,20 +175,60 @@ function imprimir() {
 }
 
 function descargarPDF() {
-  const { fecha } = buildHTMLContent()
+  const { fecha, hora, conStock, sinStock, totalUnidades, filas } = buildHTMLContent()
+
   const el = document.createElement('div')
-  el.innerHTML = buildHTML()
-  const body = el.querySelector('body')
+  el.style.cssText = 'font-family:Arial,sans-serif;font-size:11px;color:#111;padding:20px;width:190mm'
+  el.innerHTML = `
+    <h1 style="font-size:20px;font-weight:bold;margin-bottom:2px">CEKETO — Stock actual</h1>
+    <p style="font-size:11px;color:#666;margin-bottom:16px">
+      Generado el ${fecha} a las ${hora} hs${filtroCategoria.value ? ' · Categoría: ' + filtroCategoria.value : ''}
+    </p>
+    <div style="display:flex;gap:24px;margin-bottom:16px;background:#f9fafb;padding:10px 14px;border-radius:8px">
+      <div>Total productos<br><strong style="font-size:13px">${productosFiltrados.value.length}</strong></div>
+      <div>Con stock<br><strong style="font-size:13px;color:#2a9d8f">${conStock}</strong></div>
+      <div>Sin stock<br><strong style="font-size:13px;color:#ef4444">${sinStock}</strong></div>
+      <div>Total unidades<br><strong style="font-size:13px">${totalUnidades.toLocaleString('es-AR')}</strong></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead>
+        <tr style="background:#2a9d8f;color:white">
+          <th style="padding:7px 8px;text-align:left">Código</th>
+          <th style="padding:7px 8px;text-align:left">Nombre</th>
+          <th style="padding:7px 8px;text-align:left">Categoría</th>
+          <th style="padding:7px 8px;text-align:right">Precio</th>
+          <th style="padding:7px 8px;text-align:right">Stock</th>
+        </tr>
+      </thead>
+      <tbody>${
+        productosFiltrados.value.map((p, i) => {
+          const stockColor = p.stock === 0 ? '#ef4444' : p.stock < 5 ? '#eab308' : '#2a9d8f'
+          const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb'
+          return `<tr style="background:${bg}">
+            <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:10px">${p.codigo}</td>
+            <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb">${p.nombre}</td>
+            <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;color:#555">${p.categoria?.nombre || '—'}</td>
+            <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;text-align:right">$${parseFloat(p.precio).toLocaleString('es-AR')}</td>
+            <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:bold;color:${stockColor}">${p.stock}</td>
+          </tr>`
+        }).join('')
+      }</tbody>
+    </table>
+    <p style="margin-top:16px;font-size:10px;color:#999;text-align:right">CEKETO · Independencia 663, Santiago del Estero</p>
+  `
+
+  document.body.appendChild(el)
   html2pdf()
     .set({
-      margin:      [10, 10, 10, 10],
+      margin:      [8, 8, 8, 8],
       filename:    `stock-ceketo-${fecha.replace(/\//g, '-')}.pdf`,
       image:       { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
       jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
     })
-    .from(body)
+    .from(el)
     .save()
+    .then(() => document.body.removeChild(el))
 }
 
 onMounted(async () => {
