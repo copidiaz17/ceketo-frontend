@@ -5,12 +5,16 @@
         <h1 class="font-display text-3xl font-bold text-gray-900">Stock actual</h1>
         <p class="font-body text-gray-500 mt-1">Inventario de todos los productos</p>
       </div>
-      <button
-        @click="descargarPDF"
-        class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
-      >
-        📄 Descargar PDF
-      </button>
+      <div class="flex gap-2">
+        <button
+          @click="imprimir"
+          class="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-body text-sm font-medium hover:bg-gray-200 transition-colors"
+        >🖨️ Imprimir</button>
+        <button
+          @click="descargarPDF"
+          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
+        >📄 Descargar PDF</button>
+      </div>
     </div>
 
     <!-- Filtros -->
@@ -75,6 +79,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import html2pdf from 'html2pdf.js'
 
 const productos        = ref([])
 const filtroCategoria  = ref('')
@@ -101,27 +106,30 @@ const productosFiltrados = computed(() => {
     })
 })
 
-function descargarPDF() {
+function buildHTMLContent() {
   const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
   const hora  = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+  const conStock      = productosFiltrados.value.filter(p => p.stock > 0).length
+  const sinStock      = productosFiltrados.value.filter(p => p.stock === 0).length
+  const totalUnidades = productosFiltrados.value.reduce((a, p) => a + p.stock, 0)
 
   const filas = productosFiltrados.value.map(p => {
     const stockColor = p.stock === 0 ? '#ef4444' : p.stock < 5 ? '#eab308' : '#2a9d8f'
-    return `
-      <tr>
-        <td>${p.codigo}</td>
-        <td>${p.nombre}</td>
-        <td>${p.categoria?.nombre || '—'}</td>
-        <td class="right">$${parseFloat(p.precio).toLocaleString('es-AR')}</td>
-        <td class="right stock" style="color:${stockColor}">${p.stock}</td>
-      </tr>`
+    return `<tr>
+      <td>${p.codigo}</td>
+      <td>${p.nombre}</td>
+      <td>${p.categoria?.nombre || '—'}</td>
+      <td class="right">$${parseFloat(p.precio).toLocaleString('es-AR')}</td>
+      <td class="right" style="color:${stockColor};font-weight:bold">${p.stock}</td>
+    </tr>`
   }).join('')
 
-  const conStock    = productosFiltrados.value.filter(p => p.stock > 0).length
-  const sinStock    = productosFiltrados.value.filter(p => p.stock === 0).length
-  const totalUnidades = productosFiltrados.value.reduce((a, p) => a + p.stock, 0)
+  return { fecha, hora, conStock, sinStock, totalUnidades, filas }
+}
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+function buildHTML() {
+  const { fecha, hora, conStock, sinStock, totalUnidades, filas } = buildHTMLContent()
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Arial, sans-serif; font-size: 11px; color: #111; padding: 20px; }
@@ -136,12 +144,9 @@ function descargarPDF() {
   th.right, td.right { text-align: right; }
   td { padding: 6px 10px; border-bottom: 1px solid #e5e7eb; }
   tr:nth-child(even) td { background: #f9fafb; }
-  .stock { font-weight: bold; }
-  .sin-stock td { background: #fef2f2 !important; }
   .footer { margin-top: 16px; font-size: 10px; color: #999; text-align: right; }
   @media print { @page { margin: 15mm; size: A4; } }
-</style>
-</head><body>
+</style></head><body>
   <h1>CEKETO — Stock actual</h1>
   <div class="sub">Generado el ${fecha} a las ${hora} hs${filtroCategoria.value ? ' · Categoría: ' + filtroCategoria.value : ''}</div>
   <div class="resumen">
@@ -151,25 +156,39 @@ function descargarPDF() {
     <div>Total unidades<br><span>${totalUnidades.toLocaleString('es-AR')}</span></div>
   </div>
   <table>
-    <thead>
-      <tr>
-        <th>Código</th>
-        <th>Nombre</th>
-        <th>Categoría</th>
-        <th class="right">Precio</th>
-        <th class="right">Stock</th>
-      </tr>
-    </thead>
+    <thead><tr>
+      <th>Código</th><th>Nombre</th><th>Categoría</th>
+      <th class="right">Precio</th><th class="right">Stock</th>
+    </tr></thead>
     <tbody>${filas}</tbody>
   </table>
   <div class="footer">CEKETO · Independencia 663, Santiago del Estero</div>
 </body></html>`
+}
 
+function imprimir() {
   const win = window.open('', '_blank', 'width=900,height=700')
-  win.document.write(html)
+  win.document.write(buildHTML())
   win.document.close()
   win.focus()
   setTimeout(() => { win.print() }, 400)
+}
+
+function descargarPDF() {
+  const { fecha } = buildHTMLContent()
+  const el = document.createElement('div')
+  el.innerHTML = buildHTML()
+  const body = el.querySelector('body')
+  html2pdf()
+    .set({
+      margin:      [10, 10, 10, 10],
+      filename:    `stock-ceketo-${fecha.replace(/\//g, '-')}.pdf`,
+      image:       { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    })
+    .from(body)
+    .save()
 }
 
 onMounted(async () => {
