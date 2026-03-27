@@ -276,10 +276,39 @@
       </div>
     </div>
 
-    <!-- Historial de ventas del día -->
+    <!-- Historial de ventas -->
     <div class="mt-8 bg-white border border-gray-200 rounded-2xl p-6">
-      <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Ventas del día</h2>
-      <div v-if="historialVentas.length === 0" class="text-gray-400 font-body text-sm">Sin ventas registradas hoy</div>
+      <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
+        <h2 class="font-display text-lg font-semibold text-gray-900">
+          Ventas — {{ filtroFechaLabel }}
+          <span class="text-sm font-body text-gray-400 ml-2">({{ historialVentas.length }})</span>
+        </h2>
+        <div class="flex items-center gap-2">
+          <input
+            v-model="filtroFecha"
+            type="date"
+            class="px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+            @change="cargarHistorial"
+          />
+          <button
+            v-if="filtroFecha !== hoyISO"
+            @click="filtroFecha = hoyISO; cargarHistorial()"
+            class="px-3 py-2 rounded-xl bg-teal/10 text-teal font-body text-sm hover:bg-teal/20 transition-colors"
+          >Hoy</button>
+        </div>
+      </div>
+      <!-- Resumen rápido del día filtrado -->
+      <div v-if="historialVentas.length" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div v-for="resumen in resumenMetodos" :key="resumen.metodo" class="bg-gray-50 rounded-xl px-4 py-3">
+          <p class="font-body text-xs text-gray-400 mb-1">{{ resumen.label }}</p>
+          <p class="font-display font-bold text-teal text-base">${{ resumen.total.toLocaleString('es-AR') }}</p>
+        </div>
+        <div class="bg-teal/10 rounded-xl px-4 py-3">
+          <p class="font-body text-xs text-gray-500 mb-1">Total del día</p>
+          <p class="font-display font-bold text-teal text-base">${{ totalDia.toLocaleString('es-AR') }}</p>
+        </div>
+      </div>
+      <div v-if="historialVentas.length === 0" class="text-gray-400 font-body text-sm">Sin ventas para esta fecha</div>
       <div v-else class="overflow-x-auto">
         <table class="w-full font-body text-sm">
           <thead>
@@ -447,6 +476,8 @@ const anulando              = ref(false)
 const metodoPagoSeleccionado = ref('')
 const descuentoPct           = ref(0)
 const fechaVenta             = ref('')
+const hoyISO                 = new Date().toISOString().split('T')[0]
+const filtroFecha            = ref(hoyISO)
 
 const metodosPago = [
   { value: 'efectivo',      label: 'Efectivo',      icon: '💵' },
@@ -477,6 +508,29 @@ const montoDescuento = computed(() =>
 const totalFinal = computed(() =>
   totalCarrito.value - montoDescuento.value
 )
+
+const resumenMetodos = computed(() => {
+  const mapa = {}
+  for (const v of historialVentas.value) {
+    const key = v.metodo_pago || 'sin_metodo'
+    if (!mapa[key]) {
+      const m = metodosPago.find(x => x.value === key)
+      mapa[key] = { metodo: key, label: m?.label || key, total: 0 }
+    }
+    mapa[key].total += parseFloat(v.total) || 0
+  }
+  return Object.values(mapa)
+})
+
+const totalDia = computed(() =>
+  historialVentas.value.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0)
+)
+
+const filtroFechaLabel = computed(() => {
+  if (filtroFecha.value === hoyISO) return 'Hoy'
+  const [y, m, d] = filtroFecha.value.split('-')
+  return `${d}/${m}/${y}`
+})
 
 function formatHora(fecha) {
   return new Date(fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
@@ -874,8 +928,11 @@ async function cargarProductos() {
 async function cargarHistorial() {
   try {
     const { data } = await axios.get('/api/ventas')
-    const hoy = new Date().toDateString()
-    historialVentas.value = data.filter(v => new Date(v.fecha).toDateString() === hoy).slice(0, 20)
+    historialVentas.value = data.filter(v => {
+      const d = new Date(v.fecha)
+      const localDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      return localDate === filtroFecha.value
+    }).slice(0, 50)
   } catch { historialVentas.value = [] }
 }
 
