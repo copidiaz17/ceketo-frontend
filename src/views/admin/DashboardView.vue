@@ -166,14 +166,14 @@ function formatFecha(f) {
 }
 
 function buildChart(ventasSemana) {
-  // Construir array de últimos 7 días
+  // Últimos 7 días en zona Argentina (UTC-3)
+  const ARG_OFFSET_MS = 3 * 60 * 60 * 1000
   const dias = []
   for (let i = 6; i >= 0; i--) {
-    const d = new Date()
-    d.setDate(d.getDate() - i)
+    const d = new Date(Date.now() - ARG_OFFSET_MS - i * 24 * 60 * 60 * 1000)
     dias.push(d.toISOString().slice(0, 10))
   }
-  const labels  = dias.map(d => new Date(d + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }))
+  const labels  = dias.map(d => { const [, m, day] = d.split('-'); return `${day}/${m}` })
   const totales = dias.map(dia => {
     const found = ventasSemana.find(v => v.dia === dia)
     return found ? parseFloat(found.total) : 0
