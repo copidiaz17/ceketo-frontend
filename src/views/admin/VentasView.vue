@@ -480,11 +480,12 @@ const hoyISO                 = new Date().toISOString().split('T')[0]
 const filtroFecha            = ref(hoyISO)
 
 const metodosPago = [
-  { value: 'efectivo',      label: 'Efectivo',      icon: '💵' },
-  { value: 'transferencia', label: 'Transferencia',  icon: '🏦' },
-  { value: 'debito',        label: 'Débito',         icon: '💳' },
-  { value: 'credito',       label: 'Crédito',        icon: '💳' },
-  { value: 'qr',           label: 'QR',             icon: '📱' },
+  { value: 'efectivo',          label: 'Efectivo',       icon: '💵' },
+  { value: 'transferencia',     label: 'Transferencia',  icon: '🏦' },
+  { value: 'debito',            label: 'Débito',         icon: '💳' },
+  { value: 'credito',           label: 'Crédito',        icon: '💳' },
+  { value: 'qr',                label: 'QR',             icon: '📱' },
+  { value: 'cuenta_corriente',  label: 'Cta. Corriente', icon: '🤝' },
 ]
 
 const categoriasConProductos = computed(() => {
