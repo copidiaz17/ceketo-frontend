@@ -52,6 +52,7 @@
               <th class="text-left px-6 py-4">Categoría</th>
               <th class="text-right px-6 py-4">Precio</th>
               <th class="text-right px-6 py-4">Stock</th>
+              <th class="text-center px-6 py-4">Ajuste</th>
             </tr>
           </thead>
           <tbody>
@@ -68,6 +69,128 @@
                 :class="p.stock === 0 ? 'text-red-400' : p.stock < 5 ? 'text-yellow-400' : 'text-teal'">
                 {{ p.stock }}
               </td>
+              <td class="px-6 py-3 text-center">
+                <button
+                  @click="abrirAjuste(p)"
+                  class="px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-600 hover:bg-teal hover:text-white transition-colors font-medium"
+                >✏️ Editar</button>
+                <button
+                  @click="abrirHistorial(p)"
+                  class="ml-1 px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors font-medium"
+                >📋 Historial</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ajuste de Stock -->
+  <div v-if="modalAjuste" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+      <h2 class="font-display text-xl font-bold text-gray-900 mb-1">Ajuste de Stock</h2>
+      <p class="text-sm text-gray-500 mb-6 font-body">{{ productoAjuste?.nombre }}</p>
+
+      <div class="space-y-4">
+        <div class="flex items-center gap-4 bg-gray-50 rounded-xl p-4">
+          <div class="text-center flex-1">
+            <div class="text-xs text-gray-400 mb-1">Stock actual</div>
+            <div class="text-2xl font-bold text-gray-700">{{ productoAjuste?.stock }}</div>
+          </div>
+          <div class="text-gray-300 text-2xl">→</div>
+          <div class="text-center flex-1">
+            <div class="text-xs text-gray-400 mb-1">Stock nuevo</div>
+            <div class="text-2xl font-bold"
+              :class="ajusteForm.stock_nuevo === '' ? 'text-gray-300' :
+                Number(ajusteForm.stock_nuevo) === productoAjuste?.stock ? 'text-gray-500' :
+                Number(ajusteForm.stock_nuevo) > productoAjuste?.stock ? 'text-teal' : 'text-red-400'">
+              {{ ajusteForm.stock_nuevo === '' ? '—' : ajusteForm.stock_nuevo }}
+            </div>
+          </div>
+          <div v-if="ajusteForm.stock_nuevo !== '' && Number(ajusteForm.stock_nuevo) !== productoAjuste?.stock"
+            class="text-center flex-1">
+            <div class="text-xs text-gray-400 mb-1">Diferencia</div>
+            <div class="text-2xl font-bold"
+              :class="Number(ajusteForm.stock_nuevo) > productoAjuste?.stock ? 'text-teal' : 'text-red-400'">
+              {{ Number(ajusteForm.stock_nuevo) > productoAjuste?.stock ? '+' : '' }}{{ Number(ajusteForm.stock_nuevo) - productoAjuste?.stock }}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1 font-body">Nuevo stock *</label>
+          <input
+            v-model="ajusteForm.stock_nuevo"
+            type="number"
+            min="0"
+            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 font-body text-sm focus:outline-none focus:border-teal"
+            placeholder="Ingresá el nuevo stock"
+            @keydown.enter="guardarAjuste"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1 font-body">Observación (opcional)</label>
+          <textarea
+            v-model="ajusteForm.observacion"
+            rows="2"
+            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 font-body text-sm focus:outline-none focus:border-teal resize-none"
+            placeholder="Ej: conteo físico, devolución, etc."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button
+          @click="modalAjuste = false"
+          class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-body text-sm hover:bg-gray-50 transition-colors"
+        >Cancelar</button>
+        <button
+          @click="guardarAjuste"
+          :disabled="ajusteForm.stock_nuevo === '' || guardandoAjuste"
+          class="flex-1 px-4 py-2.5 rounded-xl bg-teal text-white font-body text-sm font-medium hover:bg-teal/80 transition-colors disabled:opacity-40"
+        >{{ guardandoAjuste ? 'Guardando...' : 'Guardar ajuste' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Historial de Ajustes -->
+  <div v-if="modalHistorial" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[80vh] flex flex-col">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="font-display text-xl font-bold text-gray-900">Historial de ajustes</h2>
+          <p class="text-sm text-gray-500 font-body">{{ productoHistorial?.nombre }}</p>
+        </div>
+        <button @click="modalHistorial = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+      </div>
+
+      <div class="overflow-y-auto flex-1">
+        <div v-if="cargandoHistorial" class="text-center text-gray-400 py-8 font-body">Cargando...</div>
+        <div v-else-if="historialAjustes.length === 0" class="text-center text-gray-400 py-8 font-body">
+          Sin ajustes registrados
+        </div>
+        <table v-else class="w-full font-body text-sm">
+          <thead>
+            <tr class="text-gray-400 border-b border-gray-100 text-xs">
+              <th class="text-left py-2 px-3">Fecha</th>
+              <th class="text-center py-2 px-3">Anterior</th>
+              <th class="text-center py-2 px-3">Nuevo</th>
+              <th class="text-center py-2 px-3">Dif.</th>
+              <th class="text-left py-2 px-3">Obs.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="a in historialAjustes" :key="a.id" class="border-b border-gray-50">
+              <td class="py-2 px-3 text-gray-400 text-xs whitespace-nowrap">{{ formatFecha(a.createdAt) }}</td>
+              <td class="py-2 px-3 text-center text-gray-600">{{ a.stock_anterior }}</td>
+              <td class="py-2 px-3 text-center font-bold text-gray-900">{{ a.stock_nuevo }}</td>
+              <td class="py-2 px-3 text-center font-bold text-xs"
+                :class="a.diferencia > 0 ? 'text-teal' : a.diferencia < 0 ? 'text-red-400' : 'text-gray-400'">
+                {{ a.diferencia > 0 ? '+' : '' }}{{ a.diferencia }}
+              </td>
+              <td class="py-2 px-3 text-gray-500 text-xs">{{ a.observacion || '—' }}</td>
             </tr>
           </tbody>
         </table>
@@ -80,10 +203,25 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import html2pdf from 'html2pdf.js'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 const productos        = ref([])
 const filtroCategoria  = ref('')
 const busqueda         = ref('')
+
+// Ajuste de stock
+const modalAjuste     = ref(false)
+const productoAjuste  = ref(null)
+const guardandoAjuste = ref(false)
+const ajusteForm      = ref({ stock_nuevo: '', observacion: '' })
+
+// Historial
+const modalHistorial    = ref(false)
+const productoHistorial = ref(null)
+const historialAjustes  = ref([])
+const cargandoHistorial = ref(false)
 
 const categorias = computed(() => {
   const set = new Set(productos.value.map(p => p.categoria?.nombre).filter(Boolean))
@@ -100,11 +238,56 @@ const productosFiltrados = computed(() => {
       return matchCat && matchBusq
     })
     .sort((a, b) => {
-      // Con stock primero, sin stock al final; dentro de cada grupo orden alfabético
       if ((a.stock > 0) === (b.stock > 0)) return a.nombre.localeCompare(b.nombre)
       return b.stock > 0 ? 1 : -1
     })
 })
+
+function abrirAjuste(p) {
+  productoAjuste.value = { ...p }
+  ajusteForm.value = { stock_nuevo: p.stock, observacion: '' }
+  modalAjuste.value = true
+}
+
+async function guardarAjuste() {
+  if (ajusteForm.value.stock_nuevo === '' || guardandoAjuste.value) return
+  guardandoAjuste.value = true
+  try {
+    const { data } = await axios.put(`/api/productos/${productoAjuste.value.id}/ajuste-stock`, {
+      stock_nuevo: Number(ajusteForm.value.stock_nuevo),
+      observacion: ajusteForm.value.observacion || null,
+      usuario: auth.user?.nombre || auth.user?.email || null,
+    })
+    // Actualizar stock en lista local
+    const idx = productos.value.findIndex(p => p.id === productoAjuste.value.id)
+    if (idx !== -1) productos.value[idx].stock = data.stock
+    modalAjuste.value = false
+  } catch (err) {
+    alert(err.response?.data?.error || 'Error al guardar ajuste')
+  } finally {
+    guardandoAjuste.value = false
+  }
+}
+
+async function abrirHistorial(p) {
+  productoHistorial.value = p
+  historialAjustes.value = []
+  modalHistorial.value = true
+  cargandoHistorial.value = true
+  try {
+    const { data } = await axios.get(`/api/productos/${p.id}/ajustes`)
+    historialAjustes.value = data
+  } catch {
+    historialAjustes.value = []
+  } finally {
+    cargandoHistorial.value = false
+  }
+}
+
+function formatFecha(iso) {
+  const d = new Date(iso)
+  return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
+}
 
 function buildHTMLContent() {
   const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
