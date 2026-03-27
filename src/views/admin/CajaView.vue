@@ -21,7 +21,7 @@
 
         <div class="text-left space-y-4">
           <div>
-            <label class="block font-body text-sm text-gray-500 mb-2">Saldo inicial en caja ($)</label>
+            <label class="block font-body text-sm text-gray-500 mb-2">💵 Efectivo en caja ($)</label>
             <input
               v-model.number="apertura.saldo_inicial"
               type="number"
@@ -30,6 +30,18 @@
               class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
                      focus:outline-none focus:border-teal transition-colors"
             />
+          </div>
+          <div>
+            <label class="block font-body text-sm text-gray-500 mb-2">📲 Saldo billetera virtual ($)</label>
+            <input
+              v-model.number="apertura.saldo_billetera_inicial"
+              type="number"
+              min="0"
+              placeholder="0"
+              class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
+                     focus:outline-none focus:border-teal transition-colors"
+            />
+            <p class="font-body text-xs text-gray-400 mt-1">Saldo actual en Mercado Pago / cuenta bancaria</p>
           </div>
           <div>
             <label class="block font-body text-sm text-gray-500 mb-2">Responsable (opcional)</label>
@@ -160,59 +172,120 @@
         </div>
       </div>
 
-      <!-- Saldo teórico -->
-      <div class="bg-white border border-gray-200 rounded-2xl p-6">
-        <h2 class="font-display text-lg font-semibold text-gray-900 mb-4">Saldo teórico en efectivo</h2>
-        <div class="space-y-2 font-body text-sm">
-          <div class="flex justify-between text-gray-500">
-            <span>Saldo inicial</span>
-            <span>${{ parseFloat(cajaActual.caja.saldo_inicial).toLocaleString('es-AR') }}</span>
-          </div>
-          <div class="flex justify-between text-teal">
-            <span>Ventas en efectivo</span>
-            <span>+${{ (cajaActual.ventasPorMetodo['efectivo'] || 0).toLocaleString('es-AR') }}</span>
-          </div>
-          <div v-if="cajaActual.totalIngresos > 0" class="flex justify-between text-teal">
-            <span>Ingresos manuales</span>
-            <span>+${{ cajaActual.totalIngresos.toLocaleString('es-AR') }}</span>
-          </div>
-          <div v-if="cajaActual.totalEgresos > 0" class="flex justify-between text-red-400">
-            <span>Egresos manuales</span>
-            <span>-${{ cajaActual.totalEgresos.toLocaleString('es-AR') }}</span>
-          </div>
-          <div class="flex justify-between font-bold text-gray-900 text-lg border-t border-gray-200 pt-3 mt-2">
-            <span>Debería haber</span>
-            <span class="text-teal">${{ cajaActual.saldoTeorico.toLocaleString('es-AR') }}</span>
+      <!-- Saldos teóricos: efectivo + billetera -->
+      <div class="grid md:grid-cols-2 gap-4">
+
+        <!-- Efectivo -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-6">
+          <h2 class="font-display text-base font-semibold text-gray-900 mb-4">💵 Efectivo teórico</h2>
+          <div class="space-y-2 font-body text-sm">
+            <div class="flex justify-between text-gray-500">
+              <span>Saldo inicial</span>
+              <span>${{ parseFloat(cajaActual.caja.saldo_inicial).toLocaleString('es-AR') }}</span>
+            </div>
+            <div class="flex justify-between text-teal">
+              <span>Ventas en efectivo</span>
+              <span>+${{ (cajaActual.ventasPorMetodo['efectivo'] || 0).toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="(cajaActual.gastosPorMetodo['efectivo'] || 0) > 0" class="flex justify-between text-red-400">
+              <span>Gastos en efectivo</span>
+              <span>-${{ cajaActual.gastosPorMetodo['efectivo'].toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="cajaActual.totalIngresos > 0" class="flex justify-between text-teal">
+              <span>Ingresos manuales</span>
+              <span>+${{ cajaActual.totalIngresos.toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="cajaActual.totalEgresos > 0" class="flex justify-between text-red-400">
+              <span>Egresos manuales</span>
+              <span>-${{ cajaActual.totalEgresos.toLocaleString('es-AR') }}</span>
+            </div>
+            <div class="flex justify-between font-bold text-gray-900 text-lg border-t border-gray-200 pt-3 mt-2">
+              <span>Debería haber</span>
+              <span class="text-teal">${{ cajaActual.saldoTeorico.toLocaleString('es-AR') }}</span>
+            </div>
           </div>
         </div>
+
+        <!-- Billetera virtual -->
+        <div class="bg-white border border-blue-100 rounded-2xl p-6">
+          <h2 class="font-display text-base font-semibold text-gray-900 mb-4">📲 Billetera virtual</h2>
+          <div class="space-y-2 font-body text-sm">
+            <div class="flex justify-between text-gray-500">
+              <span>Saldo inicial</span>
+              <span>${{ parseFloat(cajaActual.caja.saldo_billetera_inicial).toLocaleString('es-AR') }}</span>
+            </div>
+            <div class="flex justify-between text-teal">
+              <span>Cobros por transferencia</span>
+              <span>+${{ (cajaActual.transferenciaVentas || 0).toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="(cajaActual.transferenciaGastos || 0) > 0" class="flex justify-between text-red-400">
+              <span>Gastos por transferencia</span>
+              <span>-${{ cajaActual.transferenciaGastos.toLocaleString('es-AR') }}</span>
+            </div>
+            <div class="flex justify-between font-bold text-gray-900 text-lg border-t border-gray-200 pt-3 mt-2">
+              <span>Saldo final</span>
+              <span class="text-blue-600">${{ cajaActual.saldoBilleteraFinal.toLocaleString('es-AR') }}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Arqueo y cierre -->
       <div class="bg-white border border-red-100 rounded-2xl p-6">
         <h2 class="font-display text-lg font-semibold text-gray-900 mb-4">Arqueo y cierre de caja</h2>
         <div class="space-y-4">
-          <div>
-            <label class="block font-body text-sm text-gray-500 mb-2">Efectivo contado en caja ($)</label>
-            <input
-              v-model.number="arqueo.efectivo"
-              type="number"
-              min="0"
-              placeholder="0"
-              class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
-                     focus:outline-none focus:border-teal transition-colors"
-            />
-          </div>
-          <!-- Diferencia -->
-          <div v-if="arqueo.efectivo !== null && arqueo.efectivo !== ''" class="bg-gray-50 rounded-xl px-4 py-3">
-            <div class="flex justify-between font-body text-sm">
-              <span class="text-gray-500">Diferencia</span>
-              <span :class="diferencia === 0 ? 'text-teal' : diferencia > 0 ? 'text-teal' : 'text-red-400'" class="font-bold">
-                {{ diferencia >= 0 ? '+' : '' }}${{ diferencia.toLocaleString('es-AR') }}
-              </span>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <!-- Arqueo efectivo -->
+            <div>
+              <label class="block font-body text-sm text-gray-500 mb-2">💵 Efectivo contado en caja ($)</label>
+              <input
+                v-model.number="arqueo.efectivo"
+                type="number"
+                min="0"
+                placeholder="0"
+                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
+                       focus:outline-none focus:border-teal transition-colors"
+              />
+              <!-- Diferencia efectivo -->
+              <div v-if="arqueo.efectivo !== null && arqueo.efectivo !== ''" class="bg-gray-50 rounded-xl px-4 py-2 mt-2">
+                <div class="flex justify-between font-body text-sm">
+                  <span class="text-gray-500">Diferencia</span>
+                  <span :class="diferenciaEfectivo === 0 ? 'text-gray-500' : diferenciaEfectivo > 0 ? 'text-teal' : 'text-red-400'" class="font-bold">
+                    {{ diferenciaEfectivo >= 0 ? '+' : '' }}${{ diferenciaEfectivo.toLocaleString('es-AR') }}
+                  </span>
+                </div>
+                <p v-if="diferenciaEfectivo > 0" class="font-body text-xs text-teal">Sobrante</p>
+                <p v-else-if="diferenciaEfectivo < 0" class="font-body text-xs text-red-400">Faltante</p>
+                <p v-else class="font-body text-xs text-gray-400">Cuadrada ✓</p>
+              </div>
             </div>
-            <p v-if="diferencia > 0" class="font-body text-xs text-teal mt-1">Sobrante de caja</p>
-            <p v-else-if="diferencia < 0" class="font-body text-xs text-red-400 mt-1">Faltante de caja</p>
-            <p v-else class="font-body text-xs text-gray-400 mt-1">Caja cuadrada ✓</p>
+
+            <!-- Arqueo billetera -->
+            <div>
+              <label class="block font-body text-sm text-gray-500 mb-2">📲 Saldo billetera real ($)</label>
+              <input
+                v-model.number="arqueo.billetera"
+                type="number"
+                min="0"
+                placeholder="0"
+                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
+                       focus:outline-none focus:border-teal transition-colors"
+              />
+              <!-- Diferencia billetera -->
+              <div v-if="arqueo.billetera !== null && arqueo.billetera !== ''" class="bg-gray-50 rounded-xl px-4 py-2 mt-2">
+                <div class="flex justify-between font-body text-sm">
+                  <span class="text-gray-500">Diferencia</span>
+                  <span :class="diferenciaBilletera === 0 ? 'text-gray-500' : diferenciaBilletera > 0 ? 'text-teal' : 'text-red-400'" class="font-bold">
+                    {{ diferenciaBilletera >= 0 ? '+' : '' }}${{ diferenciaBilletera.toLocaleString('es-AR') }}
+                  </span>
+                </div>
+                <p v-if="diferenciaBilletera > 0" class="font-body text-xs text-teal">Sobrante</p>
+                <p v-else-if="diferenciaBilletera < 0" class="font-body text-xs text-red-400">Faltante</p>
+                <p v-else class="font-body text-xs text-gray-400">Cuadrada ✓</p>
+              </div>
+            </div>
           </div>
           <div>
             <label class="block font-body text-sm text-gray-500 mb-2">Nota de cierre (opcional)</label>
@@ -305,23 +378,45 @@
             <span>Total ventas</span>
             <span class="font-bold">${{ resumenCierre.totalVentas.toLocaleString('es-AR') }}</span>
           </div>
-          <div class="flex justify-between text-gray-600">
-            <span>Saldo teórico</span>
-            <span class="font-bold">${{ resumenCierre.saldoTeorico.toLocaleString('es-AR') }}</span>
+
+          <!-- Efectivo -->
+          <div class="border-t border-gray-200 pt-2">
+            <p class="text-xs text-gray-400 mb-1">💵 Efectivo</p>
+            <div class="flex justify-between text-gray-600">
+              <span>Teórico</span>
+              <span class="font-bold">${{ resumenCierre.saldoTeorico.toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="resumenCierre.arqueo_efectivo !== null" class="flex justify-between text-gray-600">
+              <span>Contado</span>
+              <span class="font-bold">${{ parseFloat(resumenCierre.arqueo_efectivo).toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="resumenCierre.diferenciaEfectivo !== 0" class="flex justify-between"
+              :class="resumenCierre.diferenciaEfectivo > 0 ? 'text-teal' : 'text-red-400'"
+            >
+              <span>{{ resumenCierre.diferenciaEfectivo > 0 ? 'Sobrante' : 'Faltante' }}</span>
+              <span class="font-bold">${{ Math.abs(resumenCierre.diferenciaEfectivo).toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-else class="text-teal text-xs">Cuadrada ✓</div>
           </div>
-          <div v-if="resumenCierre.arqueo_efectivo !== null" class="flex justify-between text-gray-600">
-            <span>Arqueo efectivo</span>
-            <span class="font-bold">${{ parseFloat(resumenCierre.arqueo_efectivo).toLocaleString('es-AR') }}</span>
-          </div>
-          <div v-if="resumenCierre.diferencia !== 0" class="flex justify-between border-t border-gray-200 pt-2"
-            :class="resumenCierre.diferencia > 0 ? 'text-teal' : 'text-red-400'"
-          >
-            <span>{{ resumenCierre.diferencia > 0 ? 'Sobrante' : 'Faltante' }}</span>
-            <span class="font-bold">${{ Math.abs(resumenCierre.diferencia).toLocaleString('es-AR') }}</span>
-          </div>
-          <div v-else class="flex justify-between border-t border-gray-200 pt-2 text-teal">
-            <span>Resultado</span>
-            <span class="font-bold">Caja cuadrada ✓</span>
+
+          <!-- Billetera -->
+          <div class="border-t border-gray-200 pt-2">
+            <p class="text-xs text-gray-400 mb-1">📲 Billetera virtual</p>
+            <div class="flex justify-between text-gray-600">
+              <span>Teórico</span>
+              <span class="font-bold">${{ resumenCierre.saldoBilleteraFinal.toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="resumenCierre.arqueo_billetera !== null" class="flex justify-between text-gray-600">
+              <span>Real</span>
+              <span class="font-bold">${{ parseFloat(resumenCierre.arqueo_billetera).toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="resumenCierre.diferenciaBilletera !== 0" class="flex justify-between"
+              :class="resumenCierre.diferenciaBilletera > 0 ? 'text-teal' : 'text-red-400'"
+            >
+              <span>{{ resumenCierre.diferenciaBilletera > 0 ? 'Sobrante' : 'Faltante' }}</span>
+              <span class="font-bold">${{ Math.abs(resumenCierre.diferenciaBilletera).toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-else class="text-teal text-xs">Cuadrada ✓</div>
           </div>
         </div>
 
@@ -350,8 +445,8 @@ const modalMov      = ref(false)
 const guardandoMov  = ref(false)
 const resumenCierre = ref(null)
 
-const apertura = ref({ saldo_inicial: 0, usuario: '' })
-const arqueo   = ref({ efectivo: null, nota: '' })
+const apertura = ref({ saldo_inicial: 0, saldo_billetera_inicial: 0, usuario: '' })
+const arqueo   = ref({ efectivo: null, billetera: null, nota: '' })
 const nuevoMov = ref({ tipo: 'ingreso', concepto: '', monto: null })
 
 const metodoLabels = {
@@ -368,9 +463,14 @@ function metodoLabel(m) {
   return metodoLabels[m] || m
 }
 
-const diferencia = computed(() => {
+const diferenciaEfectivo = computed(() => {
   if (arqueo.value.efectivo === null || arqueo.value.efectivo === '') return 0
   return (Number(arqueo.value.efectivo) || 0) - (cajaActual.value?.saldoTeorico || 0)
+})
+
+const diferenciaBilletera = computed(() => {
+  if (arqueo.value.billetera === null || arqueo.value.billetera === '') return 0
+  return (Number(arqueo.value.billetera) || 0) - (cajaActual.value?.saldoBilleteraFinal || 0)
 })
 
 function formatFechaHora(fecha) {
@@ -397,7 +497,7 @@ async function cargar() {
     ])
     cajaActual.value = actual
     historial.value  = hist.filter(c => c.estado === 'cerrada').slice(0, 10)
-    arqueo.value = { efectivo: null, nota: '' }
+    arqueo.value = { efectivo: null, billetera: null, nota: '' }
   } catch {}
   cargando.value = false
 }
@@ -407,10 +507,11 @@ async function abrirCaja() {
   errorApertura.value = ''
   try {
     await axios.post('/api/caja/abrir', {
-      saldo_inicial: apertura.value.saldo_inicial || 0,
-      usuario:       apertura.value.usuario || undefined,
+      saldo_inicial:           apertura.value.saldo_inicial || 0,
+      saldo_billetera_inicial: apertura.value.saldo_billetera_inicial || 0,
+      usuario:                 apertura.value.usuario || undefined,
     })
-    apertura.value = { saldo_inicial: 0, usuario: '' }
+    apertura.value = { saldo_inicial: 0, saldo_billetera_inicial: 0, usuario: '' }
     await cargar()
   } catch (err) {
     errorApertura.value = err.response?.data?.error || 'Error al abrir la caja'
@@ -451,16 +552,20 @@ async function cerrarCaja() {
   errorCierre.value = ''
   try {
     const { data } = await axios.post(`/api/caja/${cajaActual.value.caja.id}/cerrar`, {
-      arqueo_efectivo: arqueo.value.efectivo !== null ? arqueo.value.efectivo : undefined,
-      nota_cierre:     arqueo.value.nota || undefined,
+      arqueo_efectivo:  arqueo.value.efectivo !== null ? arqueo.value.efectivo : undefined,
+      arqueo_billetera: arqueo.value.billetera !== null ? arqueo.value.billetera : undefined,
+      nota_cierre:      arqueo.value.nota || undefined,
     })
     resumenCierre.value = {
-      totalVentas:    data.resumen.totalVentas,
-      saldoTeorico:   data.resumen.saldoTeorico,
-      arqueo_efectivo: arqueo.value.efectivo,
-      diferencia:     arqueo.value.efectivo !== null
-        ? (Number(arqueo.value.efectivo) - data.resumen.saldoTeorico)
-        : 0,
+      totalVentas:       data.resumen.totalVentas,
+      saldoTeorico:      data.resumen.saldoTeorico,
+      saldoBilleteraFinal: data.resumen.saldoBilleteraFinal,
+      arqueo_efectivo:   arqueo.value.efectivo,
+      arqueo_billetera:  arqueo.value.billetera,
+      diferenciaEfectivo: arqueo.value.efectivo !== null
+        ? (Number(arqueo.value.efectivo) - data.resumen.saldoTeorico) : 0,
+      diferenciaBilletera: arqueo.value.billetera !== null
+        ? (Number(arqueo.value.billetera) - data.resumen.saldoBilleteraFinal) : 0,
     }
     cajaActual.value = null
   } catch (err) {

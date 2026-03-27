@@ -243,6 +243,19 @@
               />
             </div>
 
+            <!-- Método de pago -->
+            <div>
+              <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Método de pago</label>
+              <select v-model="modal.metodo_pago" class="input-field w-full">
+                <option value="">Sin especificar</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="debito">Débito</option>
+                <option value="credito">Crédito</option>
+                <option value="qr">QR</option>
+              </select>
+            </div>
+
             <!-- Factura + IVA -->
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <label class="flex items-center gap-3 cursor-pointer mb-3">
@@ -414,6 +427,7 @@ function abrirModal(g = null) {
       descripcion: g.descripcion, monto: g.monto,
       proveedor: g.proveedor || '',
       archivo: null, comprobante_actual: g.comprobante || null,
+      metodo_pago: g.metodo_pago || '',
       es_factura: g.es_factura || false,
       alicuota_iva: g.alicuota_iva ? String(g.alicuota_iva) : '',
     }
@@ -423,7 +437,7 @@ function abrirModal(g = null) {
       visible: true, id: null, guardando: false,
       fecha: hoy, categoria: '', descripcion: '', monto: '', proveedor: '',
       archivo: null, comprobante_actual: null,
-      es_factura: false, alicuota_iva: '',
+      metodo_pago: '', es_factura: false, alicuota_iva: '',
     }
   }
 }
@@ -443,6 +457,7 @@ async function guardar() {
     fd.append('descripcion',  m.descripcion)
     fd.append('monto',        m.monto)
     fd.append('proveedor',    m.proveedor || '')
+    fd.append('metodo_pago',  m.metodo_pago || '')
     fd.append('es_factura',   m.es_factura ? 'true' : 'false')
     fd.append('alicuota_iva', m.es_factura && m.alicuota_iva ? m.alicuota_iva : '')
     if (m.archivo) fd.append('comprobante', m.archivo)
