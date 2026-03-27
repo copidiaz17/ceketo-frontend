@@ -203,10 +203,6 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import html2pdf from 'html2pdf.js'
-import { useAuthStore } from '@/stores/auth'
-
-const auth = useAuthStore()
-
 const productos        = ref([])
 const filtroCategoria  = ref('')
 const busqueda         = ref('')
@@ -256,7 +252,7 @@ async function guardarAjuste() {
     const { data } = await axios.put(`/api/productos/${productoAjuste.value.id}/ajuste-stock`, {
       stock_nuevo: Number(ajusteForm.value.stock_nuevo),
       observacion: ajusteForm.value.observacion || null,
-      usuario: auth.user?.nombre || auth.user?.email || null,
+      usuario: null,
     })
     // Actualizar stock en lista local
     const idx = productos.value.findIndex(p => p.id === productoAjuste.value.id)
