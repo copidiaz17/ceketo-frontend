@@ -220,6 +220,23 @@
           </button>
         </div>
 
+        <!-- Selector de cliente (solo cta corriente) -->
+        <div v-if="metodoPagoSeleccionado === 'cuenta_corriente'" class="mb-4">
+          <label class="block font-body text-sm text-gray-500 mb-2">Cliente *</label>
+          <select
+            v-model="cuentaSeleccionada"
+            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body focus:outline-none focus:border-teal transition-colors"
+          >
+            <option value="">Seleccionar cliente...</option>
+            <option v-for="c in clientesCta" :key="c.id" :value="c.id">
+              {{ c.nombre }}
+            </option>
+          </select>
+          <p v-if="!clientesCta.length" class="text-xs text-gray-400 mt-1 font-body">
+            No hay clientes en Cta. Corriente. Creá uno primero.
+          </p>
+        </div>
+
         <!-- Fecha -->
         <div class="mb-4">
           <label class="block font-body text-sm text-gray-500 mb-2">Fecha de venta</label>
@@ -267,7 +284,7 @@
           >Cancelar</button>
           <button
             @click="confirmarVenta"
-            :disabled="!metodoPagoSeleccionado || enviandoVenta"
+            :disabled="!metodoPagoSeleccionado || enviandoVenta || (metodoPagoSeleccionado === 'cuenta_corriente' && !cuentaSeleccionada)"
             class="flex-1 py-3 bg-keto-orange text-gray-800 font-body font-semibold rounded-xl
                    hover:bg-keto-orange/80 transition-all duration-200
                    disabled:opacity-40 disabled:cursor-not-allowed"
@@ -478,6 +495,8 @@ const descuentoPct           = ref(0)
 const fechaVenta             = ref('')
 const hoyISO                 = new Date().toISOString().split('T')[0]
 const filtroFecha            = ref(hoyISO)
+const clientesCta            = ref([])
+const cuentaSeleccionada     = ref('')
 
 const metodosPago = [
   { value: 'efectivo',          label: 'Efectivo',       icon: '💵' },
@@ -601,6 +620,7 @@ function abrirModalPago() {
   metodoPagoSeleccionado.value = ''
   descuentoPct.value = 0
   fechaVenta.value   = new Date().toISOString().split('T')[0]
+  cuentaSeleccionada.value = ''
   modalPago.value = true
 }
 
@@ -616,6 +636,7 @@ async function confirmarVenta() {
       metodo_pago: metodoPagoSeleccionado.value,
       descuento:   descuentoPct.value || 0,
       fecha:       fechaVenta.value || undefined,
+      cuenta_id:   metodoPagoSeleccionado.value === 'cuenta_corriente' ? (cuentaSeleccionada.value || undefined) : undefined,
       items: carrito.value.map(i => ({
         producto_id: i.producto_id,
         cantidad:    i.cantidad,
@@ -926,6 +947,13 @@ async function cargarProductos() {
   productos.value = data
 }
 
+async function cargarClientesCta() {
+  try {
+    const { data } = await axios.get('/api/cuentas')
+    clientesCta.value = data.filter(c => c.tipo === 'cliente')
+  } catch {}
+}
+
 async function cargarHistorial() {
   try {
     const { data } = await axios.get('/api/ventas')
@@ -933,13 +961,14 @@ async function cargarHistorial() {
       const d = new Date(v.fecha)
       const localDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
       return localDate === filtroFecha.value
-    }).slice(0, 50)
+    }).reverse().slice(0, 50)  // orden ascendente (más antigua primero)
   } catch { historialVentas.value = [] }
 }
 
 onMounted(async () => {
   await cargarProductos()
   await cargarHistorial()
+  await cargarClientesCta()
   // Intentar reconectar impresora automáticamente si ya fue autorizada antes
   try {
     const devices = await navigator.usb?.getDevices()
