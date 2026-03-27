@@ -208,19 +208,28 @@
 
         <!-- Billetera virtual -->
         <div class="bg-white border border-blue-100 rounded-2xl p-6">
-          <h2 class="font-display text-base font-semibold text-gray-900 mb-4">📲 Billetera virtual</h2>
+          <h2 class="font-display text-base font-semibold text-gray-900 mb-1">📲 Billetera virtual</h2>
+          <p class="font-body text-xs text-gray-400 mb-4">Transferencia · QR · Débito · Crédito</p>
           <div class="space-y-2 font-body text-sm">
             <div class="flex justify-between text-gray-500">
               <span>Saldo inicial</span>
               <span>${{ parseFloat(cajaActual.caja.saldo_billetera_inicial).toLocaleString('es-AR') }}</span>
             </div>
             <div class="flex justify-between text-teal">
-              <span>Cobros por transferencia</span>
-              <span>+${{ (cajaActual.transferenciaVentas || 0).toLocaleString('es-AR') }}</span>
+              <span>Cobros digitales</span>
+              <span>+${{ (cajaActual.billeteraVentas || 0).toLocaleString('es-AR') }}</span>
             </div>
-            <div v-if="(cajaActual.transferenciaGastos || 0) > 0" class="flex justify-between text-red-400">
-              <span>Gastos por transferencia</span>
-              <span>-${{ cajaActual.transferenciaGastos.toLocaleString('es-AR') }}</span>
+            <!-- Desglose por método -->
+            <div v-for="m in ['transferencia','qr','debito','credito']" :key="m"
+              v-if="(cajaActual.ventasPorMetodo[m] || 0) > 0"
+              class="flex justify-between text-gray-400 text-xs pl-4"
+            >
+              <span>{{ metodoLabel(m) }}</span>
+              <span>${{ cajaActual.ventasPorMetodo[m].toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="(cajaActual.billeteraGastos || 0) > 0" class="flex justify-between text-red-400">
+              <span>Gastos digitales</span>
+              <span>-${{ cajaActual.billeteraGastos.toLocaleString('es-AR') }}</span>
             </div>
             <div class="flex justify-between font-bold text-gray-900 text-lg border-t border-gray-200 pt-3 mt-2">
               <span>Saldo final</span>
