@@ -264,6 +264,19 @@
             </label>
             <input v-model="modalMov.monto" type="number" min="0" step="0.01" placeholder="0.00" class="input-cc w-full" />
           </div>
+
+          <!-- Método de pago — solo cuando hay dinero que realmente entra/sale -->
+          <div v-if="esPagoReal">
+            <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Método de pago *</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                v-for="m in metodosPago" :key="m.value"
+                @click="modalMov.metodo_pago = m.value"
+                class="py-2 rounded-xl border-2 font-body text-xs transition-all"
+                :class="modalMov.metodo_pago === m.value ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/40'"
+              >{{ m.label }}</button>
+            </div>
+          </div>
         </div>
 
         <div class="flex gap-3 mt-6">
@@ -296,7 +309,25 @@ const tabs = [
 ]
 
 const modalCuenta = ref({ visible: false, id: null, tipo: 'cliente', nombre: '', telefono: '', notas: '' })
-const modalMov    = ref({ visible: false, tipo: 'cargo', fecha: '', concepto: '', monto: '', items: [] })
+const modalMov    = ref({ visible: false, tipo: 'cargo', fecha: '', concepto: '', monto: '', items: [], metodo_pago: '' })
+
+const metodosPago = [
+  { value: 'efectivo',      label: 'Efectivo' },
+  { value: 'transferencia', label: 'Transferencia' },
+  { value: 'debito',        label: 'Débito' },
+  { value: 'credito',       label: 'Crédito' },
+  { value: 'qr',            label: 'QR' },
+]
+
+// Es un pago real de dinero (no un cargo a crédito)
+const esPagoReal = computed(() => {
+  if (!detalle.value) return false
+  // Cliente pagando su deuda → dinero entra
+  if (detalle.value.cuenta.tipo === 'cliente' && modalMov.value.tipo === 'pago') return true
+  // Nosotros pagando a proveedor → dinero sale
+  if (detalle.value.cuenta.tipo === 'proveedor' && modalMov.value.tipo === 'pago') return true
+  return false
+})
 
 const categoriasConProductos = computed(() => {
   const mapa = {}
@@ -413,7 +444,7 @@ async function abrirDetalle(c) {
 
 function abrirModalMov(tipo) {
   const hoy = new Date().toISOString().split('T')[0]
-  modalMov.value = { visible: true, tipo, fecha: hoy, concepto: '', monto: '', items: [] }
+  modalMov.value = { visible: true, tipo, fecha: hoy, concepto: '', monto: '', items: [], metodo_pago: '' }
   prodSelId.value = ''
   prodCant.value  = 1
 }
