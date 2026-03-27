@@ -220,6 +220,16 @@
           </button>
         </div>
 
+        <!-- Fecha -->
+        <div class="mb-4">
+          <label class="block font-body text-sm text-gray-500 mb-2">Fecha de venta</label>
+          <input
+            v-model="fechaVenta"
+            type="date"
+            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body focus:outline-none focus:border-teal transition-colors"
+          />
+        </div>
+
         <!-- Descuento -->
         <div class="mb-4">
           <label class="block font-body text-sm text-gray-500 mb-2">Descuento (%)</label>
@@ -436,6 +446,7 @@ const ventaAAnular          = ref(null)
 const anulando              = ref(false)
 const metodoPagoSeleccionado = ref('')
 const descuentoPct           = ref(0)
+const fechaVenta             = ref('')
 
 const metodosPago = [
   { value: 'efectivo',      label: 'Efectivo',      icon: '💵' },
@@ -534,6 +545,7 @@ function abrirModalPago() {
   if (!carrito.value.length) return
   metodoPagoSeleccionado.value = ''
   descuentoPct.value = 0
+  fechaVenta.value   = new Date().toISOString().split('T')[0]
   modalPago.value = true
 }
 
@@ -548,6 +560,7 @@ async function confirmarVenta() {
       tipo:        tipoVenta.value,
       metodo_pago: metodoPagoSeleccionado.value,
       descuento:   descuentoPct.value || 0,
+      fecha:       fechaVenta.value || undefined,
       items: carrito.value.map(i => ({
         producto_id: i.producto_id,
         cantidad:    i.cantidad,
