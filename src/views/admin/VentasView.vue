@@ -202,7 +202,7 @@
 
     <!-- Modal método de pago -->
     <div v-if="modalPago" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-md">
+      <div class="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h2 class="font-display text-xl font-bold text-gray-900 mb-6">Método de pago</h2>
 
         <div class="grid grid-cols-2 gap-3 mb-6">
