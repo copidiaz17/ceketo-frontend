@@ -202,30 +202,31 @@
 
     <!-- Modal método de pago -->
     <div v-if="modalPago" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h2 class="font-display text-xl font-bold text-gray-900 mb-6">Método de pago</h2>
+      <div class="bg-white border border-gray-200 rounded-2xl p-5 w-full max-w-md">
+        <h2 class="font-display text-lg font-bold text-gray-900 mb-4">Método de pago</h2>
 
-        <div class="grid grid-cols-2 gap-3 mb-6">
+        <!-- Métodos en grid compacto -->
+        <div class="grid grid-cols-3 gap-2 mb-4">
           <button
             v-for="metodo in metodosPago"
             :key="metodo.value"
             @click="metodoPagoSeleccionado = metodo.value"
-            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 font-body text-sm transition-all duration-200"
+            class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
             :class="metodoPagoSeleccionado === metodo.value
               ? 'bg-teal border-teal text-gray-900'
               : 'border-gray-200 text-gray-500 hover:border-teal/50 hover:text-gray-900'"
           >
-            <span class="text-2xl">{{ metodo.icon }}</span>
+            <span class="text-xl">{{ metodo.icon }}</span>
             {{ metodo.label }}
           </button>
         </div>
 
         <!-- Selector de cliente (solo cta corriente) -->
-        <div v-if="metodoPagoSeleccionado === 'cuenta_corriente'" class="mb-4">
-          <label class="block font-body text-sm text-gray-500 mb-2">Cliente *</label>
+        <div v-if="metodoPagoSeleccionado === 'cuenta_corriente'" class="mb-3">
+          <label class="block font-body text-xs text-gray-500 mb-1">Cliente *</label>
           <select
             v-model="cuentaSeleccionada"
-            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body focus:outline-none focus:border-teal transition-colors"
+            class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
           >
             <option value="">Seleccionar cliente...</option>
             <option v-for="c in clientesCta" :key="c.id" :value="c.id">
@@ -237,32 +238,31 @@
           </p>
         </div>
 
-        <!-- Fecha -->
-        <div class="mb-4">
-          <label class="block font-body text-sm text-gray-500 mb-2">Fecha de venta</label>
-          <input
-            v-model="fechaVenta"
-            type="date"
-            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body focus:outline-none focus:border-teal transition-colors"
-          />
-        </div>
-
-        <!-- Descuento -->
-        <div class="mb-4">
-          <label class="block font-body text-sm text-gray-500 mb-2">Descuento (%)</label>
-          <input
-            v-model.number="descuentoPct"
-            type="number"
-            min="0"
-            max="100"
-            placeholder="0"
-            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
-                   focus:outline-none focus:border-teal transition-colors"
-          />
+        <!-- Fecha y Descuento en una fila -->
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="block font-body text-xs text-gray-500 mb-1">Fecha</label>
+            <input
+              v-model="fechaVenta"
+              type="date"
+              class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+            />
+          </div>
+          <div>
+            <label class="block font-body text-xs text-gray-500 mb-1">Descuento (%)</label>
+            <input
+              v-model.number="descuentoPct"
+              type="number"
+              min="0"
+              max="100"
+              placeholder="0"
+              class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+            />
+          </div>
         </div>
 
         <!-- Resumen de montos -->
-        <div class="bg-gray-50 rounded-xl px-4 py-3 mb-6 space-y-2">
+        <div class="bg-gray-50 rounded-xl px-4 py-2 mb-4 space-y-1">
           <div class="flex justify-between font-body text-sm text-gray-500">
             <span>Subtotal</span>
             <span>${{ totalCarrito.toLocaleString('es-AR') }}</span>
@@ -271,7 +271,7 @@
             <span>Descuento ({{ descuentoPct }}%)</span>
             <span>− ${{ montoDescuento.toLocaleString('es-AR') }}</span>
           </div>
-          <div class="flex justify-between font-body font-bold text-gray-900 border-t border-gray-200 pt-2">
+          <div class="flex justify-between font-body font-bold text-gray-900 border-t border-gray-200 pt-1">
             <span>Total a cobrar</span>
             <span class="text-teal text-lg">${{ totalFinal.toLocaleString('es-AR') }}</span>
           </div>
@@ -280,12 +280,12 @@
         <div class="flex gap-3">
           <button
             @click="modalPago = false"
-            class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors"
+            class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors"
           >Cancelar</button>
           <button
             @click="confirmarVenta"
             :disabled="!metodoPagoSeleccionado || enviandoVenta || (metodoPagoSeleccionado === 'cuenta_corriente' && !cuentaSeleccionada)"
-            class="flex-1 py-3 bg-keto-orange text-gray-800 font-body font-semibold rounded-xl
+            class="flex-1 py-2.5 bg-keto-orange text-gray-800 font-body font-semibold rounded-xl
                    hover:bg-keto-orange/80 transition-all duration-200
                    disabled:opacity-40 disabled:cursor-not-allowed"
           >{{ enviandoVenta ? 'Procesando...' : 'Confirmar' }}</button>
