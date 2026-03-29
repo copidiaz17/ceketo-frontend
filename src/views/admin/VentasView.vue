@@ -234,14 +234,24 @@
           </select>
         </div>
 
-        <!-- Descuento -->
-        <div>
-          <label class="block font-body text-xs text-gray-500 mb-1">Descuento (%)</label>
-          <input
-            v-model.number="descuentoPct"
-            type="number" min="0" max="100" placeholder="0"
-            class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
-          />
+        <!-- Fecha y Descuento en la misma fila -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-body text-xs text-gray-500 mb-1">Fecha</label>
+            <input
+              v-model="fechaVenta"
+              type="date"
+              class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
+            />
+          </div>
+          <div>
+            <label class="block font-body text-xs text-gray-500 mb-1">Descuento (%)</label>
+            <input
+              v-model.number="descuentoPct"
+              type="number" min="0" max="100" placeholder="0"
+              class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
+            />
+          </div>
         </div>
 
         <!-- Total -->
