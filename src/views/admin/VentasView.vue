@@ -201,83 +201,93 @@
     </div>
 
     <!-- Modal método de pago -->
-    <div v-if="modalPago" class="fixed inset-0 bg-black/70 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div class="bg-white border border-gray-200 rounded-t-2xl sm:rounded-2xl p-5 w-full sm:max-w-md max-h-[92dvh] overflow-y-auto overscroll-contain">
-        <h2 class="font-display text-lg font-bold text-gray-900 mb-4">Método de pago</h2>
+    <div v-if="modalPago" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-md flex flex-col" style="max-height:90vh">
 
-        <!-- Métodos en grid compacto -->
-        <div class="grid grid-cols-3 gap-2 mb-4">
-          <button
-            v-for="metodo in metodosPago"
-            :key="metodo.value"
-            @click="metodoPagoSeleccionado = metodo.value"
-            class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
-            :class="metodoPagoSeleccionado === metodo.value
-              ? 'bg-teal border-teal text-gray-900'
-              : 'border-gray-200 text-gray-500 hover:border-teal/50 hover:text-gray-900'"
-          >
-            <span class="text-xl">{{ metodo.icon }}</span>
-            {{ metodo.label }}
-          </button>
+        <!-- Cabecera fija -->
+        <div class="px-5 pt-5 pb-3 border-b border-gray-100 shrink-0">
+          <h2 class="font-display text-lg font-bold text-gray-900">Método de pago</h2>
         </div>
 
-        <!-- Selector de cliente (solo cta corriente) -->
-        <div v-if="metodoPagoSeleccionado === 'cuenta_corriente'" class="mb-3">
-          <label class="block font-body text-xs text-gray-500 mb-1">Cliente *</label>
-          <select
-            v-model="cuentaSeleccionada"
-            class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
-          >
-            <option value="">Seleccionar cliente...</option>
-            <option v-for="c in clientesCta" :key="c.id" :value="c.id">
-              {{ c.nombre }}
-            </option>
-          </select>
-          <p v-if="!clientesCta.length" class="text-xs text-gray-400 mt-1 font-body">
-            No hay clientes en Cta. Corriente. Creá uno primero.
-          </p>
-        </div>
+        <!-- Contenido scrolleable -->
+        <div class="overflow-y-auto flex-1 px-5 py-3 space-y-3">
 
-        <!-- Fecha y Descuento en una fila -->
-        <div class="grid grid-cols-2 gap-3 mb-3">
-          <div>
-            <label class="block font-body text-xs text-gray-500 mb-1">Fecha</label>
-            <input
-              v-model="fechaVenta"
-              type="date"
+          <!-- Métodos en grid compacto -->
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="metodo in metodosPago"
+              :key="metodo.value"
+              @click="metodoPagoSeleccionado = metodo.value"
+              class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
+              :class="metodoPagoSeleccionado === metodo.value
+                ? 'bg-teal border-teal text-gray-900'
+                : 'border-gray-200 text-gray-500 hover:border-teal/50 hover:text-gray-900'"
+            >
+              <span class="text-xl">{{ metodo.icon }}</span>
+              {{ metodo.label }}
+            </button>
+          </div>
+
+          <!-- Selector de cliente (solo cta corriente) -->
+          <div v-if="metodoPagoSeleccionado === 'cuenta_corriente'">
+            <label class="block font-body text-xs text-gray-500 mb-1">Cliente *</label>
+            <select
+              v-model="cuentaSeleccionada"
               class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
-            />
+            >
+              <option value="">Seleccionar cliente...</option>
+              <option v-for="c in clientesCta" :key="c.id" :value="c.id">
+                {{ c.nombre }}
+              </option>
+            </select>
+            <p v-if="!clientesCta.length" class="text-xs text-gray-400 mt-1 font-body">
+              No hay clientes en Cta. Corriente. Creá uno primero.
+            </p>
           </div>
-          <div>
-            <label class="block font-body text-xs text-gray-500 mb-1">Descuento (%)</label>
-            <input
-              v-model.number="descuentoPct"
-              type="number"
-              min="0"
-              max="100"
-              placeholder="0"
-              class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
-            />
+
+          <!-- Fecha y Descuento en una fila -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-body text-xs text-gray-500 mb-1">Fecha</label>
+              <input
+                v-model="fechaVenta"
+                type="date"
+                class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+              />
+            </div>
+            <div>
+              <label class="block font-body text-xs text-gray-500 mb-1">Descuento (%)</label>
+              <input
+                v-model.number="descuentoPct"
+                type="number"
+                min="0"
+                max="100"
+                placeholder="0"
+                class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+              />
+            </div>
           </div>
+
+          <!-- Resumen de montos -->
+          <div class="bg-gray-50 rounded-xl px-4 py-2 space-y-1">
+            <div class="flex justify-between font-body text-sm text-gray-500">
+              <span>Subtotal</span>
+              <span>${{ totalCarrito.toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="descuentoPct > 0" class="flex justify-between font-body text-sm text-red-400">
+              <span>Descuento ({{ descuentoPct }}%)</span>
+              <span>− ${{ montoDescuento.toLocaleString('es-AR') }}</span>
+            </div>
+            <div class="flex justify-between font-body font-bold text-gray-900 border-t border-gray-200 pt-1">
+              <span>Total a cobrar</span>
+              <span class="text-teal text-lg">${{ totalFinal.toLocaleString('es-AR') }}</span>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Resumen de montos -->
-        <div class="bg-gray-50 rounded-xl px-4 py-2 mb-4 space-y-1">
-          <div class="flex justify-between font-body text-sm text-gray-500">
-            <span>Subtotal</span>
-            <span>${{ totalCarrito.toLocaleString('es-AR') }}</span>
-          </div>
-          <div v-if="descuentoPct > 0" class="flex justify-between font-body text-sm text-red-400">
-            <span>Descuento ({{ descuentoPct }}%)</span>
-            <span>− ${{ montoDescuento.toLocaleString('es-AR') }}</span>
-          </div>
-          <div class="flex justify-between font-body font-bold text-gray-900 border-t border-gray-200 pt-1">
-            <span>Total a cobrar</span>
-            <span class="text-teal text-lg">${{ totalFinal.toLocaleString('es-AR') }}</span>
-          </div>
-        </div>
-
-        <div class="flex gap-3">
+        <!-- Botones siempre visibles abajo -->
+        <div class="px-5 py-4 border-t border-gray-100 shrink-0 flex gap-3">
           <button
             @click="modalPago = false"
             class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors"
@@ -290,6 +300,7 @@
                    disabled:opacity-40 disabled:cursor-not-allowed"
           >{{ enviandoVenta ? 'Procesando...' : 'Confirmar' }}</button>
         </div>
+
       </div>
     </div>
 
