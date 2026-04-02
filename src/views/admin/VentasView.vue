@@ -83,36 +83,41 @@
           </div>
         </div>
 
-        <!-- Selector manual -->
-        <div class="bg-white border border-gray-200 rounded-2xl p-6">
-          <h2 class="font-display text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span>📋</span> Seleccionar producto
-          </h2>
-          <div class="mb-4">
-            <ProductSelect
-              v-model="selectedId"
-              :grupos="categoriasConProductos"
-            />
+        <!-- Selector por categoría + grid de productos -->
+        <div class="bg-white border border-gray-200 rounded-2xl p-4">
+          <!-- Tabs de categorías -->
+          <div class="flex flex-wrap gap-2 mb-4">
+            <button
+              v-for="cat in categoriasConProductos"
+              :key="cat.codigo"
+              @click="categoriaActiva = cat.codigo"
+              class="px-3 py-1.5 rounded-xl font-body text-sm border-2 transition-all duration-200"
+              :class="categoriaActiva === cat.codigo
+                ? 'bg-teal border-teal text-gray-900 font-semibold'
+                : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+            >{{ cat.nombre }}</button>
           </div>
 
-          <div class="flex gap-3 items-end">
-            <div class="flex-1">
-              <label class="block font-body text-xs text-gray-400 mb-1">Cantidad</label>
-              <input
-                v-model.number="cantidadVenta"
-                type="number"
-                min="1"
-                class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
-                       focus:outline-none focus:border-teal transition-colors"
-              />
-            </div>
+          <!-- Grid de productos -->
+          <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
             <button
-              @click="agregarDesdeSelector"
-              :disabled="!selectedId"
-              class="px-5 py-3 bg-teal/20 border border-teal text-teal rounded-xl font-body text-sm
-                     hover:bg-teal hover:text-gray-900 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              v-for="prod in productosFiltrados"
+              :key="prod.id"
+              @click="agregarAlCarrito(prod, 1)"
+              class="flex flex-col items-center gap-1 p-2 rounded-xl border border-gray-200
+                     hover:border-teal hover:bg-teal/5 active:scale-95 transition-all duration-150 text-center"
             >
-              + Agregar
+              <div class="w-full aspect-square rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  v-if="prod.imagen"
+                  :src="prod.imagen"
+                  :alt="prod.nombre"
+                  class="w-full h-full object-cover"
+                />
+                <div v-else class="w-full h-full flex items-center justify-center text-gray-300 text-2xl">🛒</div>
+              </div>
+              <p class="font-body text-xs text-gray-800 leading-tight line-clamp-2 w-full">{{ prod.nombre }}</p>
+              <p class="font-body text-xs font-bold text-teal">${{ parseFloat(prod.precio).toLocaleString('es-AR') }}</p>
             </button>
           </div>
         </div>
@@ -480,6 +485,7 @@ const hoyISO                 = new Date().toISOString().split('T')[0]
 const filtroFecha            = ref(hoyISO)
 const clientesCta            = ref([])
 const cuentaSeleccionada     = ref('')
+const categoriaActiva        = ref('')
 
 const metodosPago = [
   { value: 'efectivo',          label: 'Efectivo',       icon: '💵' },
@@ -498,6 +504,11 @@ const categoriasConProductos = computed(() => {
     mapa[key].productos.push(p)
   }
   return Object.values(mapa)
+})
+
+const productosFiltrados = computed(() => {
+  const cat = categoriasConProductos.value.find(c => c.codigo === categoriaActiva.value)
+  return cat?.productos || []
 })
 
 const totalCarrito = computed(() =>
@@ -928,6 +939,10 @@ function imprimirTicketFallback(v) {
 async function cargarProductos() {
   const { data } = await axios.get('/api/productos?limit=500')
   productos.value = data
+  if (!categoriaActiva.value && data.length) {
+    const primeraCategoria = data[0]?.categoria?.codigo
+    if (primeraCategoria) categoriaActiva.value = primeraCategoria
+  }
 }
 
 async function cargarClientesCta() {
