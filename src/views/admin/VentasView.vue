@@ -547,7 +547,7 @@ const filtroFechaLabel = computed(() => {
 })
 
 function formatHora(fecha) {
-  return new Date(fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+  return new Date(fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
 }
 
 function onBarcodeInput() {
