@@ -1019,10 +1019,13 @@ async function cargarClientesCta() {
 async function cargarHistorial() {
   try {
     const { data } = await axios.get('/api/ventas')
-    historialVentas.value = data.filter(v => {
-      const arDate = new Date(v.fecha).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
-      return arDate === filtroFecha.value
-    }).slice(0, 50)
+    historialVentas.value = data
+      .filter(v => {
+        const arDate = new Date(v.fecha).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+        return arDate === filtroFecha.value
+      })
+      .sort((a, b) => b.id - a.id)
+      .slice(0, 50)
   } catch { historialVentas.value = [] }
 }
 
