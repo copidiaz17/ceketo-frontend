@@ -304,7 +304,8 @@ async function guardarModal() {
       productos.value.unshift(data)
       mostrarToast('✓ Producto creado')
     } else {
-      await axios.put(`/api/productos/${modal.value.productoId}`, body, { headers: { Authorization: `Bearer ${token}` } })
+      const { stock: _stock, ...bodySinStock } = body
+      await axios.put(`/api/productos/${modal.value.productoId}`, bodySinStock, { headers: { Authorization: `Bearer ${token}` } })
       const idx = productos.value.findIndex(p => p.id === modal.value.productoId)
       if (idx !== -1) {
         // Recargar producto con categoría incluida
