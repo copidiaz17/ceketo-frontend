@@ -211,23 +211,26 @@
 
         <h2 class="font-display text-lg font-bold text-gray-900">Método de pago</h2>
 
-        <!-- Métodos en grid 3 cols -->
-        <div class="grid grid-cols-3 gap-2">
-          <button
-            v-for="metodo in metodosPago"
-            :key="metodo.value"
-            @click="metodoPagoSeleccionado = metodo.value"
-            class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
-            :class="metodoPagoSeleccionado === metodo.value
-              ? 'bg-teal border-teal text-gray-900'
-              : 'border-gray-200 text-gray-500 hover:border-teal/50'"
-          >
-            <span class="text-lg">{{ metodo.icon }}</span>
-            {{ metodo.label }}
-          </button>
+        <!-- Primer método -->
+        <div>
+          <label class="block font-body text-xs text-gray-500 mb-1.5">{{ pagoDoble ? '1° método' : 'Método' }}</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="metodo in metodosPago"
+              :key="metodo.value"
+              @click="metodoPagoSeleccionado = metodo.value"
+              class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
+              :class="metodoPagoSeleccionado === metodo.value
+                ? 'bg-teal border-teal text-gray-900'
+                : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+            >
+              <span class="text-lg">{{ metodo.icon }}</span>
+              {{ metodo.label }}
+            </button>
+          </div>
         </div>
 
-        <!-- Cliente (solo cta corriente) -->
+        <!-- Cliente (solo cta corriente en primer método) -->
         <div v-if="metodoPagoSeleccionado === 'cuenta_corriente'">
           <label class="block font-body text-xs text-gray-500 mb-1">Cliente *</label>
           <select
@@ -239,7 +242,48 @@
           </select>
         </div>
 
-        <!-- Fecha y Descuento en la misma fila -->
+        <!-- Toggle pago dividido -->
+        <button
+          v-if="metodoPagoSeleccionado && metodoPagoSeleccionado !== 'cuenta_corriente'"
+          @click="pagoDoble = !pagoDoble; metodoPago2 = ''; montoPago2 = ''"
+          class="w-full py-2 rounded-xl border-2 font-body text-sm transition-all duration-200"
+          :class="pagoDoble ? 'border-teal bg-teal/10 text-teal font-semibold' : 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400'"
+        >
+          {{ pagoDoble ? '✓ Pago dividido activado' : '＋ Dividir en dos formas de pago' }}
+        </button>
+
+        <!-- Segundo método -->
+        <div v-if="pagoDoble" class="space-y-2 bg-teal/5 border border-teal/20 rounded-xl p-3">
+          <label class="block font-body text-xs text-gray-500">2° método</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="metodo in metodosPago.filter(m => m.value !== 'cuenta_corriente' && m.value !== metodoPagoSeleccionado)"
+              :key="metodo.value"
+              @click="metodoPago2 = metodo.value"
+              class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
+              :class="metodoPago2 === metodo.value
+                ? 'bg-teal border-teal text-gray-900'
+                : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+            >
+              <span class="text-lg">{{ metodo.icon }}</span>
+              {{ metodo.label }}
+            </button>
+          </div>
+          <div v-if="metodoPago2">
+            <label class="block font-body text-xs text-gray-500 mb-1">Monto con {{ metodosPago.find(m=>m.value===metodoPago2)?.label }}</label>
+            <input
+              v-model.number="montoPago2"
+              type="number" min="1" :max="totalFinal - 1" placeholder="0"
+              class="w-full px-3 py-2 rounded-xl bg-white border border-teal/30 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
+            />
+            <p v-if="montoPago2 > 0" class="font-body text-xs text-gray-400 mt-1">
+              {{ metodosPago.find(m=>m.value===metodoPagoSeleccionado)?.label }}: ${{ (totalFinal - montoPago2).toLocaleString('es-AR') }} ·
+              {{ metodosPago.find(m=>m.value===metodoPago2)?.label }}: ${{ Number(montoPago2).toLocaleString('es-AR') }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Fecha y Descuento -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-body text-xs text-gray-500 mb-1">Fecha</label>
@@ -273,7 +317,9 @@
           >Cancelar</button>
           <button
             @click="confirmarVenta"
-            :disabled="!metodoPagoSeleccionado || enviandoVenta || (metodoPagoSeleccionado === 'cuenta_corriente' && !cuentaSeleccionada)"
+            :disabled="!metodoPagoSeleccionado || enviandoVenta
+              || (metodoPagoSeleccionado === 'cuenta_corriente' && !cuentaSeleccionada)
+              || (pagoDoble && (!metodoPago2 || !montoPago2 || montoPago2 <= 0 || montoPago2 >= totalFinal))"
             class="flex-1 py-2.5 bg-keto-orange text-gray-800 font-body font-semibold rounded-xl hover:bg-keto-orange/80 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >{{ enviandoVenta ? 'Procesando...' : 'Confirmar' }}</button>
         </div>
@@ -346,7 +392,10 @@
                 <span v-if="v.metodo_pago" class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
                   {{ metodosPago.find(m => m.value === v.metodo_pago)?.label || v.metodo_pago }}
                 </span>
-                <span v-else class="text-gray-300">—</span>
+                <span v-if="v.metodo_pago2" class="ml-1 px-2 py-0.5 rounded-full text-xs bg-teal/10 text-teal">
+                  + {{ metodosPago.find(m => m.value === v.metodo_pago2)?.label || v.metodo_pago2 }}
+                </span>
+                <span v-if="!v.metodo_pago" class="text-gray-300">—</span>
               </td>
               <td class="py-3 text-right font-bold text-teal">${{ parseFloat(v.total).toLocaleString('es-AR') }}</td>
               <td class="py-3 pl-4 text-right">
@@ -373,7 +422,14 @@
         <div class="flex justify-between items-start mb-4">
           <div>
             <h2 class="font-display text-xl font-bold text-gray-900">Venta #{{ ventaDetalle.id }}</h2>
-            <p class="font-body text-sm text-gray-400">{{ formatHora(ventaDetalle.fecha) }} · {{ metodosPago.find(m => m.value === ventaDetalle.metodo_pago)?.label || '—' }}</p>
+            <p class="font-body text-sm text-gray-400">
+              {{ formatHora(ventaDetalle.fecha) }} ·
+              {{ metodosPago.find(m => m.value === ventaDetalle.metodo_pago)?.label || '—' }}
+              <template v-if="ventaDetalle.metodo_pago2">
+                + {{ metodosPago.find(m => m.value === ventaDetalle.metodo_pago2)?.label }}
+                (${{ parseFloat(ventaDetalle.monto_pago2).toLocaleString('es-AR') }})
+              </template>
+            </p>
           </div>
           <button @click="ventaDetalle = null" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
         </div>
@@ -479,6 +535,9 @@ const impresoraError        = ref('')
 const ventaAAnular          = ref(null)
 const anulando              = ref(false)
 const metodoPagoSeleccionado = ref('')
+const pagoDoble              = ref(false)
+const metodoPago2            = ref('')
+const montoPago2             = ref('')
 const descuentoPct           = ref(0)
 const fechaVenta             = ref('')
 const hoyISO                 = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
@@ -612,8 +671,11 @@ function agregarAlCarrito(prod, cant) {
 function abrirModalPago() {
   if (!carrito.value.length) return
   metodoPagoSeleccionado.value = ''
+  pagoDoble.value   = false
+  metodoPago2.value = ''
+  montoPago2.value  = ''
   descuentoPct.value = 0
-  fechaVenta.value   = new Date().toISOString().split('T')[0]
+  fechaVenta.value   = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
   cuentaSeleccionada.value = ''
   modalPago.value = true
 }
@@ -626,11 +688,13 @@ async function confirmarVenta() {
   try {
     const token = localStorage.getItem('ceketo_token')
     const { data } = await axios.post('/api/ventas', {
-      tipo:        tipoVenta.value,
-      metodo_pago: metodoPagoSeleccionado.value,
-      descuento:   descuentoPct.value || 0,
-      fecha:       fechaVenta.value || undefined,
-      cuenta_id:   metodoPagoSeleccionado.value === 'cuenta_corriente' ? (cuentaSeleccionada.value || undefined) : undefined,
+      tipo:          tipoVenta.value,
+      metodo_pago:   metodoPagoSeleccionado.value,
+      metodo_pago2:  pagoDoble.value ? metodoPago2.value : undefined,
+      monto_pago2:   pagoDoble.value ? montoPago2.value : undefined,
+      descuento:     descuentoPct.value || 0,
+      fecha:         fechaVenta.value || undefined,
+      cuenta_id:     metodoPagoSeleccionado.value === 'cuenta_corriente' ? (cuentaSeleccionada.value || undefined) : undefined,
       items: carrito.value.map(i => ({
         producto_id: i.producto_id,
         cantidad:    i.cantidad,
