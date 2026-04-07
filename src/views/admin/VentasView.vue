@@ -481,7 +481,7 @@ const anulando              = ref(false)
 const metodoPagoSeleccionado = ref('')
 const descuentoPct           = ref(0)
 const fechaVenta             = ref('')
-const hoyISO                 = new Date().toISOString().split('T')[0]
+const hoyISO                 = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
 const filtroFecha            = ref(hoyISO)
 const clientesCta            = ref([])
 const cuentaSeleccionada     = ref('')
@@ -956,10 +956,9 @@ async function cargarHistorial() {
   try {
     const { data } = await axios.get('/api/ventas')
     historialVentas.value = data.filter(v => {
-      const d = new Date(v.fecha)
-      const localDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-      return localDate === filtroFecha.value
-    }).reverse().slice(0, 50)  // orden ascendente (más antigua primero)
+      const arDate = new Date(v.fecha).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+      return arDate === filtroFecha.value
+    }).slice(0, 50)
   } catch { historialVentas.value = [] }
 }
 
