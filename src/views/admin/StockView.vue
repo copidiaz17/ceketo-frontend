@@ -14,6 +14,10 @@
           @click="descargarPDF"
           class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
         >📄 Descargar PDF</button>
+        <button
+          @click="descargarExcel"
+          class="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl font-body text-sm font-medium hover:bg-green-700 transition-colors"
+        >📊 Descargar Excel</button>
       </div>
     </div>
 
@@ -203,6 +207,7 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import html2pdf from 'html2pdf.js'
+import * as XLSX from 'xlsx'
 const productos        = ref([])
 const filtroCategoria  = ref('')
 const busqueda         = ref('')
@@ -408,6 +413,38 @@ function descargarPDF() {
     .from(el)
     .save()
     .then(() => document.body.removeChild(el))
+}
+
+function descargarExcel() {
+  const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const hora  = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+
+  const filas = productosFiltrados.value.map(p => ({
+    'Código':     p.codigo,
+    'Nombre':     p.nombre,
+    'Categoría':  p.categoria?.nombre || '—',
+    'Precio':     parseFloat(p.precio),
+    'Stock':      p.stock,
+    'Estado':     p.stock === 0 ? 'Sin stock' : p.stock < 5 ? 'Stock bajo' : 'OK',
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(filas)
+
+  // Ancho de columnas
+  ws['!cols'] = [
+    { wch: 12 }, // Código
+    { wch: 35 }, // Nombre
+    { wch: 18 }, // Categoría
+    { wch: 12 }, // Precio
+    { wch: 8 },  // Stock
+    { wch: 12 }, // Estado
+  ]
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Stock')
+
+  const nombreArchivo = `ceketo-stock-${fecha.replace(/\//g, '-')}.xlsx`
+  XLSX.writeFile(wb, nombreArchivo)
 }
 
 onMounted(async () => {
