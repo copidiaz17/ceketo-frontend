@@ -693,7 +693,7 @@ async function confirmarVenta() {
       metodo_pago2:  pagoDoble.value ? metodoPago2.value : undefined,
       monto_pago2:   pagoDoble.value ? montoPago2.value : undefined,
       descuento:     descuentoPct.value || 0,
-      fecha:         fechaVenta.value || undefined,
+      fecha:         fechaVenta.value !== hoyISO ? fechaVenta.value : undefined,
       cuenta_id:     metodoPagoSeleccionado.value === 'cuenta_corriente' ? (cuentaSeleccionada.value || undefined) : undefined,
       items: carrito.value.map(i => ({
         producto_id: i.producto_id,
