@@ -10,6 +10,9 @@ if (import.meta.env.VITE_API_BASE_URL) {
   axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL
 }
 
+// Timeout global: si el servidor no responde en 20s, falla rápido en lugar de colgar
+axios.defaults.timeout = 20000
+
 // Inyectar token JWT automáticamente en todas las peticiones cuando existe
 axios.interceptors.request.use(config => {
   const token = localStorage.getItem('ceketo_token')

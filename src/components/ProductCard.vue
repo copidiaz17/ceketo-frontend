@@ -4,9 +4,12 @@
     <!-- Image container -->
     <div class="relative overflow-hidden h-64">
       <img
-        :src="product.image || '/images/prod1.jpg'"
+        :src="optimizedImage(product.image)"
         :alt="product.name"
         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        loading="lazy"
+        width="400"
+        height="256"
         @error="$event.target.src = '/images/prod1.jpg'"
       />
 
@@ -96,6 +99,13 @@ const props = defineProps({
 
 const cartStore = useCartStore()
 const showAdded = ref(false)
+
+// Aplica transformaciones de Cloudinary para reducir tamaño en mobile
+function optimizedImage(url) {
+  if (!url || !url.includes('cloudinary.com')) return url || '/images/prod1.jpg'
+  // Inserta parámetros: ancho 400px, calidad automática, formato WebP automático
+  return url.replace('/upload/', '/upload/c_scale,w_400,q_auto,f_auto/')
+}
 
 function addToCart() {
   cartStore.addItem(props.product)
