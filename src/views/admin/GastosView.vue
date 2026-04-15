@@ -6,12 +6,22 @@
         <h1 class="font-display text-3xl font-bold text-gray-900">Gastos</h1>
         <p class="font-body text-gray-500 mt-1">Registro de costos operativos</p>
       </div>
-      <button
-        @click="abrirModal()"
-        class="flex items-center gap-2 bg-teal text-gray-900 px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-teal-dark transition-colors"
-      >
-        + Registrar gasto
-      </button>
+      <div class="flex gap-2 flex-wrap">
+        <button
+          v-if="gastos.length"
+          @click="descargarPDF"
+          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
+        >📄 PDF</button>
+        <button
+          v-if="gastos.length"
+          @click="descargarExcel"
+          class="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl font-body text-sm font-medium hover:bg-green-700 transition-colors"
+        >📊 Excel</button>
+        <button
+          @click="abrirModal()"
+          class="flex items-center gap-2 bg-keto-orange text-gray-900 px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-keto-orange/80 transition-colors"
+        >+ Registrar gasto</button>
+      </div>
     </div>
 
     <!-- Resumen cards -->
@@ -322,13 +332,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import html2pdf from 'html2pdf.js'
+import * as XLSX from 'xlsx'
 
 const gastos         = ref([])
 const categorias     = ref([])
 const resumen        = ref({})
 const totalMes       = ref(0)
 const loading        = ref(true)
-const filtroMes      = ref(new Date().toISOString().slice(0, 7))
+const filtroMes      = ref(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).slice(0, 7))
 const filtroCategoria = ref('')
 const visorSrc       = ref(null)
 
@@ -432,7 +444,7 @@ function abrirModal(g = null) {
       alicuota_iva: g.alicuota_iva ? String(g.alicuota_iva) : '',
     }
   } else {
-    const hoy = new Date().toISOString().split('T')[0]
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
     modal.value = {
       visible: true, id: null, guardando: false,
       fecha: hoy, categoria: '', descripcion: '', monto: '', proveedor: '',
@@ -482,6 +494,80 @@ async function eliminar(g) {
   } catch {
     alert('Error al eliminar')
   }
+}
+
+// ── Exportar ─────────────────────────────────────────────────────
+function descargarPDF() {
+  const mes = mesLabel.value
+  const el = document.createElement('div')
+  el.style.cssText = 'font-family:Arial,sans-serif;font-size:11px;color:#111;padding:20px;width:190mm'
+
+  const resumenHTML = resumenCards.value.map(c =>
+    `<div style="min-width:90px"><div style="font-size:10px;color:#555">${c.icon} ${c.nombre}</div><div style="font-size:13px;font-weight:bold;color:#2a9d8f">$${formatNum(c.total)}</div></div>`
+  ).join('')
+
+  const filas = gastos.value.map((g, i) => {
+    const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb'
+    return `<tr style="background:${bg}">
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb">${formatFecha(g.fecha)}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb">${g.categoria}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb">${g.descripcion}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb">${g.proveedor || '—'}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:bold;color:#2a9d8f">$${formatNum(g.monto)}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;text-align:right">${g.es_factura && g.iva_monto ? '$'+formatNum(g.iva_monto) : '—'}</td>
+    </tr>`
+  }).join('')
+
+  el.innerHTML = `
+    <h1 style="font-size:20px;font-weight:bold;margin-bottom:2px">CEKETO — Gastos</h1>
+    <p style="font-size:11px;color:#666;margin-bottom:14px">${mes}${filtroCategoria.value ? ' · ' + filtroCategoria.value : ''}</p>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;background:#f0fdf9;padding:10px 14px;border-radius:8px;margin-bottom:16px;border:1px solid #d1fae5">
+      ${resumenHTML}
+      <div style="min-width:90px"><div style="font-size:10px;color:#555">TOTAL</div><div style="font-size:13px;font-weight:bold;color:#111">$${formatNum(totalFiltrado.value)}</div></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#2a9d8f;color:white">
+        <th style="padding:7px 8px;text-align:left">Fecha</th>
+        <th style="padding:7px 8px;text-align:left">Categoría</th>
+        <th style="padding:7px 8px;text-align:left">Descripción</th>
+        <th style="padding:7px 8px;text-align:left">Proveedor</th>
+        <th style="padding:7px 8px;text-align:right">Monto</th>
+        <th style="padding:7px 8px;text-align:right">IVA</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>
+    <p style="margin-top:16px;font-size:10px;color:#999;text-align:right">CEKETO · Independencia 663, Santiago del Estero</p>
+  `
+  document.body.appendChild(el)
+  html2pdf().set({
+    margin: [8, 8, 8, 8],
+    filename: `gastos-ceketo-${filtroMes.value}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  }).from(el).save().then(() => document.body.removeChild(el))
+}
+
+function descargarExcel() {
+  const filas = gastos.value.map(g => ({
+    'Fecha':        formatFecha(g.fecha),
+    'Categoría':    g.categoria,
+    'Descripción':  g.descripcion,
+    'Proveedor':    g.proveedor || '—',
+    'Monto ($)':    parseFloat(g.monto),
+    'Factura':      g.es_factura ? 'Sí' : 'No',
+    'IVA ($)':      g.iva_monto ? parseFloat(g.iva_monto) : '',
+    'Alícuota IVA': g.alicuota_iva ? g.alicuota_iva + '%' : '',
+    'Método pago':  g.metodo_pago || '—',
+  }))
+  const ws = XLSX.utils.json_to_sheet(filas)
+  ws['!cols'] = [
+    { wch: 10 }, { wch: 16 }, { wch: 35 }, { wch: 20 },
+    { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 16 },
+  ]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Gastos')
+  XLSX.writeFile(wb, `gastos-ceketo-${filtroMes.value}.xlsx`)
 }
 
 // ── Init ─────────────────────────────────────────────────────────

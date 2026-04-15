@@ -346,6 +346,16 @@
             @click="filtroFecha = hoyISO; cargarHistorial()"
             class="px-3 py-2 rounded-xl bg-teal/10 text-teal font-body text-sm hover:bg-teal/20 transition-colors"
           >Hoy</button>
+          <button
+            v-if="historialVentas.length"
+            @click="descargarPDFVentas"
+            class="px-4 py-2 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
+          >📄 PDF</button>
+          <button
+            v-if="historialVentas.length"
+            @click="descargarExcelVentas"
+            class="px-4 py-2 bg-green-600 text-white rounded-xl font-body text-sm font-medium hover:bg-green-700 transition-colors"
+          >📊 Excel</button>
         </div>
       </div>
       <!-- Resumen rápido del día filtrado -->
@@ -508,6 +518,8 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import axios from 'axios'
+import html2pdf from 'html2pdf.js'
+import * as XLSX from 'xlsx'
 import ProductSelect from '@/components/admin/ProductSelect.vue'
 import { conectarImpresora, imprimirTicketESCPOS } from '@/utils/printer.js'
 
@@ -1027,6 +1039,116 @@ async function cargarHistorial() {
       .sort((a, b) => b.id - a.id)
       .slice(0, 50)
   } catch { historialVentas.value = [] }
+}
+
+function descargarPDFVentas() {
+  const fechaLabel = filtroFechaLabel.value
+  const [y, m, d] = filtroFecha.value.split('-')
+  const fechaFormateada = `${d}/${m}/${y}`
+  const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
+
+  const resumenHTML = resumenMetodos.value.map(r =>
+    `<div class="resumen-item"><div class="label">${r.label}</div><div class="valor">$${r.total.toLocaleString('es-AR')}</div></div>`
+  ).join('') +
+  `<div class="resumen-item total-dia"><div class="label">TOTAL</div><div class="valor">$${totalDia.value.toLocaleString('es-AR')}</div></div>`
+
+  const filasHTML = historialVentas.value.map((v, i) => {
+    const hora = formatHora(v.fecha)
+    const tipo = v.tipo || 'local'
+    const metodo = metodosPago.find(x => x.value === v.metodo_pago)?.label || v.metodo_pago || '—'
+    const metodo2 = v.metodo_pago2 ? ` + ${metodosPago.find(x => x.value === v.metodo_pago2)?.label || v.metodo_pago2}` : ''
+    const nItems = v.items?.length || 0
+    const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb'
+    return `<tr style="background:${bg}">
+      <td>#${v.id}</td>
+      <td>${hora}</td>
+      <td>${tipo}</td>
+      <td>${nItems} item(s)</td>
+      <td>${metodo}${metodo2}</td>
+      <td style="text-align:right;font-weight:bold;color:#2a9d8f">$${parseFloat(v.total).toLocaleString('es-AR')}</td>
+    </tr>`
+  }).join('')
+
+  const el = document.createElement('div')
+  el.style.cssText = 'font-family:Arial,sans-serif;font-size:11px;color:#111;padding:20px;width:190mm'
+  el.innerHTML = `
+    <h1 style="font-size:20px;font-weight:bold;margin-bottom:2px">CEKETO — Ventas</h1>
+    <p style="font-size:11px;color:#666;margin-bottom:14px">Fecha: ${fechaLabel} · Generado a las ${hora} hs</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;background:#f0fdf9;padding:10px 14px;border-radius:8px;border:1px solid #d1fae5">
+      ${resumenHTML}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead>
+        <tr style="background:#2a9d8f;color:white">
+          <th style="padding:7px 8px;text-align:left">#</th>
+          <th style="padding:7px 8px;text-align:left">Hora</th>
+          <th style="padding:7px 8px;text-align:left">Tipo</th>
+          <th style="padding:7px 8px;text-align:left">Items</th>
+          <th style="padding:7px 8px;text-align:left">Método pago</th>
+          <th style="padding:7px 8px;text-align:right">Total</th>
+        </tr>
+      </thead>
+      <tbody>${filasHTML}</tbody>
+    </table>
+    <p style="margin-top:16px;font-size:10px;color:#999;text-align:right">CEKETO · Independencia 663, Santiago del Estero</p>
+  `
+  // Estilos inline para el resumen
+  el.querySelectorAll('.resumen-item').forEach(el => {
+    el.style.cssText = 'min-width:100px'
+  })
+  el.querySelectorAll('.label').forEach(el => {
+    el.style.cssText = 'font-size:10px;color:#555;margin-bottom:2px'
+  })
+  el.querySelectorAll('.valor').forEach(el => {
+    el.style.cssText = 'font-size:14px;font-weight:bold;color:#2a9d8f'
+  })
+  el.querySelectorAll('.total-dia .valor').forEach(el => {
+    el.style.cssText = 'font-size:14px;font-weight:bold;color:#111'
+  })
+
+  document.body.appendChild(el)
+  html2pdf().set({
+    margin: [8, 8, 8, 8],
+    filename: `ventas-ceketo-${filtroFecha.value}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  }).from(el).save().then(() => document.body.removeChild(el))
+}
+
+function descargarExcelVentas() {
+  // Hoja 1: resumen por método de pago
+  const resumenFilas = resumenMetodos.value.map(r => ({
+    'Método de pago': r.label,
+    'Total ($)': r.total,
+  }))
+  resumenFilas.push({ 'Método de pago': 'TOTAL', 'Total ($)': totalDia.value })
+  const wsResumen = XLSX.utils.json_to_sheet(resumenFilas)
+  wsResumen['!cols'] = [{ wch: 22 }, { wch: 14 }]
+
+  // Hoja 2: detalle de ventas
+  const detalleFilas = historialVentas.value.map(v => ({
+    '#':            v.id,
+    'Hora':         formatHora(v.fecha),
+    'Tipo':         v.tipo || 'local',
+    'Items':        v.items?.length || 0,
+    'Método pago':  metodosPago.find(x => x.value === v.metodo_pago)?.label || v.metodo_pago || '—',
+    'Método pago 2': v.metodo_pago2 ? metodosPago.find(x => x.value === v.metodo_pago2)?.label || v.metodo_pago2 : '',
+    'Monto pago 2': v.monto_pago2 ? parseFloat(v.monto_pago2) : '',
+    'Descuento (%)': v.descuento || 0,
+    'Total ($)':    parseFloat(v.total),
+  }))
+  const wsDetalle = XLSX.utils.json_to_sheet(detalleFilas)
+  wsDetalle['!cols'] = [
+    { wch: 6 }, { wch: 8 }, { wch: 8 }, { wch: 6 },
+    { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 12 },
+  ]
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
+  XLSX.utils.book_append_sheet(wb, wsDetalle, 'Ventas')
+
+  XLSX.writeFile(wb, `ventas-ceketo-${filtroFecha.value}.xlsx`)
 }
 
 onMounted(async () => {

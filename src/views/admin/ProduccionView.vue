@@ -103,7 +103,12 @@
               @click="descargarPDF"
               class="flex-1 py-3 border border-brand-green text-brand-green font-body text-sm font-medium rounded-xl
                      hover:bg-brand-green hover:text-white transition-colors"
-            >⬇️ Descargar PDF</button>
+            >⬇️ PDF</button>
+            <button
+              @click="descargarExcel()"
+              class="flex-1 py-3 bg-green-600 text-white font-body text-sm font-medium rounded-xl
+                     hover:bg-green-700 transition-colors"
+            >📊 Excel</button>
           </div>
 
           <p v-if="mensajeOk" class="text-teal text-sm text-center mt-3 font-body">{{ mensajeOk }}</p>
@@ -175,7 +180,11 @@
         <button
           @click="descargarPDFLote(loteDetalle)"
           class="flex-1 py-2 border border-brand-green text-brand-green font-body text-sm rounded-xl hover:bg-brand-green hover:text-white transition-colors"
-        >⬇️ Descargar PDF</button>
+        >⬇️ PDF</button>
+        <button
+          @click="descargarExcelLote(loteDetalle)"
+          class="flex-1 py-2 bg-green-600 text-white font-body text-sm rounded-xl hover:bg-green-700 transition-colors"
+        >📊 Excel</button>
         <button
           @click="confirmarEliminarLote(loteDetalle); loteDetalle = null"
           class="flex-1 py-2 border border-red-200 text-red-400 font-body text-sm rounded-xl hover:bg-red-50 transition-colors"
@@ -206,6 +215,7 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import html2pdf from 'html2pdf.js'
+import * as XLSX from 'xlsx'
 import ProductSelect from '@/components/admin/ProductSelect.vue'
 
 const productos        = ref([])
@@ -265,8 +275,11 @@ async function confirmarProduccion() {
   try {
     const token   = localStorage.getItem('ceketo_token')
     const lote_id = crypto.randomUUID()
+    // Usar fecha local Argentina para evitar desfase UTC
+    const fechaLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
     await axios.post('/api/produccion', {
       lote_id,
+      fecha: fechaLocal,
       items: lote.value.map(i => ({ producto_id: i.producto_id, cantidad: i.cantidad })),
       nota: nota.value || undefined,
     }, { headers: { Authorization: `Bearer ${token}` } })
@@ -463,6 +476,43 @@ function descargarPDFLote(l) {
   descargarPDF()
   lote.value = loteBackup
   nota.value = notaBackup
+}
+
+function _buildExcelFilas(items) {
+  const totalUnidades = items.reduce((acc, i) => acc + i.cantidad, 0)
+  const filas = items.map((item, idx) => ({
+    '#':        idx + 1,
+    'Código':   item.codigo || item.producto?.codigo || '',
+    'Producto': item.nombre || item.producto?.nombre || '',
+    'Cantidad': item.cantidad,
+  }))
+  filas.push({ '#': '', 'Código': '', 'Producto': 'TOTAL', 'Cantidad': totalUnidades })
+  return filas
+}
+
+function descargarExcel() {
+  if (!lote.value.length) return
+  const filas = _buildExcelFilas(lote.value)
+  const ws = XLSX.utils.json_to_sheet(filas)
+  ws['!cols'] = [{ wch: 4 }, { wch: 12 }, { wch: 35 }, { wch: 10 }]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Producción')
+  const fechaStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  XLSX.writeFile(wb, `remito-produccion-${fechaStr}.xlsx`)
+}
+
+function descargarExcelLote(l) {
+  const items = l.items.map(i => ({
+    codigo:   i.producto?.codigo || '',
+    nombre:   i.producto?.nombre || '',
+    cantidad: i.cantidad,
+  }))
+  const filas = _buildExcelFilas(items)
+  const ws = XLSX.utils.json_to_sheet(filas)
+  ws['!cols'] = [{ wch: 4 }, { wch: 12 }, { wch: 35 }, { wch: 10 }]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Producción')
+  XLSX.writeFile(wb, `remito-produccion-${l.fecha}.xlsx`)
 }
 
 async function cargarProductos() {

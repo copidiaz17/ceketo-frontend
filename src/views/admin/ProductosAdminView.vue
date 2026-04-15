@@ -5,19 +5,19 @@
         <h1 class="font-display text-3xl font-bold text-gray-900">Gestión de Productos</h1>
         <p class="font-body text-gray-500 mt-1">Crear, editar y eliminar productos</p>
       </div>
-      <div class="flex gap-3">
+      <div class="flex gap-2 flex-wrap">
+        <button
+          @click="descargarPDF"
+          class="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-body text-sm font-medium hover:bg-gray-200 transition-colors"
+        >📄 PDF</button>
+        <button
+          @click="descargarExcel"
+          class="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl font-body text-sm font-medium hover:bg-green-700 transition-colors"
+        >📊 Excel</button>
         <button
           @click="abrirModalNuevo"
           class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-all"
-        >
-          + Nuevo producto
-        </button>
-        <button
-          @click="exportarCSV"
-          class="flex items-center gap-2 px-5 py-2.5 bg-gray-50 border border-gray-200 text-gray-600 rounded-xl font-body text-sm hover:bg-gray-100 transition-all"
-        >
-          ⬇ CSV
-        </button>
+        >+ Nuevo producto</button>
       </div>
     </div>
 
@@ -235,6 +235,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import html2pdf from 'html2pdf.js'
+import * as XLSX from 'xlsx'
 
 const productos       = ref([])
 const categoriasLista = ref([])
@@ -364,18 +366,77 @@ async function uploadImagen(event, p) {
   } catch { mostrarToast('✗ Error al subir imagen') }
 }
 
-function exportarCSV() {
-  const headers = ['Código', 'Nombre', 'Categoría', 'Precio', 'Stock', 'Activo']
-  const rows = productos.value.map(p => [
-    p.codigo, p.nombre, p.categoria?.nombre || '',
-    parseFloat(p.precio), p.stock, p.activo ? 'Sí' : 'No',
-  ])
-  const csv = [headers, ...rows].map(r => r.join(';')).join('\n')
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href = url; a.download = 'ceketo_productos.csv'; a.click()
-  URL.revokeObjectURL(url)
+function productosFiltradosExport() {
+  return productos.value.filter(p => {
+    const matchCat  = !filtroCategoria.value || p.categoria?.nombre === filtroCategoria.value
+    const matchBusq = !busqueda.value ||
+      p.nombre.toLowerCase().includes(busqueda.value.toLowerCase()) ||
+      p.codigo.toLowerCase().includes(busqueda.value.toLowerCase())
+    return matchCat && matchBusq
+  })
+}
+
+function descargarPDF() {
+  const lista = productosFiltradosExport()
+  const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' })
+  const filas = lista.map((p, i) => {
+    const stockColor = p.stock === 0 ? '#ef4444' : p.stock < 5 ? '#eab308' : '#2a9d8f'
+    const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb'
+    return `<tr style="background:${bg}">
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:10px">${p.codigo}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb">${p.nombre}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;color:#555">${p.categoria?.nombre || '—'}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;text-align:right">$${parseFloat(p.precio).toLocaleString('es-AR')}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:bold;color:${stockColor}">${p.stock}</td>
+      <td style="padding:5px 8px;border-bottom:1px solid #e5e7eb;text-align:center">${p.activo ? 'Sí' : 'No'}</td>
+    </tr>`
+  }).join('')
+
+  const el = document.createElement('div')
+  el.style.cssText = 'font-family:Arial,sans-serif;font-size:11px;color:#111;padding:20px;width:190mm'
+  el.innerHTML = `
+    <h1 style="font-size:20px;font-weight:bold;margin-bottom:2px">CEKETO — Productos</h1>
+    <p style="font-size:11px;color:#666;margin-bottom:16px">Generado el ${fecha}${filtroCategoria.value ? ' · Categoría: ' + filtroCategoria.value : ''} · ${lista.length} productos</p>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#2a9d8f;color:white">
+        <th style="padding:7px 8px;text-align:left">Código</th>
+        <th style="padding:7px 8px;text-align:left">Nombre</th>
+        <th style="padding:7px 8px;text-align:left">Categoría</th>
+        <th style="padding:7px 8px;text-align:right">Precio</th>
+        <th style="padding:7px 8px;text-align:right">Stock</th>
+        <th style="padding:7px 8px;text-align:center">Activo</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>
+    <p style="margin-top:16px;font-size:10px;color:#999;text-align:right">CEKETO · Independencia 663, Santiago del Estero</p>
+  `
+  document.body.appendChild(el)
+  html2pdf().set({
+    margin: [8, 8, 8, 8],
+    filename: `productos-ceketo-${fecha.replace(/\//g, '-')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  }).from(el).save().then(() => document.body.removeChild(el))
+}
+
+function descargarExcel() {
+  const lista = productosFiltradosExport()
+  const fecha = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' })
+  const filas = lista.map(p => ({
+    'Código':     p.codigo,
+    'Nombre':     p.nombre,
+    'Categoría':  p.categoria?.nombre || '—',
+    'Precio ($)': parseFloat(p.precio),
+    'Stock':      p.stock,
+    'Estado':     p.stock === 0 ? 'Sin stock' : p.stock < 5 ? 'Stock bajo' : 'OK',
+    'Activo':     p.activo ? 'Sí' : 'No',
+  }))
+  const ws = XLSX.utils.json_to_sheet(filas)
+  ws['!cols'] = [{ wch: 12 }, { wch: 35 }, { wch: 18 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 7 }]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Productos')
+  XLSX.writeFile(wb, `productos-ceketo-${fecha.replace(/\//g, '-')}.xlsx`)
 }
 
 function mostrarToast(msg) {
