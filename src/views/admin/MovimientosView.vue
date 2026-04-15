@@ -58,7 +58,7 @@
               :key="i"
               class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
             >
-              <td class="px-5 py-3 text-gray-500 text-xs">{{ formatFecha(m.fecha) }}</td>
+              <td class="px-5 py-3 text-gray-500 text-xs">{{ formatFecha(m) }}</td>
               <td class="px-5 py-3">
                 <span
                   class="px-2 py-0.5 rounded-full text-xs font-medium"
@@ -115,14 +115,18 @@ const movimientosFiltrados = computed(() =>
   movimientos.value.filter(m => filtroTipo.value === 'todos' || m.tipo === filtroTipo.value)
 )
 
-function formatFecha(f) {
-  if (!f) return '—'
-  const d = new Date(f)
-  // Si la hora es exactamente 12:00 viene de producción (solo fecha) → mostrar solo fecha
-  if (d.getUTCHours() === 12 && d.getUTCMinutes() === 0) {
-    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
+function formatFecha(m) {
+  if (!m.fecha) return '—'
+  if (m.solo_fecha) {
+    // DATEONLY "YYYY-MM-DD" — parsear manualmente para evitar desfase UTC
+    const [y, mo, d] = m.fecha.split('-')
+    return `${d}/${mo}/${y.slice(2)}`
   }
-  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
+  return new Date(m.fecha).toLocaleString('es-AR', {
+    day: '2-digit', month: '2-digit', year: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  })
 }
 
 async function cargarMovimientos() {
@@ -138,7 +142,7 @@ async function cargarMovimientos() {
 function exportarCSV() {
   const headers = ['Fecha', 'Tipo', 'Código', 'Producto', 'Referencia', 'Cantidad']
   const rows = movimientosFiltrados.value.map(m => [
-    formatFecha(m.fecha),
+    formatFecha(m),
     m.tipo,
     m.producto?.codigo || '',
     m.producto?.nombre || '',
