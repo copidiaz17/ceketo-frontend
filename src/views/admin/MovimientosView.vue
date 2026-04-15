@@ -117,7 +117,12 @@ const movimientosFiltrados = computed(() =>
 
 function formatFecha(f) {
   if (!f) return '—'
-  return new Date(f).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+  const d = new Date(f)
+  // Si la hora es exactamente 12:00 viene de producción (solo fecha) → mostrar solo fecha
+  if (d.getUTCHours() === 12 && d.getUTCMinutes() === 0) {
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
+  }
+  return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
 }
 
 async function cargarMovimientos() {
