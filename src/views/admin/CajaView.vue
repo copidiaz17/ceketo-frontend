@@ -92,6 +92,12 @@
     <!-- ══════════════════════════════════════════════════════════════ -->
     <div v-else class="space-y-6">
 
+      <!-- Botones exportar -->
+      <div class="flex gap-2 justify-end">
+        <button @click="descargarPDF" class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors">📄 PDF</button>
+        <button @click="descargarExcel" class="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl font-body text-sm font-medium hover:bg-green-700 transition-colors">📊 Excel</button>
+      </div>
+
       <!-- Banner de caja abierta -->
       <div class="bg-teal/10 border border-teal/30 rounded-2xl px-6 py-4 flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -442,6 +448,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import html2pdf from 'html2pdf.js'
+import * as XLSX from 'xlsx'
 
 const cargando      = ref(true)
 const cajaActual    = ref(null)
@@ -584,8 +592,143 @@ async function cerrarCaja() {
   }
 }
 
-function verHistorialDetalle(c) {
-  // Por ahora solo muestra la caja en un alert básico, se puede expandir
+function verHistorialDetalle(c) {}
+
+const METODOS_ORDEN = ['efectivo', 'transferencia', 'qr', 'debito', 'credito', 'cuenta_corriente', 'sin_metodo']
+
+function buildDatosCaja() {
+  const c = cajaActual.value
+  const fechaApertura = formatFechaHora(c.caja.fecha_apertura)
+  const ahora = new Date().toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
+
+  // Ventas por método en orden
+  const ventasMetodo = METODOS_ORDEN
+    .filter(m => (c.ventasPorMetodo[m] || 0) > 0)
+    .map(m => ({ metodo: metodoLabel(m), total: c.ventasPorMetodo[m] || 0 }))
+
+  // Movimientos manuales
+  const movIngresos = c.movimientos.filter(m => m.tipo === 'ingreso')
+  const movEgresos  = c.movimientos.filter(m => m.tipo === 'egreso')
+
+  return { c, fechaApertura, ahora, ventasMetodo, movIngresos, movEgresos }
+}
+
+function descargarPDF() {
+  const { c, fechaApertura, ahora, ventasMetodo, movIngresos, movEgresos } = buildDatosCaja()
+
+  const filasVentas = ventasMetodo.map(v =>
+    `<tr><td style="padding:5px 10px;border-bottom:1px solid #e5e7eb">${v.metodo}</td><td style="padding:5px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:bold;color:#2a9d8f">$${v.total.toLocaleString('es-AR')}</td></tr>`
+  ).join('')
+
+  const filasMovIngresos = movIngresos.map(m =>
+    `<tr><td style="padding:4px 10px;border-bottom:1px solid #f3f4f6;color:#555">${m.concepto}</td><td style="padding:4px 10px;border-bottom:1px solid #f3f4f6;text-align:right;color:#2a9d8f">+$${parseFloat(m.monto).toLocaleString('es-AR')}</td></tr>`
+  ).join('')
+
+  const filasMovEgresos = movEgresos.map(m =>
+    `<tr><td style="padding:4px 10px;border-bottom:1px solid #f3f4f6;color:#555">${m.concepto}</td><td style="padding:4px 10px;border-bottom:1px solid #f3f4f6;text-align:right;color:#ef4444">-$${parseFloat(m.monto).toLocaleString('es-AR')}</td></tr>`
+  ).join('')
+
+  const el = document.createElement('div')
+  el.style.cssText = 'font-family:Arial,sans-serif;font-size:11px;color:#111;padding:20px;width:190mm'
+  el.innerHTML = `
+    <h1 style="font-size:20px;font-weight:bold;margin-bottom:2px">CEKETO — Informe de Caja</h1>
+    <p style="font-size:11px;color:#666;margin-bottom:2px">Apertura: ${fechaApertura}${c.caja.usuario ? ' · ' + c.caja.usuario : ''}</p>
+    <p style="font-size:10px;color:#999;margin-bottom:16px">Generado: ${ahora}</p>
+
+    <h2 style="font-size:13px;font-weight:bold;margin-bottom:6px;color:#2a9d8f">Ventas por método de pago</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px">
+      <thead><tr style="background:#2a9d8f;color:white">
+        <th style="padding:7px 10px;text-align:left">Concepto</th>
+        <th style="padding:7px 10px;text-align:right">Total</th>
+      </tr></thead>
+      <tbody>${filasVentas}</tbody>
+      <tfoot><tr style="background:#f0fdf9;font-weight:bold">
+        <td style="padding:7px 10px;border-top:2px solid #2a9d8f">TOTAL VENTAS</td>
+        <td style="padding:7px 10px;border-top:2px solid #2a9d8f;text-align:right;color:#2a9d8f">$${c.totalVentas.toLocaleString('es-AR')}</td>
+      </tr></tfoot>
+    </table>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div style="background:#f9fafb;border-radius:8px;padding:12px">
+        <p style="font-size:12px;font-weight:bold;margin-bottom:8px">💵 Efectivo</p>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Saldo inicial</span><span>$${parseFloat(c.caja.saldo_inicial).toLocaleString('es-AR')}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Ventas efectivo</span><span style="color:#2a9d8f">+$${(c.ventasPorMetodo['efectivo'] || 0).toLocaleString('es-AR')}</span></div>
+        ${c.totalIngresos > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Ingresos manuales</span><span style="color:#2a9d8f">+$${c.totalIngresos.toLocaleString('es-AR')}</span></div>` : ''}
+        ${c.totalEgresos > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Egresos manuales</span><span style="color:#ef4444">-$${c.totalEgresos.toLocaleString('es-AR')}</span></div>` : ''}
+        <div style="display:flex;justify-content:space-between;font-weight:bold;border-top:1px solid #e5e7eb;padding-top:6px;margin-top:4px"><span>Saldo teórico</span><span style="color:#2a9d8f">$${c.saldoTeorico.toLocaleString('es-AR')}</span></div>
+      </div>
+      <div style="background:#f0f7ff;border-radius:8px;padding:12px">
+        <p style="font-size:12px;font-weight:bold;margin-bottom:8px">📲 Billetera virtual</p>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Saldo inicial</span><span>$${parseFloat(c.caja.saldo_billetera_inicial).toLocaleString('es-AR')}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Cobros digitales</span><span style="color:#2a9d8f">+$${(c.billeteraVentas || 0).toLocaleString('es-AR')}</span></div>
+        ${['transferencia','qr','debito','credito'].filter(m => (c.ventasPorMetodo[m]||0)>0).map(m =>
+          `<div style="display:flex;justify-content:space-between;margin-bottom:2px;padding-left:12px;font-size:10px;color:#888"><span>${metodoLabel(m)}</span><span>$${(c.ventasPorMetodo[m]||0).toLocaleString('es-AR')}</span></div>`
+        ).join('')}
+        <div style="display:flex;justify-content:space-between;font-weight:bold;border-top:1px solid #dbeafe;padding-top:6px;margin-top:4px"><span>Saldo final</span><span style="color:#2563eb">$${c.saldoBilleteraFinal.toLocaleString('es-AR')}</span></div>
+      </div>
+    </div>
+
+    ${(movIngresos.length || movEgresos.length) ? `
+    <h2 style="font-size:13px;font-weight:bold;margin-bottom:6px;color:#555">Movimientos manuales</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px">
+      <thead><tr style="background:#f9fafb"><th style="padding:6px 10px;text-align:left;color:#555">Concepto</th><th style="padding:6px 10px;text-align:right;color:#555">Monto</th></tr></thead>
+      <tbody>${filasMovIngresos}${filasMovEgresos}</tbody>
+    </table>` : ''}
+
+    <p style="font-size:10px;color:#999;text-align:right">CEKETO · Independencia 663, Santiago del Estero</p>
+  `
+
+  document.body.appendChild(el)
+  const fecha = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  html2pdf().set({
+    margin: [8, 8, 8, 8],
+    filename: `caja-ceketo-${fecha}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  }).from(el).save().then(() => document.body.removeChild(el))
+}
+
+function descargarExcel() {
+  const { c, fechaApertura, ventasMetodo, movIngresos, movEgresos } = buildDatosCaja()
+  const wb = XLSX.utils.book_new()
+
+  // Hoja 1: Resumen
+  const resumenFilas = [
+    { 'Concepto': 'VENTAS POR MÉTODO DE PAGO', 'Monto ($)': '' },
+    ...ventasMetodo.map(v => ({ 'Concepto': v.metodo, 'Monto ($)': v.total })),
+    { 'Concepto': 'TOTAL VENTAS', 'Monto ($)': c.totalVentas },
+    { 'Concepto': '', 'Monto ($)': '' },
+    { 'Concepto': 'EFECTIVO', 'Monto ($)': '' },
+    { 'Concepto': 'Saldo inicial', 'Monto ($)': parseFloat(c.caja.saldo_inicial) },
+    { 'Concepto': 'Ventas efectivo', 'Monto ($)': c.ventasPorMetodo['efectivo'] || 0 },
+    ...(c.totalIngresos > 0 ? [{ 'Concepto': 'Ingresos manuales', 'Monto ($)': c.totalIngresos }] : []),
+    ...(c.totalEgresos > 0  ? [{ 'Concepto': 'Egresos manuales', 'Monto ($)': -c.totalEgresos }] : []),
+    { 'Concepto': 'Saldo teórico efectivo', 'Monto ($)': c.saldoTeorico },
+    { 'Concepto': '', 'Monto ($)': '' },
+    { 'Concepto': 'BILLETERA VIRTUAL', 'Monto ($)': '' },
+    { 'Concepto': 'Saldo inicial billetera', 'Monto ($)': parseFloat(c.caja.saldo_billetera_inicial) },
+    { 'Concepto': 'Cobros digitales', 'Monto ($)': c.billeteraVentas || 0 },
+    { 'Concepto': 'Saldo final billetera', 'Monto ($)': c.saldoBilleteraFinal },
+  ]
+  const wsResumen = XLSX.utils.json_to_sheet(resumenFilas)
+  wsResumen['!cols'] = [{ wch: 30 }, { wch: 16 }]
+  XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
+
+  // Hoja 2: Movimientos manuales
+  if (c.movimientos.length) {
+    const movFilas = c.movimientos.map(m => ({
+      'Tipo':     m.tipo,
+      'Concepto': m.concepto,
+      'Monto ($)': m.tipo === 'ingreso' ? parseFloat(m.monto) : -parseFloat(m.monto),
+    }))
+    const wsMov = XLSX.utils.json_to_sheet(movFilas)
+    wsMov['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 14 }]
+    XLSX.utils.book_append_sheet(wb, wsMov, 'Movimientos')
+  }
+
+  const fecha = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  XLSX.writeFile(wb, `caja-ceketo-${fecha}.xlsx`)
 }
 
 onMounted(cargar)
