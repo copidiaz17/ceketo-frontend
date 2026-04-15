@@ -117,12 +117,13 @@ const movimientosFiltrados = computed(() =>
 
 function formatFecha(m) {
   if (!m.fecha) return '—'
-  if (m.solo_fecha) {
-    // DATEONLY "YYYY-MM-DD" — parsear manualmente para evitar desfase UTC
-    const [y, mo, d] = m.fecha.split('-')
+  const f = String(m.fecha)
+  // Si la fecha es solo YYYY-MM-DD (sin hora) parsear manualmente para evitar desfase UTC
+  if (/^\d{4}-\d{2}-\d{2}$/.test(f) || m.solo_fecha) {
+    const [y, mo, d] = f.slice(0, 10).split('-')
     return `${d}/${mo}/${y.slice(2)}`
   }
-  return new Date(m.fecha).toLocaleString('es-AR', {
+  return new Date(f).toLocaleString('es-AR', {
     day: '2-digit', month: '2-digit', year: '2-digit',
     hour: '2-digit', minute: '2-digit',
     timeZone: 'America/Argentina/Buenos_Aires',
