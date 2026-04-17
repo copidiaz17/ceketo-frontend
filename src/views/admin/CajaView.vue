@@ -63,28 +63,6 @@
         </div>
       </div>
 
-      <!-- Historial de cajas -->
-      <div v-if="historial.length" class="mt-8">
-        <h3 class="font-display text-lg font-semibold text-gray-900 mb-3">Turnos anteriores</h3>
-        <div class="space-y-2">
-          <div
-            v-for="c in historial"
-            :key="c.id"
-            class="bg-white border border-gray-200 rounded-xl px-5 py-3 flex justify-between items-center cursor-pointer hover:border-teal transition-colors"
-            @click="verHistorialDetalle(c)"
-          >
-            <div>
-              <p class="font-body text-sm text-gray-900">{{ formatFechaHora(c.fecha_apertura) }}</p>
-              <p class="font-body text-xs text-gray-400">{{ c.usuario || 'Sin responsable' }}</p>
-            </div>
-            <div class="text-right">
-              <span class="px-2 py-0.5 rounded-full text-xs font-body"
-                :class="c.estado === 'abierta' ? 'bg-teal/20 text-teal' : 'bg-gray-100 text-gray-500'"
-              >{{ c.estado }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════ -->
@@ -246,25 +224,6 @@
 
       </div>
 
-      <!-- Historial visible también cuando hay caja abierta -->
-      <div v-if="historial.length" class="bg-white border border-gray-200 rounded-2xl p-6">
-        <h2 class="font-display text-lg font-semibold text-gray-900 mb-3">Turnos anteriores</h2>
-        <div class="space-y-2">
-          <div
-            v-for="c in historial"
-            :key="c.id"
-            class="bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 flex justify-between items-center cursor-pointer hover:border-teal transition-colors"
-            @click="verHistorialDetalle(c)"
-          >
-            <div>
-              <p class="font-body text-sm text-gray-900">{{ formatFechaHora(c.fecha_apertura) }}</p>
-              <p class="font-body text-xs text-gray-400">{{ c.usuario || 'Sin responsable' }}</p>
-            </div>
-            <span class="px-2 py-0.5 rounded-full text-xs font-body bg-gray-100 text-gray-500">ver detalle</span>
-          </div>
-        </div>
-      </div>
-
       <!-- Arqueo y cierre -->
       <div class="bg-white border border-red-100 rounded-2xl p-6">
         <h2 class="font-display text-lg font-semibold text-gray-900 mb-4">Arqueo y cierre de caja</h2>
@@ -409,6 +368,30 @@
             class="flex-1 py-3 bg-teal text-gray-900 font-body text-sm font-semibold rounded-xl
                    hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >{{ guardandoMov ? 'Guardando...' : 'Guardar' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial — siempre visible -->
+    <div v-if="historial.length" class="mt-6 mx-0">
+      <h3 class="font-display text-lg font-semibold text-gray-900 mb-3">Turnos anteriores</h3>
+      <div class="space-y-2">
+        <div
+          v-for="c in historial"
+          :key="c.id"
+          class="bg-white border border-gray-200 rounded-xl px-5 py-3 flex justify-between items-center cursor-pointer hover:border-teal transition-colors"
+          @click="verHistorialDetalle(c)"
+        >
+          <div>
+            <p class="font-body text-sm text-gray-900">{{ formatFechaHora(c.fecha_apertura) }}</p>
+            <p class="font-body text-xs text-gray-400">{{ c.usuario || 'Sin responsable' }}</p>
+          </div>
+          <div class="text-right flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-full text-xs font-body"
+              :class="c.estado === 'abierta' ? 'bg-teal/20 text-teal' : 'bg-gray-100 text-gray-500'"
+            >{{ c.estado }}</span>
+            <span class="text-xs text-gray-400 font-body">ver detalle →</span>
+          </div>
         </div>
       </div>
     </div>
