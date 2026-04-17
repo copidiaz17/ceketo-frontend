@@ -153,7 +153,7 @@
               </span>
               <div>
                 <p class="font-body text-sm text-gray-900">{{ m.concepto }}</p>
-                <p class="font-body text-xs text-gray-400">{{ m.tipo }} · {{ formatHora(m.createdAt) }}</p>
+                <p class="font-body text-xs text-gray-400">{{ m.tipo }} · {{ m.medio === 'billetera' ? '📲 Billetera' : '💵 Efectivo' }} · {{ formatHora(m.createdAt) }}</p>
               </div>
             </div>
             <div class="flex items-center gap-3">
@@ -244,6 +244,25 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- Historial visible también cuando hay caja abierta -->
+      <div v-if="historial.length" class="bg-white border border-gray-200 rounded-2xl p-6">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-3">Turnos anteriores</h2>
+        <div class="space-y-2">
+          <div
+            v-for="c in historial"
+            :key="c.id"
+            class="bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 flex justify-between items-center cursor-pointer hover:border-teal transition-colors"
+            @click="verHistorialDetalle(c)"
+          >
+            <div>
+              <p class="font-body text-sm text-gray-900">{{ formatFechaHora(c.fecha_apertura) }}</p>
+              <p class="font-body text-xs text-gray-400">{{ c.usuario || 'Sin responsable' }}</p>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-xs font-body bg-gray-100 text-gray-500">ver detalle</span>
+          </div>
+        </div>
       </div>
 
       <!-- Arqueo y cierre -->
@@ -341,6 +360,20 @@
           >↓ Egreso</button>
         </div>
 
+        <!-- Medio -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <button
+            @click="nuevoMov.medio = 'efectivo'"
+            class="py-2.5 rounded-xl border-2 font-body text-sm transition-all"
+            :class="nuevoMov.medio === 'efectivo' ? 'bg-amber-50 border-amber-400 text-amber-700' : 'border-gray-200 text-gray-500'"
+          >💵 Efectivo</button>
+          <button
+            @click="nuevoMov.medio = 'billetera'"
+            class="py-2.5 rounded-xl border-2 font-body text-sm transition-all"
+            :class="nuevoMov.medio === 'billetera' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-gray-200 text-gray-500'"
+          >📲 Billetera</button>
+        </div>
+
         <div class="space-y-3">
           <div>
             <label class="block font-body text-sm text-gray-500 mb-1">Concepto</label>
@@ -376,6 +409,98 @@
             class="flex-1 py-3 bg-teal text-gray-900 font-body text-sm font-semibold rounded-xl
                    hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >{{ guardandoMov ? 'Guardando...' : 'Guardar' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal historial detalle -->
+    <div v-if="historialDetalle" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <!-- Header -->
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h2 class="font-display text-xl font-bold text-gray-900">
+                Caja #{{ historialDetalle.caja?.id }}
+                <span v-if="cargandoDetalle" class="text-sm font-body text-gray-400"> Cargando...</span>
+              </h2>
+              <p v-if="historialDetalle.caja?.fecha_apertura" class="font-body text-sm text-gray-400 mt-0.5">
+                {{ formatFechaHora(historialDetalle.caja.fecha_apertura) }}
+                <template v-if="historialDetalle.caja.fecha_cierre"> → {{ formatFechaHora(historialDetalle.caja.fecha_cierre) }}</template>
+                <span v-if="historialDetalle.caja.usuario"> · {{ historialDetalle.caja.usuario }}</span>
+              </p>
+            </div>
+            <button @click="historialDetalle = null" class="text-gray-400 hover:text-gray-700 text-xl ml-4">✕</button>
+          </div>
+
+          <template v-if="!cargandoDetalle && historialDetalle.ventasPorMetodo">
+            <!-- Ventas por método -->
+            <h3 class="font-display text-sm font-semibold text-gray-700 mb-2">Ventas por método</h3>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+              <div
+                v-for="(total, metodo) in historialDetalle.ventasPorMetodo"
+                :key="metodo"
+                class="bg-gray-50 rounded-xl px-3 py-2"
+              >
+                <p class="font-body text-xs text-gray-400">{{ metodoLabel(metodo) }}</p>
+                <p class="font-display font-bold text-teal text-sm">${{ total.toLocaleString('es-AR') }}</p>
+              </div>
+              <div class="bg-teal/10 rounded-xl px-3 py-2 col-span-2">
+                <p class="font-body text-xs text-gray-500">Total ventas</p>
+                <p class="font-display font-bold text-teal">${{ (historialDetalle.totalVentas || 0).toLocaleString('es-AR') }}</p>
+              </div>
+            </div>
+
+            <!-- Saldos -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="bg-gray-50 rounded-xl px-4 py-3 text-sm font-body space-y-1">
+                <p class="font-semibold text-gray-700 text-xs mb-2">💵 Efectivo</p>
+                <div class="flex justify-between"><span class="text-gray-500">Saldo inicial</span><span>${{ parseFloat(historialDetalle.caja.saldo_inicial).toLocaleString('es-AR') }}</span></div>
+                <div class="flex justify-between font-bold border-t border-gray-200 pt-1 mt-1"><span>Teórico</span><span class="text-teal">${{ (historialDetalle.saldoTeorico || 0).toLocaleString('es-AR') }}</span></div>
+                <div v-if="historialDetalle.caja.arqueo_efectivo != null" class="flex justify-between"><span class="text-gray-500">Contado</span><span>${{ parseFloat(historialDetalle.caja.arqueo_efectivo).toLocaleString('es-AR') }}</span></div>
+              </div>
+              <div class="bg-blue-50 rounded-xl px-4 py-3 text-sm font-body space-y-1">
+                <p class="font-semibold text-gray-700 text-xs mb-2">📲 Billetera</p>
+                <div class="flex justify-between"><span class="text-gray-500">Cobros digitales</span><span>${{ (historialDetalle.billeteraVentas || 0).toLocaleString('es-AR') }}</span></div>
+                <div class="flex justify-between font-bold border-t border-blue-200 pt-1 mt-1"><span>Saldo final</span><span class="text-blue-600">${{ (historialDetalle.saldoBilleteraFinal || 0).toLocaleString('es-AR') }}</span></div>
+                <div v-if="historialDetalle.caja.arqueo_billetera != null" class="flex justify-between"><span class="text-gray-500">Real</span><span>${{ parseFloat(historialDetalle.caja.arqueo_billetera).toLocaleString('es-AR') }}</span></div>
+              </div>
+            </div>
+
+            <!-- Movimientos -->
+            <div v-if="historialDetalle.movimientos?.length" class="mb-4">
+              <h3 class="font-display text-sm font-semibold text-gray-700 mb-2">Movimientos manuales</h3>
+              <div class="space-y-1">
+                <div
+                  v-for="m in historialDetalle.movimientos"
+                  :key="m.id"
+                  class="flex justify-between items-center bg-gray-50 rounded-xl px-4 py-2 text-sm font-body"
+                >
+                  <div>
+                    <span class="text-gray-900">{{ m.concepto }}</span>
+                    <span class="text-xs text-gray-400 ml-2">{{ m.medio === 'billetera' ? '📲' : '💵' }} {{ formatHora(m.createdAt) }}</span>
+                  </div>
+                  <span :class="m.tipo === 'ingreso' ? 'text-teal' : 'text-red-400'" class="font-bold">
+                    {{ m.tipo === 'ingreso' ? '+' : '-' }}${{ parseFloat(m.monto).toLocaleString('es-AR') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nota cierre -->
+            <p v-if="historialDetalle.caja.nota_cierre" class="font-body text-sm text-gray-500 italic mb-4">
+              Nota: {{ historialDetalle.caja.nota_cierre }}
+            </p>
+
+            <!-- Exportar -->
+            <div class="flex gap-3 pt-2 border-t border-gray-100">
+              <button @click="descargarPDFHistorialDetalle" class="flex-1 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors">📄 PDF</button>
+              <button @click="descargarExcelHistorialDetalle" class="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-body text-sm font-medium hover:bg-green-700 transition-colors">📊 Excel</button>
+              <button @click="historialDetalle = null" class="flex-1 py-2.5 border border-gray-200 text-gray-500 rounded-xl font-body text-sm hover:border-gray-400 transition-colors">Cerrar</button>
+            </div>
+          </template>
+
+          <div v-else-if="cargandoDetalle" class="text-center py-8 text-gray-400 font-body text-sm">Cargando resumen...</div>
         </div>
       </div>
     </div>
@@ -451,20 +576,22 @@ import axios from 'axios'
 import html2pdf from 'html2pdf.js'
 import * as XLSX from 'xlsx'
 
-const cargando      = ref(true)
-const cajaActual    = ref(null)
-const historial     = ref([])
-const abriendo      = ref(false)
-const cerrando      = ref(false)
-const errorApertura = ref('')
-const errorCierre   = ref('')
-const modalMov      = ref(false)
-const guardandoMov  = ref(false)
-const resumenCierre = ref(null)
+const cargando        = ref(true)
+const cajaActual      = ref(null)
+const historial       = ref([])
+const abriendo        = ref(false)
+const cerrando        = ref(false)
+const errorApertura   = ref('')
+const errorCierre     = ref('')
+const modalMov        = ref(false)
+const guardandoMov    = ref(false)
+const resumenCierre   = ref(null)
+const historialDetalle = ref(null)
+const cargandoDetalle  = ref(false)
 
 const apertura = ref({ saldo_inicial: 0, saldo_billetera_inicial: 0, usuario: '' })
 const arqueo   = ref({ efectivo: null, billetera: null, nota: '' })
-const nuevoMov = ref({ tipo: 'ingreso', concepto: '', monto: null })
+const nuevoMov = ref({ tipo: 'ingreso', concepto: '', monto: null, medio: 'efectivo' })
 
 const metodoLabels = {
   efectivo:      'Efectivo',
@@ -502,7 +629,7 @@ function formatHora(fecha) {
 }
 
 function resetNuevoMov() {
-  nuevoMov.value = { tipo: 'ingreso', concepto: '', monto: null }
+  nuevoMov.value = { tipo: 'ingreso', concepto: '', monto: null, medio: 'efectivo' }
 }
 
 async function cargar() {
@@ -545,6 +672,7 @@ async function agregarMovimiento() {
       tipo:     nuevoMov.value.tipo,
       concepto: nuevoMov.value.concepto,
       monto:    nuevoMov.value.monto,
+      medio:    nuevoMov.value.medio,
     })
     modalMov.value = false
     resetNuevoMov()
@@ -592,7 +720,116 @@ async function cerrarCaja() {
   }
 }
 
-function verHistorialDetalle(c) {}
+async function verHistorialDetalle(c) {
+  cargandoDetalle.value = true
+  historialDetalle.value = { caja: c, cargando: true }
+  try {
+    const { data } = await axios.get(`/api/caja/${c.id}`)
+    historialDetalle.value = data
+  } catch {
+    historialDetalle.value = null
+  } finally {
+    cargandoDetalle.value = false
+  }
+}
+
+function descargarPDFHistorialDetalle() {
+  const c = historialDetalle.value
+  if (!c) return
+  const fechaApertura = formatFechaHora(c.caja.fecha_apertura)
+  const fechaCierre   = c.caja.fecha_cierre ? formatFechaHora(c.caja.fecha_cierre) : 'Abierta'
+  const ahora = new Date().toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+
+  const ventasMetodo = METODOS_ORDEN.filter(m => (c.ventasPorMetodo[m] || 0) > 0)
+    .map(m => ({ metodo: metodoLabel(m), total: c.ventasPorMetodo[m] || 0 }))
+  const filasVentas = ventasMetodo.map(v =>
+    `<tr><td style="padding:5px 10px;border-bottom:1px solid #e5e7eb">${v.metodo}</td><td style="padding:5px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:bold;color:#2a9d8f">$${v.total.toLocaleString('es-AR')}</td></tr>`
+  ).join('')
+
+  const movIngresos = (c.movimientos || []).filter(m => m.tipo === 'ingreso')
+  const movEgresos  = (c.movimientos || []).filter(m => m.tipo === 'egreso')
+  const filasMovIngresos = movIngresos.map(m => `<tr><td style="padding:4px 10px;color:#555">${m.concepto} (${m.medio || 'efectivo'})</td><td style="padding:4px 10px;text-align:right;color:#2a9d8f">+$${parseFloat(m.monto).toLocaleString('es-AR')}</td></tr>`).join('')
+  const filasMovEgresos  = movEgresos.map(m =>  `<tr><td style="padding:4px 10px;color:#555">${m.concepto} (${m.medio || 'efectivo'})</td><td style="padding:4px 10px;text-align:right;color:#ef4444">-$${parseFloat(m.monto).toLocaleString('es-AR')}</td></tr>`).join('')
+
+  const el = document.createElement('div')
+  el.style.cssText = 'font-family:Arial,sans-serif;font-size:11px;color:#111;padding:20px;width:190mm'
+  el.innerHTML = `
+    <h1 style="font-size:20px;font-weight:bold;margin-bottom:2px">CEKETO — Resumen de Caja #${c.caja.id}</h1>
+    <p style="font-size:11px;color:#666;margin-bottom:2px">Apertura: ${fechaApertura}${c.caja.usuario ? ' · ' + c.caja.usuario : ''} · Cierre: ${fechaCierre}</p>
+    <p style="font-size:10px;color:#999;margin-bottom:16px">Generado: ${ahora}</p>
+    <h2 style="font-size:13px;font-weight:bold;margin-bottom:6px;color:#2a9d8f">Ventas por método</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px">
+      <thead><tr style="background:#2a9d8f;color:white"><th style="padding:7px 10px;text-align:left">Método</th><th style="padding:7px 10px;text-align:right">Total</th></tr></thead>
+      <tbody>${filasVentas}</tbody>
+      <tfoot><tr style="background:#f0fdf9;font-weight:bold"><td style="padding:7px 10px;border-top:2px solid #2a9d8f">TOTAL VENTAS</td><td style="padding:7px 10px;border-top:2px solid #2a9d8f;text-align:right;color:#2a9d8f">$${(c.totalVentas || 0).toLocaleString('es-AR')}</td></tr></tfoot>
+    </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div style="background:#f9fafb;border-radius:8px;padding:12px">
+        <p style="font-size:12px;font-weight:bold;margin-bottom:8px">💵 Efectivo</p>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Saldo inicial</span><span>$${parseFloat(c.caja.saldo_inicial).toLocaleString('es-AR')}</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Ventas efectivo</span><span style="color:#2a9d8f">+$${(c.ventasPorMetodo?.efectivo || 0).toLocaleString('es-AR')}</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:bold;border-top:1px solid #e5e7eb;padding-top:6px;margin-top:4px"><span>Saldo teórico</span><span style="color:#2a9d8f">$${(c.saldoTeorico || 0).toLocaleString('es-AR')}</span></div>
+        ${c.caja.arqueo_efectivo != null ? `<div style="display:flex;justify-content:space-between;margin-top:4px"><span>Contado</span><span>$${parseFloat(c.caja.arqueo_efectivo).toLocaleString('es-AR')}</span></div>` : ''}
+      </div>
+      <div style="background:#f0f7ff;border-radius:8px;padding:12px">
+        <p style="font-size:12px;font-weight:bold;margin-bottom:8px">📲 Billetera virtual</p>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Cobros digitales</span><span style="color:#2a9d8f">+$${(c.billeteraVentas || 0).toLocaleString('es-AR')}</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:bold;border-top:1px solid #dbeafe;padding-top:6px;margin-top:4px"><span>Saldo final</span><span style="color:#2563eb">$${(c.saldoBilleteraFinal || 0).toLocaleString('es-AR')}</span></div>
+        ${c.caja.arqueo_billetera != null ? `<div style="display:flex;justify-content:space-between;margin-top:4px"><span>Real</span><span>$${parseFloat(c.caja.arqueo_billetera).toLocaleString('es-AR')}</span></div>` : ''}
+      </div>
+    </div>
+    ${(movIngresos.length || movEgresos.length) ? `
+    <h2 style="font-size:13px;font-weight:bold;margin-bottom:6px;color:#555">Movimientos manuales</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px">
+      <thead><tr style="background:#f9fafb"><th style="padding:6px 10px;text-align:left;color:#555">Concepto</th><th style="padding:6px 10px;text-align:right;color:#555">Monto</th></tr></thead>
+      <tbody>${filasMovIngresos}${filasMovEgresos}</tbody>
+    </table>` : ''}
+    ${c.caja.nota_cierre ? `<p style="font-size:11px;color:#555;font-style:italic">Nota: ${c.caja.nota_cierre}</p>` : ''}
+    <p style="font-size:10px;color:#999;text-align:right;margin-top:12px">CEKETO · Independencia 663, Santiago del Estero</p>
+  `
+  document.body.appendChild(el)
+  const fecha = new Date(c.caja.fecha_apertura).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  html2pdf().set({
+    margin: [8, 8, 8, 8],
+    filename: `caja-${c.caja.id}-ceketo-${fecha}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  }).from(el).save().then(() => document.body.removeChild(el))
+}
+
+function descargarExcelHistorialDetalle() {
+  const c = historialDetalle.value
+  if (!c) return
+  const wb = XLSX.utils.book_new()
+
+  const ventasFilas = METODOS_ORDEN
+    .filter(m => (c.ventasPorMetodo[m] || 0) > 0)
+    .map(m => ({ 'Método': metodoLabel(m), 'Total ($)': c.ventasPorMetodo[m] || 0 }))
+  ventasFilas.push({ 'Método': 'TOTAL VENTAS', 'Total ($)': c.totalVentas || 0 })
+  ventasFilas.push({ 'Método': '', 'Total ($)': '' })
+  ventasFilas.push({ 'Método': 'Saldo teórico efectivo', 'Total ($)': c.saldoTeorico || 0 })
+  ventasFilas.push({ 'Método': 'Saldo final billetera',  'Total ($)': c.saldoBilleteraFinal || 0 })
+  if (c.caja.arqueo_efectivo != null) ventasFilas.push({ 'Método': 'Contado efectivo', 'Total ($)': parseFloat(c.caja.arqueo_efectivo) })
+  if (c.caja.arqueo_billetera != null) ventasFilas.push({ 'Método': 'Real billetera',    'Total ($)': parseFloat(c.caja.arqueo_billetera) })
+  const wsResumen = XLSX.utils.json_to_sheet(ventasFilas)
+  wsResumen['!cols'] = [{ wch: 28 }, { wch: 16 }]
+  XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
+
+  if (c.movimientos?.length) {
+    const movFilas = c.movimientos.map(m => ({
+      'Tipo': m.tipo, 'Concepto': m.concepto,
+      'Medio': m.medio || 'efectivo',
+      'Monto ($)': m.tipo === 'ingreso' ? parseFloat(m.monto) : -parseFloat(m.monto),
+    }))
+    const wsMov = XLSX.utils.json_to_sheet(movFilas)
+    wsMov['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 12 }, { wch: 14 }]
+    XLSX.utils.book_append_sheet(wb, wsMov, 'Movimientos')
+  }
+
+  const fecha = new Date(c.caja.fecha_apertura).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  XLSX.writeFile(wb, `caja-${c.caja.id}-ceketo-${fecha}.xlsx`)
+}
 
 const METODOS_ORDEN = ['efectivo', 'transferencia', 'qr', 'debito', 'credito', 'cuenta_corriente', 'sin_metodo']
 

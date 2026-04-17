@@ -208,12 +208,10 @@
               </div>
               <div>
                 <label class="block font-body text-xs text-gray-500 uppercase tracking-wider mb-2">Proveedor</label>
-                <input
-                  v-model="modal.proveedor"
-                  type="text"
-                  placeholder="Opcional"
-                  class="input-field w-full"
-                />
+                <select v-model="modal.proveedor" class="input-field w-full">
+                  <option value="">Sin proveedor</option>
+                  <option v-for="p in proveedores" :key="p.id" :value="p.nombre">{{ p.nombre }}</option>
+                </select>
               </div>
             </div>
 
@@ -337,6 +335,7 @@ import * as XLSX from 'xlsx'
 
 const gastos         = ref([])
 const categorias     = ref([])
+const proveedores    = ref([])
 const resumen        = ref({})
 const totalMes       = ref(0)
 const loading        = ref(true)
@@ -572,8 +571,12 @@ function descargarExcel() {
 
 // ── Init ─────────────────────────────────────────────────────────
 onMounted(async () => {
-  const { data } = await axios.get('/api/gastos/categorias')
-  categorias.value = data
+  const [{ data: cats }, { data: provs }] = await Promise.all([
+    axios.get('/api/gastos/categorias'),
+    axios.get('/api/proveedores').catch(() => ({ data: [] })),
+  ])
+  categorias.value  = cats
+  proveedores.value = provs
   await cargarDatos()
 })
 </script>

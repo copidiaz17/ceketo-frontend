@@ -309,6 +309,30 @@
           <span class="font-display text-xl font-bold text-teal">${{ totalFinal.toLocaleString('es-AR') }}</span>
         </div>
 
+        <!-- Vuelto (solo efectivo, pago simple) -->
+        <div v-if="metodoPagoSeleccionado === 'efectivo' && !pagoDoble" class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+          <div>
+            <label class="block font-body text-xs text-gray-500 mb-1">💵 Dinero recibido ($)</label>
+            <input
+              v-model.number="dineroRecibido"
+              type="number"
+              min="0"
+              placeholder="0"
+              class="w-full px-3 py-2 rounded-xl bg-white border border-amber-300 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
+            />
+          </div>
+          <div v-if="dineroRecibido !== null && dineroRecibido !== ''" class="flex justify-between items-center">
+            <span class="font-body text-sm text-gray-600">Vuelto</span>
+            <span
+              class="font-display text-xl font-bold"
+              :class="vuelto >= 0 ? 'text-teal' : 'text-red-500'"
+            >
+              ${{ (vuelto || 0).toLocaleString('es-AR') }}
+            </span>
+          </div>
+          <p v-if="vuelto !== null && vuelto < 0" class="font-body text-xs text-red-500">El monto recibido es menor al total</p>
+        </div>
+
         <!-- Botones -->
         <div class="flex gap-3">
           <button
@@ -480,10 +504,71 @@
                    hover:border-teal hover:text-teal transition-colors"
           >🖨️ Reimprimir</button>
           <button
+            @click="abrirEditarPago(ventaDetalle)"
+            class="flex-1 py-3 border border-teal/40 text-teal font-body text-sm font-medium rounded-xl
+                   hover:bg-teal/5 transition-colors"
+          >✏️ Editar pago</button>
+          <button
             @click="confirmarAnulacion(ventaDetalle); ventaDetalle = null"
             class="flex-1 py-3 border border-red-200 text-red-400 font-body text-sm font-medium rounded-xl
                    hover:bg-red-50 transition-colors"
-          >Anular venta</button>
+          >Anular</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal editar forma de pago -->
+    <div v-if="modalEditarPago" class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4">
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm space-y-4">
+        <h2 class="font-display text-lg font-bold text-gray-900">Editar forma de pago</h2>
+        <p class="font-body text-xs text-gray-400">Venta #{{ ventaDetalle?.id }} · Total ${{ parseFloat(ventaDetalle?.total || 0).toLocaleString('es-AR') }}</p>
+
+        <div>
+          <label class="block font-body text-xs text-gray-500 mb-1.5">Método principal</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="metodo in metodosPago"
+              :key="metodo.value"
+              @click="editPago.metodo_pago = metodo.value; editPago.metodo_pago2 = ''; editPago.monto_pago2 = ''"
+              class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all"
+              :class="editPago.metodo_pago === metodo.value ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+            >
+              <span class="text-lg">{{ metodo.icon }}</span>{{ metodo.label }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="editPago.metodo_pago && editPago.metodo_pago !== 'cuenta_corriente'" class="space-y-2">
+          <label class="block font-body text-xs text-gray-500">2° método (opcional)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="metodo in metodosPago.filter(m => m.value !== 'cuenta_corriente' && m.value !== editPago.metodo_pago)"
+              :key="metodo.value"
+              @click="editPago.metodo_pago2 = editPago.metodo_pago2 === metodo.value ? '' : metodo.value"
+              class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all"
+              :class="editPago.metodo_pago2 === metodo.value ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+            >
+              <span class="text-lg">{{ metodo.icon }}</span>{{ metodo.label }}
+            </button>
+          </div>
+          <input
+            v-if="editPago.metodo_pago2"
+            v-model.number="editPago.monto_pago2"
+            type="number" min="1" placeholder="Monto 2° método ($)"
+            class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
+          />
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button
+            @click="modalEditarPago = false"
+            class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors"
+          >Cancelar</button>
+          <button
+            @click="guardarEditarPago"
+            :disabled="!editPago.metodo_pago || editPago.guardando"
+            class="flex-1 py-2.5 bg-teal text-gray-900 font-body text-sm font-semibold rounded-xl hover:bg-teal/80 transition-all disabled:opacity-40"
+          >{{ editPago.guardando ? 'Guardando...' : 'Guardar' }}</button>
         </div>
       </div>
     </div>
@@ -550,6 +635,9 @@ const metodoPagoSeleccionado = ref('')
 const pagoDoble              = ref(false)
 const metodoPago2            = ref('')
 const montoPago2             = ref('')
+const dineroRecibido         = ref(null)
+const modalEditarPago        = ref(false)
+const editPago               = ref({ metodo_pago: '', metodo_pago2: '', monto_pago2: '', guardando: false })
 const descuentoPct           = ref(0)
 const fechaVenta             = ref('')
 const hoyISO                 = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
@@ -610,6 +698,11 @@ const resumenMetodos = computed(() => {
 const totalDia = computed(() =>
   historialVentas.value.reduce((acc, v) => acc + (parseFloat(v.total) || 0), 0)
 )
+
+const vuelto = computed(() => {
+  if (metodoPagoSeleccionado.value !== 'efectivo' || dineroRecibido.value === null) return null
+  return (Number(dineroRecibido.value) || 0) - totalFinal.value
+})
 
 const filtroFechaLabel = computed(() => {
   if (filtroFecha.value === hoyISO) return 'Hoy'
@@ -687,6 +780,7 @@ function abrirModalPago() {
   metodoPago2.value = ''
   montoPago2.value  = ''
   descuentoPct.value = 0
+  dineroRecibido.value = null
   fechaVenta.value   = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
   cuentaSeleccionada.value = ''
   modalPago.value = true
@@ -804,6 +898,42 @@ function abrirDetalleVenta(v) {
 
 function confirmarAnulacion(v) {
   ventaAAnular.value = v
+}
+
+function abrirEditarPago(v) {
+  editPago.value = {
+    metodo_pago:  v.metodo_pago  || '',
+    metodo_pago2: v.metodo_pago2 || '',
+    monto_pago2:  v.monto_pago2  ? parseFloat(v.monto_pago2) : '',
+    guardando: false,
+  }
+  modalEditarPago.value = true
+}
+
+async function guardarEditarPago() {
+  if (!editPago.value.metodo_pago || !ventaDetalle.value) return
+  editPago.value.guardando = true
+  try {
+    const token = localStorage.getItem('ceketo_token')
+    await axios.patch(`/api/ventas/${ventaDetalle.value.id}`, {
+      metodo_pago:  editPago.value.metodo_pago,
+      metodo_pago2: editPago.value.metodo_pago2 || undefined,
+      monto_pago2:  editPago.value.monto_pago2  || undefined,
+    }, { headers: { Authorization: `Bearer ${token}` } })
+    // Actualizar venta en el historial localmente
+    const idx = historialVentas.value.findIndex(v => v.id === ventaDetalle.value.id)
+    if (idx !== -1) {
+      historialVentas.value[idx].metodo_pago  = editPago.value.metodo_pago
+      historialVentas.value[idx].metodo_pago2 = editPago.value.metodo_pago2 || null
+      historialVentas.value[idx].monto_pago2  = editPago.value.monto_pago2  || null
+    }
+    ventaDetalle.value.metodo_pago  = editPago.value.metodo_pago
+    ventaDetalle.value.metodo_pago2 = editPago.value.metodo_pago2 || null
+    ventaDetalle.value.monto_pago2  = editPago.value.monto_pago2  || null
+    modalEditarPago.value = false
+  } catch (err) {
+    alert(err.response?.data?.error || 'Error al actualizar')
+  } finally { editPago.value.guardando = false }
 }
 
 async function anularVenta() {
