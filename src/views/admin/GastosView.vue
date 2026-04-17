@@ -571,12 +571,12 @@ function descargarExcel() {
 
 // ── Init ─────────────────────────────────────────────────────────
 onMounted(async () => {
-  const [{ data: cats }, { data: provs }] = await Promise.all([
+  const [{ data: cats }, { data: cuentas }] = await Promise.all([
     axios.get('/api/gastos/categorias'),
-    axios.get('/api/proveedores').catch(() => ({ data: [] })),
+    axios.get('/api/cuentas').catch(() => ({ data: [] })),
   ])
   categorias.value  = cats
-  proveedores.value = provs
+  proveedores.value = cuentas.filter(c => c.tipo === 'proveedor')
   await cargarDatos()
 })
 </script>
