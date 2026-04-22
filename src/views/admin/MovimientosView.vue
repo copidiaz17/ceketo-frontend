@@ -6,68 +6,65 @@
     </div>
 
     <!-- Filtros -->
-    <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-6 flex flex-wrap gap-4 items-end">
-      <!-- Categoría -->
-      <div class="min-w-48">
-        <label class="block font-body text-xs text-gray-400 mb-2">Categoría</label>
-        <select
-          v-model="filtroCategoriaId"
-          @change="filtroProductoId = null"
-          class="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-body text-sm text-gray-700 focus:outline-none focus:border-teal"
-        >
-          <option :value="null">— Todas las categorías —</option>
-          <option v-for="c in categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
-        </select>
-      </div>
-
-      <!-- Producto -->
-      <div class="flex-1 min-w-48">
-        <label class="block font-body text-xs text-gray-400 mb-2">Producto (opcional)</label>
-        <ProductSelect v-model="filtroProductoId" :grupos="gruposFiltrados" placeholder="— Todos los productos —" />
-      </div>
-
-      <!-- Rango de fechas -->
-      <div>
-        <label class="block font-body text-xs text-gray-400 mb-2">Desde</label>
-        <input type="date" v-model="filtroDesde"
-          class="px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-body text-sm text-gray-700 focus:outline-none focus:border-teal" />
-      </div>
-      <div>
-        <label class="block font-body text-xs text-gray-400 mb-2">Hasta</label>
-        <input type="date" v-model="filtroHasta"
-          class="px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-body text-sm text-gray-700 focus:outline-none focus:border-teal" />
-      </div>
-
-      <!-- Tipo -->
-      <div>
-        <label class="block font-body text-xs text-gray-400 mb-2">Tipo</label>
-        <div class="flex gap-2">
-          <button
-            v-for="t in tiposFiltro"
-            :key="t.val"
-            @click="filtroTipo = t.val"
-            class="px-4 py-2.5 rounded-xl font-body text-sm border transition-all"
-            :class="filtroTipo === t.val ? 'bg-teal border-teal text-gray-900' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal/50'"
-          >{{ t.label }}</button>
+    <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
+      <!-- Fila de campos -->
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+        <div>
+          <label class="block font-body text-xs text-gray-400 mb-1.5">Categoría</label>
+          <select v-model="filtroCategoriaId" @change="filtroProductoId = null"
+            class="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-body text-sm text-gray-700 focus:outline-none focus:border-teal">
+            <option :value="null">— Todas —</option>
+            <option v-for="c in categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+          </select>
+        </div>
+        <div class="lg:col-span-2">
+          <label class="block font-body text-xs text-gray-400 mb-1.5">Producto</label>
+          <ProductSelect v-model="filtroProductoId" :grupos="gruposFiltrados" placeholder="— Todos —" />
+        </div>
+        <div>
+          <label class="block font-body text-xs text-gray-400 mb-1.5">Desde</label>
+          <input type="date" v-model="filtroDesde"
+            class="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-body text-sm text-gray-700 focus:outline-none focus:border-teal" />
+        </div>
+        <div>
+          <label class="block font-body text-xs text-gray-400 mb-1.5">Hasta</label>
+          <input type="date" v-model="filtroHasta"
+            class="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-body text-sm text-gray-700 focus:outline-none focus:border-teal" />
         </div>
       </div>
 
-      <button
-        @click="cargarMovimientos"
-        class="px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-colors"
-      >Filtrar</button>
-      <button
-        @click="limpiarFiltros"
-        class="px-5 py-2.5 bg-gray-50 border border-gray-200 text-gray-500 rounded-xl font-body text-sm hover:bg-gray-100 transition-colors"
-      >Limpiar</button>
-      <button
-        @click="exportarCSV"
-        class="px-5 py-2.5 bg-gray-50 border border-gray-200 text-gray-500 rounded-xl font-body text-sm hover:bg-gray-100 transition-colors"
-      >⬇ CSV</button>
+      <!-- Fila de acciones -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Tipo -->
+        <div class="flex gap-2">
+          <button v-for="t in tiposFiltro" :key="t.val" @click="filtroTipo = t.val"
+            class="px-4 py-2 rounded-xl font-body text-sm border transition-all"
+            :class="filtroTipo === t.val ? 'bg-teal border-teal text-gray-900' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal/50'">
+            {{ t.label }}
+          </button>
+        </div>
+        <div class="flex-1"></div>
+        <button @click="cargarMovimientos"
+          class="px-5 py-2 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-colors">
+          Filtrar
+        </button>
+        <button @click="limpiarFiltros"
+          class="px-5 py-2 bg-gray-50 border border-gray-200 text-gray-500 rounded-xl font-body text-sm hover:bg-gray-100 transition-colors">
+          Limpiar
+        </button>
+        <button @click="exportarExcel"
+          class="px-5 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl font-body text-sm hover:bg-green-100 transition-colors">
+          ⬇ Excel
+        </button>
+        <button @click="exportarPDF"
+          class="px-5 py-2 bg-red-50 border border-red-200 text-red-600 rounded-xl font-body text-sm hover:bg-red-100 transition-colors">
+          ⬇ PDF
+        </button>
+      </div>
     </div>
 
     <!-- Tabla -->
-    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+    <div ref="tablaRef" class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full font-body text-sm">
           <thead>
@@ -122,8 +119,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import * as XLSX from 'xlsx'
+import html2pdf from 'html2pdf.js'
 import ProductSelect from '@/components/admin/ProductSelect.vue'
 
+const tablaRef          = ref(null)
 const movimientos       = ref([])
 const productos         = ref([])
 const categorias        = ref([])
@@ -192,6 +192,46 @@ function limpiarFiltros() {
   filtroHasta.value       = ''
   filtroTipo.value        = 'todos'
   cargarMovimientos()
+}
+
+function exportarExcel() {
+  const wb  = XLSX.utils.book_new()
+  const h   = ['Fecha', 'Tipo', 'Categoría', 'Código', 'Producto', 'Referencia', 'Cantidad']
+  const rows = movimientosFiltrados.value.map(m => [
+    formatFecha(m),
+    m.tipo === 'entrada' ? 'Entrada' : 'Salida',
+    m.producto?.categoria?.nombre || '',
+    m.producto?.codigo || '',
+    m.producto?.nombre || '',
+    m.referencia,
+    (m.tipo === 'entrada' ? '+' : '-') + m.cantidad,
+  ])
+  const ws = XLSX.utils.aoa_to_sheet([h, ...rows])
+  ws['!cols'] = [14, 9, 22, 10, 28, 16, 9].map(w => ({ wch: w }))
+  XLSX.utils.book_append_sheet(wb, ws, 'Movimientos')
+  const hoy = new Date().toLocaleDateString('es-AR').replace(/\//g, '-')
+  XLSX.writeFile(wb, `ceketo_movimientos_${hoy}.xlsx`)
+}
+
+function exportarPDF() {
+  const hoy = new Date().toLocaleDateString('es-AR')
+  const opt = {
+    margin:      [10, 8, 10, 8],
+    filename:    `ceketo_movimientos_${hoy.replace(/\//g, '-')}.pdf`,
+    image:       { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'landscape' },
+  }
+  // Clonar tabla para agregar título sin modificar el DOM
+  const clone = tablaRef.value.cloneNode(true)
+  const wrap  = document.createElement('div')
+  wrap.style.cssText = 'font-family: sans-serif; font-size: 11px; padding: 4px;'
+  const titulo = document.createElement('h2')
+  titulo.textContent = `Movimientos de Stock — ${hoy}`
+  titulo.style.cssText = 'font-size: 14px; margin-bottom: 8px; color: #111;'
+  wrap.appendChild(titulo)
+  wrap.appendChild(clone)
+  html2pdf().set(opt).from(wrap).save()
 }
 
 function exportarCSV() {
