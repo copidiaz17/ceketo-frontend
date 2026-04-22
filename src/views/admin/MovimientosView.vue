@@ -124,31 +124,21 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import ProductSelect from '@/components/admin/ProductSelect.vue'
 
-const movimientos      = ref([])
-const productos        = ref([])
-const filtroProductoId = ref(null)
+const movimientos       = ref([])
+const productos         = ref([])
+const categorias        = ref([])
+const filtroProductoId  = ref(null)
 const filtroCategoriaId = ref(null)
-const filtroTipo       = ref('todos')
-const filtroDesde      = ref('')
-const filtroHasta      = ref('')
-const loading          = ref(false)
+const filtroTipo        = ref('todos')
+const filtroDesde       = ref('')
+const filtroHasta       = ref('')
+const loading           = ref(false)
 
 const tiposFiltro = [
   { val: 'todos',   label: 'Todos' },
   { val: 'entrada', label: 'Entradas' },
   { val: 'salida',  label: 'Salidas' },
 ]
-
-// Lista plana de categorías únicas
-const categorias = computed(() => {
-  const mapa = {}
-  for (const p of productos.value) {
-    if (p.categoria && !mapa[p.categoria.id]) {
-      mapa[p.categoria.id] = { id: p.categoria.id, nombre: p.categoria.nombre }
-    }
-  }
-  return Object.values(mapa).sort((a, b) => a.nombre.localeCompare(b.nombre))
-})
 
 // Grupos para ProductSelect, filtrados por categoría seleccionada
 const gruposFiltrados = computed(() => {
@@ -224,8 +214,12 @@ function exportarCSV() {
 }
 
 onMounted(async () => {
-  const { data } = await axios.get('/api/productos?limit=500')
-  productos.value = data
+  const [prodRes, catRes] = await Promise.all([
+    axios.get('/api/productos?limit=500'),
+    axios.get('/api/categorias'),
+  ])
+  productos.value  = prodRes.data
+  categorias.value = catRes.data
   await cargarMovimientos()
 })
 </script>
