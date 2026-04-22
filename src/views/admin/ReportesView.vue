@@ -7,9 +7,9 @@
         <p class="font-body text-gray-500 mt-1">Ventas + Pedidos online unificados</p>
       </div>
       <div class="flex gap-2">
-        <button @click="exportarExcel"
-          class="px-4 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl font-body text-sm hover:bg-green-100 transition-colors">
-          ⬇ Excel
+        <button @click="exportarExcel" :disabled="exportando"
+          class="px-4 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl font-body text-sm hover:bg-green-100 transition-colors disabled:opacity-50">
+          {{ exportando ? 'Generando...' : '⬇ Excel' }}
         </button>
         <button @click="exportarPDF"
           class="px-4 py-2 bg-red-50 border border-red-200 text-red-600 rounded-xl font-body text-sm hover:bg-red-100 transition-colors">
@@ -60,7 +60,6 @@
       </div>
     </div>
 
-    <!-- Loading -->
     <div v-if="loading" class="text-center py-16 text-gray-400 font-body">Cargando reporte...</div>
 
     <template v-else>
@@ -86,9 +85,8 @@
 
       <!-- Tabs -->
       <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-        <!-- Tab bar -->
         <div class="flex border-b border-gray-200 overflow-x-auto">
-          <button v-for="t in tabs" :key="t.id" @click="tabActivo = t.id"
+          <button v-for="t in tabs" :key="t.id" @click="cambiarTab(t.id)"
             class="px-6 py-4 font-body text-sm whitespace-nowrap border-b-2 transition-all"
             :class="tabActivo === t.id
               ? 'border-teal text-teal font-semibold'
@@ -97,7 +95,7 @@
           </button>
         </div>
 
-        <!-- Tab: Ventas -->
+        <!-- Ventas -->
         <div v-if="tabActivo === 'ventas'" ref="tablaRef" class="overflow-x-auto">
           <table class="w-full font-body text-sm">
             <thead>
@@ -112,11 +110,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="operaciones.length === 0">
-                <td colspan="7" class="text-center py-12 text-gray-400">Sin datos</td>
-              </tr>
-              <tr v-for="op in operaciones" :key="op.id"
-                class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+              <tr v-if="operaciones.length === 0"><td colspan="7" class="text-center py-12 text-gray-400">Sin datos</td></tr>
+              <tr v-for="op in operaciones" :key="op.id" class="border-b border-gray-100 hover:bg-gray-50">
                 <td class="px-4 py-3 font-mono text-xs text-gray-400">{{ op.id }}</td>
                 <td class="px-4 py-3 text-xs text-gray-500">{{ formatFecha(op.fecha) }}</td>
                 <td class="px-4 py-3">
@@ -137,15 +132,15 @@
               </tr>
             </tbody>
             <tfoot v-if="operaciones.length > 0">
-              <tr class="bg-gray-50 border-t-2 border-gray-200">
-                <td colspan="6" class="px-4 py-3 font-body text-sm font-semibold text-gray-700">Total</td>
-                <td class="px-4 py-3 text-right font-display font-bold text-teal">${{ fmt(kpis.total) }}</td>
+              <tr class="bg-teal/10 border-t-2 border-teal/30">
+                <td colspan="6" class="px-4 py-3 font-semibold text-gray-700 text-sm">TOTAL</td>
+                <td class="px-4 py-3 text-right font-display font-bold text-teal text-base">${{ fmt(kpis.total) }}</td>
               </tr>
             </tfoot>
           </table>
         </div>
 
-        <!-- Tab: Detalle -->
+        <!-- Detalle -->
         <div v-if="tabActivo === 'detalle'" ref="tablaRef" class="overflow-x-auto">
           <table class="w-full font-body text-sm">
             <thead>
@@ -161,11 +156,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="detalle.length === 0">
-                <td colspan="8" class="text-center py-12 text-gray-400">Sin datos</td>
-              </tr>
-              <tr v-for="(d, i) in detalle" :key="i"
-                class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+              <tr v-if="detalle.length === 0"><td colspan="8" class="text-center py-12 text-gray-400">Sin datos</td></tr>
+              <tr v-for="(d, i) in detalle" :key="i" class="border-b border-gray-100 hover:bg-gray-50">
                 <td class="px-4 py-2.5 font-mono text-xs text-gray-400">{{ d.operacion_id }}</td>
                 <td class="px-4 py-2.5 text-xs text-gray-500">{{ formatFecha(d.fecha) }}</td>
                 <td class="px-4 py-2.5 text-xs text-gray-500">{{ d.categoria }}</td>
@@ -179,7 +171,7 @@
           </table>
         </div>
 
-        <!-- Tab: Resumen -->
+        <!-- Resumen -->
         <div v-if="tabActivo === 'resumen'" ref="tablaRef" class="overflow-x-auto">
           <table class="w-full font-body text-sm">
             <thead>
@@ -190,15 +182,12 @@
                 <th class="text-right px-4 py-3">Unidades</th>
                 <th class="text-right px-4 py-3">P. Unit.</th>
                 <th class="text-right px-4 py-3">Total</th>
-                <th class="text-right px-4 py-3">% Total</th>
+                <th class="text-right px-4 py-3 w-40">% Total</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="resumen.length === 0">
-                <td colspan="7" class="text-center py-12 text-gray-400">Sin datos</td>
-              </tr>
-              <tr v-for="(r, i) in resumen" :key="i"
-                class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+              <tr v-if="resumen.length === 0"><td colspan="7" class="text-center py-12 text-gray-400">Sin datos</td></tr>
+              <tr v-for="(r, i) in resumen" :key="i" class="border-b border-gray-100 hover:bg-gray-50">
                 <td class="px-4 py-2.5 text-xs text-gray-500">{{ r.categoria }}</td>
                 <td class="px-4 py-2.5 text-gray-800 font-medium">{{ r.producto }}</td>
                 <td class="px-4 py-2.5 font-mono text-xs text-gray-400">{{ r.codigo }}</td>
@@ -207,8 +196,8 @@
                 <td class="px-4 py-2.5 text-right font-bold text-teal">${{ fmt(r.total) }}</td>
                 <td class="px-4 py-2.5 text-right">
                   <div class="flex items-center justify-end gap-2">
-                    <div class="w-16 bg-gray-100 rounded-full h-1.5">
-                      <div class="bg-teal h-1.5 rounded-full" :style="{ width: r.pct + '%' }"></div>
+                    <div class="w-20 bg-gray-100 rounded-full h-1.5">
+                      <div class="bg-teal h-1.5 rounded-full" :style="{ width: Math.min(r.pct, 100) + '%' }"></div>
                     </div>
                     <span class="text-xs text-gray-500 w-10 text-right">{{ r.pct }}%</span>
                   </div>
@@ -218,27 +207,24 @@
           </table>
         </div>
 
-        <!-- Tab: Gráficos -->
+        <!-- Gráficos -->
         <div v-if="tabActivo === 'graficos'" class="p-6">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Ventas por día -->
-            <div>
+            <div class="bg-gray-50 rounded-2xl p-4">
               <h3 class="font-body text-sm font-semibold text-gray-600 mb-4">Ventas por día</h3>
-              <div class="relative h-64">
+              <div class="relative" style="height:260px">
                 <canvas ref="chartBarRef"></canvas>
               </div>
             </div>
-            <!-- Ventas por categoría -->
-            <div>
+            <div class="bg-gray-50 rounded-2xl p-4">
               <h3 class="font-body text-sm font-semibold text-gray-600 mb-4">Distribución por categoría</h3>
-              <div class="relative h-64">
+              <div class="relative" style="height:260px">
                 <canvas ref="chartDoughnutRef"></canvas>
               </div>
             </div>
-            <!-- Top 10 productos -->
-            <div class="lg:col-span-2">
+            <div class="bg-gray-50 rounded-2xl p-4 lg:col-span-2">
               <h3 class="font-body text-sm font-semibold text-gray-600 mb-4">Top 10 productos</h3>
-              <div class="relative h-72">
+              <div class="relative" style="height:300px">
                 <canvas ref="chartTopRef"></canvas>
               </div>
             </div>
@@ -250,46 +236,45 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import html2pdf from 'html2pdf.js'
 import { Chart, registerables } from 'chart.js'
 Chart.register(...registerables)
 
 // ── Estado ────────────────────────────────────────────────────────────────────
-const loading          = ref(false)
-const categorias       = ref([])
-const productos        = ref([])
-const filtroDesde      = ref('')
-const filtroHasta      = ref('')
+const loading           = ref(false)
+const exportando        = ref(false)
+const categorias        = ref([])
+const productos         = ref([])
+const filtroDesde       = ref('')
+const filtroHasta       = ref('')
 const filtroCategoriaId = ref(null)
 const filtroProductoId  = ref(null)
-const tabActivo        = ref('ventas')
-const tablaRef         = ref(null)
+const tabActivo         = ref('ventas')
+const tablaRef          = ref(null)
 
-// Datos del reporte
-const kpis             = ref({ total: 0, n_operaciones: 0, ticket_promedio: 0, unidades: 0 })
-const operaciones      = ref([])
-const detalle          = ref([])
-const resumen          = ref([])
-const por_categoria    = ref([])
-const por_dia          = ref([])
+const kpis          = ref({ total: 0, n_operaciones: 0, ticket_promedio: 0, unidades: 0 })
+const operaciones   = ref([])
+const detalle       = ref([])
+const resumen       = ref([])
+const por_categoria = ref([])
+const por_dia       = ref([])
 
-// Canvas refs
 const chartBarRef      = ref(null)
 const chartDoughnutRef = ref(null)
 const chartTopRef      = ref(null)
-let   chartBar         = null
-let   chartDoughnut    = null
-let   chartTop         = null
+let chartBar = null, chartDoughnut = null, chartTop = null
 
 const tabs = [
-  { id: 'ventas',    label: 'Ventas' },
-  { id: 'detalle',   label: 'Detalle de productos' },
-  { id: 'resumen',   label: 'Resumen por producto' },
-  { id: 'graficos',  label: 'Gráficos' },
+  { id: 'ventas',   label: 'Ventas' },
+  { id: 'detalle',  label: 'Detalle de productos' },
+  { id: 'resumen',  label: 'Resumen por producto' },
+  { id: 'graficos', label: 'Gráficos' },
 ]
+
+const COLORES = ['2DD4BF','F97316','6366F1','EC4899','EAB308','10B981','3B82F6','A855F7','EF4444','14B8A6']
 
 // ── Computeds ─────────────────────────────────────────────────────────────────
 const productosFiltrados = computed(() =>
@@ -310,7 +295,15 @@ function formatFecha(f) {
   })
 }
 
-// ── Carga de datos ────────────────────────────────────────────────────────────
+function formatFechaCorta(f) {
+  if (!f) return '—'
+  return new Date(f).toLocaleDateString('es-AR', {
+    day: '2-digit', month: '2-digit', year: '2-digit',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  })
+}
+
+// ── Carga ─────────────────────────────────────────────────────────────────────
 async function cargar() {
   loading.value = true
   try {
@@ -326,166 +319,309 @@ async function cargar() {
     resumen.value       = data.resumen
     por_categoria.value = data.por_categoria
     por_dia.value       = data.por_dia
+    if (tabActivo.value === 'graficos') setTimeout(crearGraficos, 100)
   } catch { }
   finally { loading.value = false }
 }
 
 function limpiar() {
-  filtroDesde.value       = ''
-  filtroHasta.value       = ''
-  filtroCategoriaId.value = null
-  filtroProductoId.value  = null
+  filtroDesde.value = ''; filtroHasta.value = ''
+  filtroCategoriaId.value = null; filtroProductoId.value = null
   cargar()
 }
 
-// ── Gráficos ──────────────────────────────────────────────────────────────────
-const COLORES = [
-  '#2DD4BF','#F97316','#6366F1','#EC4899','#EAB308',
-  '#10B981','#3B82F6','#A855F7','#EF4444','#14B8A6',
-]
+function cambiarTab(id) {
+  tabActivo.value = id
+  if (id === 'graficos') setTimeout(crearGraficos, 150)
+}
 
+// ── Gráficos en pantalla ──────────────────────────────────────────────────────
 function crearGraficos() {
-  nextTick(() => {
-    // Bar: por día
-    if (chartBarRef.value) {
-      if (chartBar) chartBar.destroy()
-      chartBar = new Chart(chartBarRef.value, {
-        type: 'bar',
-        data: {
-          labels: por_dia.value.map(d => {
-            const [y, m, day] = d.dia.split('-')
-            return `${day}/${m}`
-          }),
-          datasets: [{
-            label: 'Total $',
-            data: por_dia.value.map(d => d.total),
-            backgroundColor: '#2DD4BF',
-            borderRadius: 6,
-          }],
+  if (chartBarRef.value) {
+    if (chartBar) chartBar.destroy()
+    chartBar = new Chart(chartBarRef.value, {
+      type: 'bar',
+      data: {
+        labels: por_dia.value.map(d => { const [,m,day] = d.dia.split('-'); return `${day}/${m}` }),
+        datasets: [{ label: 'Total $', data: por_dia.value.map(d => d.total), backgroundColor: '#2DD4BF', borderRadius: 6 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { ticks: { callback: v => '$' + Math.round(v/1000) + 'K' }, grid: { color: '#F3F4F6' } },
+          x: { grid: { display: false } },
         },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { ticks: { callback: v => '$' + Math.round(v / 1000) + 'K' }, grid: { color: '#F3F4F6' } },
-            x: { grid: { display: false } },
-          },
+      },
+    })
+  }
+  if (chartDoughnutRef.value) {
+    if (chartDoughnut) chartDoughnut.destroy()
+    chartDoughnut = new Chart(chartDoughnutRef.value, {
+      type: 'doughnut',
+      data: {
+        labels: por_categoria.value.map(c => c.categoria),
+        datasets: [{ data: por_categoria.value.map(c => c.total), backgroundColor: COLORES.map(c => '#' + c), borderWidth: 2, borderColor: '#fff' }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } },
+          tooltip: { callbacks: { label: ctx => ` $${Math.round(ctx.raw).toLocaleString('es-AR')} (${por_categoria.value[ctx.dataIndex]?.pct}%)` } },
         },
-      })
-    }
-    // Doughnut: por categoría
-    if (chartDoughnutRef.value) {
-      if (chartDoughnut) chartDoughnut.destroy()
-      chartDoughnut = new Chart(chartDoughnutRef.value, {
-        type: 'doughnut',
-        data: {
-          labels: por_categoria.value.map(c => c.categoria),
-          datasets: [{
-            data: por_categoria.value.map(c => c.total),
-            backgroundColor: COLORES,
-            borderWidth: 2,
-            borderColor: '#fff',
-          }],
+      },
+    })
+  }
+  if (chartTopRef.value) {
+    if (chartTop) chartTop.destroy()
+    const top10 = resumen.value.slice(0, 10)
+    chartTop = new Chart(chartTopRef.value, {
+      type: 'bar',
+      data: {
+        labels: top10.map(r => r.producto.length > 32 ? r.producto.slice(0, 32) + '…' : r.producto),
+        datasets: [{ label: 'Total $', data: top10.map(r => r.total), backgroundColor: COLORES.map(c => '#' + c), borderRadius: 6 }],
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { callback: v => '$' + Math.round(v/1000) + 'K' }, grid: { color: '#F3F4F6' } },
+          y: { grid: { display: false }, ticks: { font: { size: 11 } } },
         },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } },
-            tooltip: { callbacks: { label: ctx => ` $${Math.round(ctx.raw).toLocaleString('es-AR')} (${por_categoria.value[ctx.dataIndex]?.pct}%)` } },
-          },
-        },
-      })
-    }
-    // Bar horizontal: top 10 productos
-    if (chartTopRef.value) {
-      if (chartTop) chartTop.destroy()
-      const top10 = resumen.value.slice(0, 10)
-      chartTop = new Chart(chartTopRef.value, {
-        type: 'bar',
-        data: {
-          labels: top10.map(r => r.producto.length > 30 ? r.producto.slice(0, 30) + '…' : r.producto),
-          datasets: [{
-            label: 'Total $',
-            data: top10.map(r => r.total),
-            backgroundColor: COLORES,
-            borderRadius: 6,
-          }],
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { callback: v => '$' + Math.round(v / 1000) + 'K' }, grid: { color: '#F3F4F6' } },
-            y: { grid: { display: false }, ticks: { font: { size: 11 } } },
-          },
-        },
-      })
-    }
+      },
+    })
+  }
+}
+
+// ── Render gráfico a imagen base64 (para Excel) ───────────────────────────────
+function renderChartImage(type, labels, datasets, options = {}, w = 900, h = 400) {
+  return new Promise(resolve => {
+    const canvas = document.createElement('canvas')
+    canvas.width = w; canvas.height = h
+    canvas.style.position = 'absolute'; canvas.style.left = '-9999px'
+    document.body.appendChild(canvas)
+    const ch = new Chart(canvas, {
+      type,
+      data: { labels, datasets },
+      options: { ...options, animation: false, responsive: false },
+    })
+    setTimeout(() => {
+      const img = canvas.toDataURL('image/png').split(',')[1]
+      ch.destroy(); document.body.removeChild(canvas)
+      resolve(img)
+    }, 200)
   })
 }
 
-// Crear gráficos cuando se cambia a la pestaña gráficos o cuando se cargan datos
-watch(tabActivo, val => { if (val === 'graficos') crearGraficos() })
-watch(por_dia,   ()  => { if (tabActivo.value === 'graficos') crearGraficos() })
+// ── Exportar Excel profesional ────────────────────────────────────────────────
+async function exportarExcel() {
+  exportando.value = true
+  try {
+    const wb = new ExcelJS.Workbook()
+    wb.creator = 'Ceketo'
+    wb.created = new Date()
 
-// ── Exportar Excel ────────────────────────────────────────────────────────────
-function exportarExcel() {
-  const wb  = XLSX.utils.book_new()
+    const VERDE_OSC  = '1A5F5A'
+    const VERDE_TEAL = '2DD4BF'
+    const VERDE_LIGHT = 'E6FFFE'
+    const GRIS_ALT   = 'F9FAFB'
+    const BORDE = { style: 'thin', color: { argb: 'FFE5E7EB' } }
+    const BORDE_H = { style: 'medium', color: { argb: 'FF' + VERDE_TEAL } }
 
-  // Hoja 1: Ventas
-  const h1 = ['#', 'Fecha', 'Origen', 'Cliente', 'Método pago', 'Entrega', 'Total']
-  const r1  = operaciones.value.map(op => [op.id, formatFecha(op.fecha), op.origen, op.cliente, op.metodo_pago, op.entrega, op.total])
-  const ws1 = XLSX.utils.aoa_to_sheet([h1, ...r1])
-  ws1['!cols'] = [8, 16, 8, 22, 14, 10, 12].map(w => ({ wch: w }))
-  XLSX.utils.book_append_sheet(wb, ws1, 'Ventas')
+    const rango = [filtroDesde.value, filtroHasta.value].filter(Boolean).join(' al ') || 'Período completo'
+    const fechaGen = new Date().toLocaleDateString('es-AR')
 
-  // Hoja 2: Detalle de productos
-  const h2 = ['Operación', 'Fecha', 'Origen', 'Categoría', 'Producto', 'Código', 'Cantidad', 'P. Unit.', 'Subtotal']
-  const r2  = detalle.value.map(d => [d.operacion_id, formatFecha(d.fecha), d.origen, d.categoria, d.producto, d.codigo, d.cantidad, d.precio_unit, d.subtotal])
-  const ws2 = XLSX.utils.aoa_to_sheet([h2, ...r2])
-  ws2['!cols'] = [8, 16, 8, 22, 30, 10, 8, 10, 12].map(w => ({ wch: w }))
-  XLSX.utils.book_append_sheet(wb, ws2, 'Detalle de productos')
+    function addTitle(ws, titulo, ncols) {
+      ws.mergeCells(1, 1, 1, ncols)
+      const t = ws.getRow(1).getCell(1)
+      t.value = titulo
+      t.font = { bold: true, size: 15, color: { argb: 'FF' + VERDE_OSC } }
+      t.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + VERDE_LIGHT } }
+      t.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
+      ws.getRow(1).height = 36
 
-  // Hoja 3: Resumen por producto
-  const h3 = ['Categoría', 'Producto', 'Código', 'Unidades', 'P. Unit.', 'Total', '% del total']
-  const r3  = resumen.value.map(r => [r.categoria, r.producto, r.codigo, r.cantidad, r.precio_unit, r.total, r.pct + '%'])
-  const ws3 = XLSX.utils.aoa_to_sheet([h3, ...r3])
-  ws3['!cols'] = [22, 30, 10, 9, 10, 12, 9].map(w => ({ wch: w }))
-  XLSX.utils.book_append_sheet(wb, ws3, 'Resumen por producto')
+      ws.mergeCells(2, 1, 2, ncols)
+      const s = ws.getRow(2).getCell(1)
+      s.value = `Período: ${rango}   |   Generado: ${fechaGen}   |   Total: $${fmt(kpis.value.total)}`
+      s.font = { size: 9, color: { argb: 'FF6B7280' }, italic: true }
+      s.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } }
+      s.alignment = { vertical: 'middle', indent: 1 }
+      ws.getRow(2).height = 18
+    }
 
-  // Hoja 4: Resumen por categoría
-  const h4 = ['Categoría', 'Total', '% del total']
-  const r4  = por_categoria.value.map(c => [c.categoria, c.total, c.pct + '%'])
-  const ws4 = XLSX.utils.aoa_to_sheet([h4, ...r4])
-  ws4['!cols'] = [30, 14, 10].map(w => ({ wch: w }))
-  XLSX.utils.book_append_sheet(wb, ws4, 'Por categoría')
+    function styleHeader(row, ncols) {
+      for (let c = 1; c <= ncols; c++) {
+        const cell = row.getCell(c)
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + VERDE_OSC } }
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false }
+        cell.border = { top: BORDE_H, bottom: BORDE_H, left: BORDE, right: BORDE }
+      }
+      row.height = 28
+    }
 
-  const hoy = new Date().toLocaleDateString('es-AR').replace(/\//g, '-')
-  XLSX.writeFile(wb, `ceketo_reporte_${hoy}.xlsx`)
+    function styleData(row, ncols, alt = false, isTotal = false) {
+      const bg = isTotal ? 'FF' + VERDE_LIGHT : alt ? 'FFF9FAFB' : 'FFFFFFFF'
+      for (let c = 1; c <= ncols; c++) {
+        const cell = row.getCell(c)
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+        cell.font = { size: 10, bold: isTotal }
+        cell.alignment = { vertical: 'middle' }
+        cell.border = { top: BORDE, bottom: BORDE, left: BORDE, right: BORDE }
+      }
+      row.height = isTotal ? 24 : 20
+    }
+
+    function numFmt(row, cols, format = '"$"#,##0') {
+      cols.forEach(c => { row.getCell(c).numFmt = format; row.getCell(c).alignment = { horizontal: 'right', vertical: 'middle' } })
+    }
+
+    // ── Hoja 1: Ventas ────────────────────────────────────────────────────────
+    const ws1 = wb.addWorksheet('Ventas', { views: [{ state: 'frozen', ySplit: 3 }] })
+    ws1.columns = [
+      { key: 'id',     width: 10 }, { key: 'fecha',   width: 18 },
+      { key: 'origen', width: 10 }, { key: 'cliente',  width: 26 },
+      { key: 'metodo', width: 16 }, { key: 'entrega',  width: 12 },
+      { key: 'total',  width: 16 },
+    ]
+    addTitle(ws1, 'VENTAS', 7)
+    const h1 = ws1.getRow(3)
+    h1.values = ['#', 'Fecha', 'Origen', 'Cliente', 'Método de pago', 'Entrega', 'Total']
+    styleHeader(h1, 7)
+    operaciones.value.forEach((op, i) => {
+      const r = ws1.addRow([op.id, formatFechaCorta(op.fecha), op.origen, op.cliente, op.metodo_pago, op.entrega, op.total])
+      styleData(r, 7, i % 2 === 1)
+      numFmt(r, [7])
+    })
+    const tot1 = ws1.addRow(['', '', '', '', '', 'TOTAL', kpis.value.total])
+    styleData(tot1, 7, false, true)
+    numFmt(tot1, [7])
+
+    // ── Hoja 2: Detalle de productos ──────────────────────────────────────────
+    const ws2 = wb.addWorksheet('Detalle de productos', { views: [{ state: 'frozen', ySplit: 3 }] })
+    ws2.columns = [
+      { key: 'op',     width: 10 }, { key: 'fecha',    width: 16 },
+      { key: 'origen', width: 9  }, { key: 'cat',      width: 24 },
+      { key: 'prod',   width: 32 }, { key: 'cod',      width: 11 },
+      { key: 'cant',   width: 9  }, { key: 'precio',   width: 14 },
+      { key: 'sub',    width: 14 },
+    ]
+    addTitle(ws2, 'DETALLE DE PRODUCTOS', 9)
+    const h2 = ws2.getRow(3)
+    h2.values = ['Operación', 'Fecha', 'Origen', 'Categoría', 'Producto', 'Código', 'Cant.', 'P. Unit.', 'Subtotal']
+    styleHeader(h2, 9)
+    detalle.value.forEach((d, i) => {
+      const r = ws2.addRow([d.operacion_id, formatFechaCorta(d.fecha), d.origen, d.categoria, d.producto, d.codigo, d.cantidad, d.precio_unit, d.subtotal])
+      styleData(r, 9, i % 2 === 1)
+      numFmt(r, [8, 9])
+      r.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' }
+    })
+
+    // ── Hoja 3: Resumen por producto ──────────────────────────────────────────
+    const ws3 = wb.addWorksheet('Resumen por producto', { views: [{ state: 'frozen', ySplit: 3 }] })
+    ws3.columns = [
+      { key: 'cat',    width: 26 }, { key: 'prod',     width: 34 },
+      { key: 'cod',    width: 11 }, { key: 'cant',     width: 10 },
+      { key: 'precio', width: 14 }, { key: 'total',    width: 16 },
+      { key: 'pct',    width: 11 },
+    ]
+    addTitle(ws3, 'RESUMEN POR PRODUCTO', 7)
+    const h3 = ws3.getRow(3)
+    h3.values = ['Categoría', 'Producto', 'Código', 'Unidades', 'P. Unit.', 'Total', '% Total']
+    styleHeader(h3, 7)
+    resumen.value.forEach((r, i) => {
+      const row = ws3.addRow([r.categoria, r.producto, r.codigo, r.cantidad, r.precio_unit, r.total, r.pct / 100])
+      styleData(row, 7, i % 2 === 1)
+      numFmt(row, [5, 6])
+      row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }
+      row.getCell(7).numFmt = '0.0%'
+      row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' }
+    })
+    const tot3 = ws3.addRow(['', 'TOTAL', '', resumen.value.reduce((s, r) => s + r.cantidad, 0), '', kpis.value.total, 1])
+    styleData(tot3, 7, false, true)
+    numFmt(tot3, [6]); tot3.getCell(7).numFmt = '0.0%'
+
+    // ── Hoja 4: Por categoría + gráfico ───────────────────────────────────────
+    const ws4 = wb.addWorksheet('Por categoría', { views: [{ state: 'frozen', ySplit: 3 }] })
+    ws4.columns = [{ key: 'cat', width: 36 }, { key: 'total', width: 16 }, { key: 'pct', width: 11 }]
+    addTitle(ws4, 'VENTAS POR CATEGORÍA', 3)
+    const h4 = ws4.getRow(3)
+    h4.values = ['Categoría', 'Total $', '% del total']
+    styleHeader(h4, 3)
+    por_categoria.value.forEach((c, i) => {
+      const row = ws4.addRow([c.categoria, c.total, c.pct / 100])
+      styleData(row, 3, i % 2 === 1)
+      numFmt(row, [2]); row.getCell(3).numFmt = '0.0%'; row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' }
+    })
+
+    // ── Gráficos como imágenes ─────────────────────────────────────────────────
+    // Torta categorías → hoja 4
+    const imgDonut = await renderChartImage(
+      'doughnut',
+      por_categoria.value.map(c => c.categoria),
+      [{ data: por_categoria.value.map(c => c.total), backgroundColor: COLORES.map(c => '#' + c), borderWidth: 2, borderColor: '#fff' }],
+      { plugins: { legend: { position: 'right' } } }
+    )
+    const idDonut = wb.addImage({ base64: imgDonut, extension: 'png' })
+    ws4.addImage(idDonut, { tl: { col: 4, row: 2 }, ext: { width: 480, height: 320 } })
+
+    // Barras por día → hoja 1
+    const imgBar = await renderChartImage(
+      'bar',
+      por_dia.value.map(d => { const [,m,day] = d.dia.split('-'); return `${day}/${m}` }),
+      [{ label: 'Total', data: por_dia.value.map(d => d.total), backgroundColor: '#2DD4BF', borderRadius: 4 }],
+      { plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => '$' + Math.round(v/1000) + 'K' } } } }
+    )
+    const idBar = wb.addImage({ base64: imgBar, extension: 'png' })
+    ws1.addImage(idBar, { tl: { col: 8, row: 2 }, ext: { width: 600, height: 320 } })
+
+    // Top 10 horizontal → hoja 3
+    const top10 = resumen.value.slice(0, 10)
+    const imgTop = await renderChartImage(
+      'bar',
+      top10.map(r => r.producto.length > 30 ? r.producto.slice(0, 30) + '…' : r.producto),
+      [{ label: 'Total', data: top10.map(r => r.total), backgroundColor: COLORES.map(c => '#' + c), borderRadius: 4 }],
+      { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => '$' + Math.round(v/1000) + 'K' } } } },
+      900, 440
+    )
+    const idTop = wb.addImage({ base64: imgTop, extension: 'png' })
+    ws3.addImage(idTop, { tl: { col: 8, row: 2 }, ext: { width: 600, height: 380 } })
+
+    // ── Descargar ──────────────────────────────────────────────────────────────
+    const buffer = await wb.xlsx.writeBuffer()
+    const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url    = URL.createObjectURL(blob)
+    const a      = document.createElement('a')
+    a.href = url
+    a.download = `ceketo_reporte_${fechaGen.replace(/\//g, '-')}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error(err)
+    alert('Error al generar Excel: ' + err.message)
+  } finally {
+    exportando.value = false
+  }
 }
 
 // ── Exportar PDF ──────────────────────────────────────────────────────────────
 function exportarPDF() {
-  const hoy = new Date().toLocaleDateString('es-AR')
+  const hoy       = new Date().toLocaleDateString('es-AR')
   const nombreTab = tabs.find(t => t.id === tabActivo.value)?.label || tabActivo.value
-  const opt = {
-    margin:      [10, 8, 10, 8],
-    filename:    `ceketo_reporte_${hoy.replace(/\//g, '-')}.pdf`,
-    image:       { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'landscape' },
-  }
-  const clone = tablaRef.value?.cloneNode(true)
-  if (!clone) return alert('Cambiá a una pestaña de tabla para exportar PDF')
+  if (!tablaRef.value) return alert('Cambiá a una pestaña de tabla para exportar PDF')
+  const clone = tablaRef.value.cloneNode(true)
   const wrap  = document.createElement('div')
   wrap.style.cssText = 'font-family: sans-serif; font-size: 10px;'
   const titulo = document.createElement('h2')
   titulo.textContent = `Reporte Ceketo — ${nombreTab} — ${hoy}`
-  titulo.style.cssText = 'font-size: 13px; margin-bottom: 8px;'
-  wrap.appendChild(titulo)
-  wrap.appendChild(clone)
-  html2pdf().set(opt).from(wrap).save()
+  titulo.style.cssText = 'font-size: 13px; margin-bottom: 8px; color: #1A5F5A;'
+  wrap.appendChild(titulo); wrap.appendChild(clone)
+  html2pdf().set({
+    margin: [10, 8, 10, 8], filename: `ceketo_reporte_${hoy.replace(/\//g, '-')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+  }).from(wrap).save()
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
