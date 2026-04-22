@@ -510,12 +510,36 @@ async function exportarExcel() {
     const h2 = ws2.getRow(3)
     h2.values = ['Operación', 'Fecha', 'Origen', 'Categoría', 'Producto', 'Código', 'Cant.', 'P. Unit.', 'Subtotal']
     styleHeader(h2, 9)
-    detalle.value.forEach((d, i) => {
+    // Agrupar detalle por operación y agregar fila de subtotal al final de cada grupo
+    let curOpId = null, opTotal = 0, opCant = 0, altIdx = 0
+    const flushOpTotal = () => {
+      if (curOpId === null) return
+      const tr = ws2.addRow(['', '', '', '', `TOTAL ${curOpId}`, '', opCant, '', opTotal])
+      for (let c = 1; c <= 9; c++) {
+        const cell = tr.getCell(c)
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } }
+        cell.font = { bold: true, size: 10 }
+        cell.border = { top: { style: 'medium', color: { argb: 'FF2DD4BF' } }, bottom: BORDE, left: BORDE, right: BORDE }
+        cell.alignment = { vertical: 'middle' }
+      }
+      tr.getCell(5).alignment = { horizontal: 'right', vertical: 'middle' }
+      tr.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' }
+      tr.getCell(9).numFmt = '"$"#,##0'; tr.getCell(9).alignment = { horizontal: 'right', vertical: 'middle' }
+      tr.height = 22
+      altIdx = 0
+    }
+    detalle.value.forEach(d => {
+      if (d.operacion_id !== curOpId) {
+        flushOpTotal()
+        curOpId = d.operacion_id; opTotal = 0; opCant = 0
+      }
       const r = ws2.addRow([d.operacion_id, formatFechaCorta(d.fecha), d.origen, d.categoria, d.producto, d.codigo, d.cantidad, d.precio_unit, d.subtotal])
-      styleData(r, 9, i % 2 === 1)
+      styleData(r, 9, altIdx % 2 === 1)
       numFmt(r, [8, 9])
       r.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' }
+      opTotal += d.subtotal; opCant += d.cantidad; altIdx++
     })
+    flushOpTotal()
 
     // ── Hoja 3: Resumen por producto ──────────────────────────────────────────
     const ws3 = wb.addWorksheet('Resumen por producto', { views: [{ state: 'frozen', ySplit: 3 }] })
