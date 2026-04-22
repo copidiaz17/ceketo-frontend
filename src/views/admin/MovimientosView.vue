@@ -7,10 +7,38 @@
 
     <!-- Filtros -->
     <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-6 flex flex-wrap gap-4 items-end">
+      <!-- Categoría -->
+      <div class="min-w-48">
+        <label class="block font-body text-xs text-gray-400 mb-2">Categoría</label>
+        <select
+          v-model="filtroCategoriaId"
+          @change="filtroProductoId = null"
+          class="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-body text-sm text-gray-700 focus:outline-none focus:border-teal"
+        >
+          <option :value="null">— Todas las categorías —</option>
+          <option v-for="c in categorias" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+        </select>
+      </div>
+
+      <!-- Producto -->
       <div class="flex-1 min-w-48">
         <label class="block font-body text-xs text-gray-400 mb-2">Producto (opcional)</label>
-        <ProductSelect v-model="filtroProductoId" :grupos="categoriasConProductos" placeholder="— Todos los productos —" />
+        <ProductSelect v-model="filtroProductoId" :grupos="gruposFiltrados" placeholder="— Todos los productos —" />
       </div>
+
+      <!-- Rango de fechas -->
+      <div>
+        <label class="block font-body text-xs text-gray-400 mb-2">Desde</label>
+        <input type="date" v-model="filtroDesde"
+          class="px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-body text-sm text-gray-700 focus:outline-none focus:border-teal" />
+      </div>
+      <div>
+        <label class="block font-body text-xs text-gray-400 mb-2">Hasta</label>
+        <input type="date" v-model="filtroHasta"
+          class="px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 font-body text-sm text-gray-700 focus:outline-none focus:border-teal" />
+      </div>
+
+      <!-- Tipo -->
       <div>
         <label class="block font-body text-xs text-gray-400 mb-2">Tipo</label>
         <div class="flex gap-2">
@@ -23,10 +51,15 @@
           >{{ t.label }}</button>
         </div>
       </div>
+
       <button
         @click="cargarMovimientos"
         class="px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-colors"
       >Filtrar</button>
+      <button
+        @click="limpiarFiltros"
+        class="px-5 py-2.5 bg-gray-50 border border-gray-200 text-gray-500 rounded-xl font-body text-sm hover:bg-gray-100 transition-colors"
+      >Limpiar</button>
       <button
         @click="exportarCSV"
         class="px-5 py-2.5 bg-gray-50 border border-gray-200 text-gray-500 rounded-xl font-body text-sm hover:bg-gray-100 transition-colors"
@@ -41,6 +74,7 @@
             <tr class="text-gray-400 border-b border-gray-200 bg-gray-50">
               <th class="text-left px-5 py-4">Fecha</th>
               <th class="text-left px-5 py-4">Tipo</th>
+              <th class="text-left px-5 py-4">Categoría</th>
               <th class="text-left px-5 py-4">Producto</th>
               <th class="text-left px-5 py-4">Referencia</th>
               <th class="text-right px-5 py-4">Cantidad</th>
@@ -48,10 +82,10 @@
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="5" class="text-center py-10 text-gray-400 font-body">Cargando...</td>
+              <td colspan="6" class="text-center py-10 text-gray-400 font-body">Cargando...</td>
             </tr>
             <tr v-else-if="movimientosFiltrados.length === 0">
-              <td colspan="5" class="text-center py-10 text-gray-400 font-body">Sin movimientos</td>
+              <td colspan="6" class="text-center py-10 text-gray-400 font-body">Sin movimientos</td>
             </tr>
             <tr
               v-for="(m, i) in movimientosFiltrados"
@@ -67,6 +101,7 @@
                   {{ m.tipo === 'entrada' ? '▲ Entrada' : '▼ Salida' }}
                 </span>
               </td>
+              <td class="px-5 py-3 text-gray-500 text-xs">{{ m.producto?.categoria?.nombre || '—' }}</td>
               <td class="px-5 py-3">
                 <p class="text-gray-900">{{ m.producto?.nombre }}</p>
                 <p class="text-gray-400 font-mono text-xs">{{ m.producto?.codigo }}</p>
@@ -89,11 +124,14 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import ProductSelect from '@/components/admin/ProductSelect.vue'
 
-const movimientos       = ref([])
-const productos         = ref([])
-const filtroProductoId  = ref(null)
-const filtroTipo        = ref('todos')
-const loading           = ref(false)
+const movimientos      = ref([])
+const productos        = ref([])
+const filtroProductoId = ref(null)
+const filtroCategoriaId = ref(null)
+const filtroTipo       = ref('todos')
+const filtroDesde      = ref('')
+const filtroHasta      = ref('')
+const loading          = ref(false)
 
 const tiposFiltro = [
   { val: 'todos',   label: 'Todos' },
@@ -101,9 +139,22 @@ const tiposFiltro = [
   { val: 'salida',  label: 'Salidas' },
 ]
 
-const categoriasConProductos = computed(() => {
+// Lista plana de categorías únicas
+const categorias = computed(() => {
   const mapa = {}
   for (const p of productos.value) {
+    if (p.categoria && !mapa[p.categoria.id]) {
+      mapa[p.categoria.id] = { id: p.categoria.id, nombre: p.categoria.nombre }
+    }
+  }
+  return Object.values(mapa).sort((a, b) => a.nombre.localeCompare(b.nombre))
+})
+
+// Grupos para ProductSelect, filtrados por categoría seleccionada
+const gruposFiltrados = computed(() => {
+  const mapa = {}
+  for (const p of productos.value) {
+    if (filtroCategoriaId.value && p.categoria?.id !== filtroCategoriaId.value) continue
     const key = p.categoria?.codigo || 'SIN'
     if (!mapa[key]) mapa[key] = { codigo: key, nombre: p.categoria?.nombre || 'Sin categoría', productos: [] }
     mapa[key].productos.push(p)
@@ -111,6 +162,7 @@ const categoriasConProductos = computed(() => {
   return Object.values(mapa)
 })
 
+// Filtro local por tipo
 const movimientosFiltrados = computed(() =>
   movimientos.value.filter(m => filtroTipo.value === 'todos' || m.tipo === filtroTipo.value)
 )
@@ -118,7 +170,6 @@ const movimientosFiltrados = computed(() =>
 function formatFecha(m) {
   if (!m.fecha) return '—'
   const f = String(m.fecha)
-  // Si la fecha es solo YYYY-MM-DD (sin hora) parsear manualmente para evitar desfase UTC
   if (/^\d{4}-\d{2}-\d{2}$/.test(f) || m.solo_fecha) {
     const [y, mo, d] = f.slice(0, 10).split('-')
     return `${d}/${mo}/${y.slice(2)}`
@@ -133,18 +184,32 @@ function formatFecha(m) {
 async function cargarMovimientos() {
   loading.value = true
   try {
-    const params = filtroProductoId.value ? `?producto_id=${filtroProductoId.value}` : ''
-    const { data } = await axios.get(`/api/admin/movimientos${params}`)
+    const params = new URLSearchParams()
+    if (filtroProductoId.value)  params.set('producto_id',  filtroProductoId.value)
+    if (filtroCategoriaId.value) params.set('categoria_id', filtroCategoriaId.value)
+    if (filtroDesde.value)       params.set('fecha_desde',  filtroDesde.value)
+    if (filtroHasta.value)       params.set('fecha_hasta',  filtroHasta.value)
+    const { data } = await axios.get(`/api/admin/movimientos?${params.toString()}`)
     movimientos.value = data
   } catch { movimientos.value = [] }
   finally { loading.value = false }
 }
 
+function limpiarFiltros() {
+  filtroCategoriaId.value = null
+  filtroProductoId.value  = null
+  filtroDesde.value       = ''
+  filtroHasta.value       = ''
+  filtroTipo.value        = 'todos'
+  cargarMovimientos()
+}
+
 function exportarCSV() {
-  const headers = ['Fecha', 'Tipo', 'Código', 'Producto', 'Referencia', 'Cantidad']
+  const headers = ['Fecha', 'Tipo', 'Categoría', 'Código', 'Producto', 'Referencia', 'Cantidad']
   const rows = movimientosFiltrados.value.map(m => [
     formatFecha(m),
     m.tipo,
+    m.producto?.categoria?.nombre || '',
     m.producto?.codigo || '',
     m.producto?.nombre || '',
     m.referencia,
