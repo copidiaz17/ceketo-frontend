@@ -110,6 +110,7 @@ const ALL_LINKS = [
   { to: '/admin/cuentas',    icon: '🤝', label: 'Cta. Corriente',  roles: ['admin'] },
   { to: '/admin/caja',        icon: '🏧', label: 'Caja',            roles: ['admin'] },
   { to: '/admin/categorias',  icon: '🏷️', label: 'Categorías',     roles: ['admin'] },
+  { to: '/admin/reportes',    icon: '📈', label: 'Reportes',        roles: ['admin'] },
 ]
 
 const navLinks = computed(() => ALL_LINKS.filter(l => l.roles.includes(rolActual)))

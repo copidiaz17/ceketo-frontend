@@ -43,6 +43,7 @@ const router = createRouter({
         { path: 'stock',       name: 'admin-stock',       component: () => import('../views/admin/StockView.vue') },
         { path: 'gastos',      name: 'admin-gastos',      component: () => import('../views/admin/GastosView.vue') },
         { path: 'categorias',  name: 'admin-categorias',  component: () => import('../views/admin/CategoriasView.vue') },
+        { path: 'reportes',    name: 'admin-reportes',    component: () => import('../views/admin/ReportesView.vue') },
         { path: 'cuentas',     name: 'admin-cuentas',     component: () => import('../views/admin/CuentasCorrientesView.vue') },
         { path: 'caja',        name: 'admin-caja',        component: () => import('../views/admin/CajaView.vue') },
         { path: 'proveedores', name: 'admin-proveedores', component: () => import('../views/admin/ProveedoresView.vue') },
