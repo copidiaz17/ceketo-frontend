@@ -47,6 +47,7 @@ const router = createRouter({
         { path: 'cuentas',     name: 'admin-cuentas',     component: () => import('../views/admin/CuentasCorrientesView.vue') },
         { path: 'caja',        name: 'admin-caja',        component: () => import('../views/admin/CajaView.vue') },
         { path: 'proveedores', name: 'admin-proveedores', component: () => import('../views/admin/ProveedoresView.vue') },
+        { path: 'insumos',     name: 'admin-insumos',     component: () => import('../views/admin/InsumosView.vue') },
       ],
     },
   ],

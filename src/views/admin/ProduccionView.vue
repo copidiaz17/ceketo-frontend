@@ -153,7 +153,7 @@
 
   <!-- Modal detalle de lote -->
   <div v-if="loteDetalle" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-    <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-start mb-4">
         <div>
           <h2 class="font-display text-xl font-bold text-gray-900">Producción {{ formatFecha(loteDetalle.fecha) }}</h2>
@@ -162,33 +162,137 @@
         <button @click="loteDetalle = null" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
       </div>
 
-      <div class="space-y-2 mb-4">
-        <div
-          v-for="item in loteDetalle.items"
-          :key="item.id"
-          class="flex justify-between items-center bg-gray-50 rounded-xl px-4 py-2"
-        >
-          <div>
-            <p class="font-body text-sm text-gray-900">{{ item.producto?.nombre }}</p>
-            <p class="font-body text-xs text-gray-400 font-mono">{{ item.producto?.codigo }}</p>
+      <!-- Tabs -->
+      <div class="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1">
+        <button
+          @click="tabDetalle = 'productos'"
+          class="flex-1 py-2 rounded-lg font-body text-sm font-medium transition-colors"
+          :class="tabDetalle === 'productos' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+        >📦 Productos</button>
+        <button
+          @click="tabDetalle = 'costos'"
+          class="flex-1 py-2 rounded-lg font-body text-sm font-medium transition-colors"
+          :class="tabDetalle === 'costos' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+        >💰 Costos</button>
+      </div>
+
+      <!-- Tab Productos -->
+      <div v-if="tabDetalle === 'productos'">
+        <div class="space-y-2 mb-4">
+          <div
+            v-for="item in loteDetalle.items"
+            :key="item.id"
+            class="flex justify-between items-center bg-gray-50 rounded-xl px-4 py-2"
+          >
+            <div>
+              <p class="font-body text-sm text-gray-900">{{ item.producto?.nombre }}</p>
+              <p class="font-body text-xs text-gray-400 font-mono">{{ item.producto?.codigo }}</p>
+            </div>
+            <span class="font-display text-lg font-bold text-teal">×{{ item.cantidad }}</span>
           </div>
-          <span class="font-display text-lg font-bold text-teal">×{{ item.cantidad }}</span>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button @click="descargarPDFLote(loteDetalle)" class="flex-1 py-2 border border-brand-green text-brand-green font-body text-sm rounded-xl hover:bg-brand-green hover:text-white transition-colors">⬇️ PDF</button>
+          <button @click="descargarExcelLote(loteDetalle)" class="flex-1 py-2 bg-green-600 text-white font-body text-sm rounded-xl hover:bg-green-700 transition-colors">📊 Excel</button>
+          <button @click="confirmarEliminarLote(loteDetalle); loteDetalle = null" class="flex-1 py-2 border border-red-200 text-red-400 font-body text-sm rounded-xl hover:bg-red-50 transition-colors">Eliminar lote</button>
         </div>
       </div>
 
-      <div class="flex gap-2 mt-4">
+      <!-- Tab Costos -->
+      <div v-if="tabDetalle === 'costos'">
+        <!-- Horas -->
+        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+          <h3 class="font-body text-sm font-semibold text-gray-700 mb-3">⏱ Mano de obra</h3>
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label class="block font-body text-xs text-gray-400 mb-1">Horas trabajadas</label>
+              <input
+                v-model.number="costos.horas"
+                type="number" min="0" step="0.5" placeholder="0"
+                class="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+              />
+            </div>
+            <div class="flex-1">
+              <label class="block font-body text-xs text-gray-400 mb-1">Costo por hora ($)</label>
+              <input
+                v-model.number="costos.costo_hora"
+                type="number" min="0" step="100" placeholder="0"
+                class="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+              />
+            </div>
+            <div class="flex-1">
+              <label class="block font-body text-xs text-gray-400 mb-1">Subtotal mano de obra</label>
+              <div class="px-3 py-2 rounded-lg bg-teal/10 border border-teal/20 font-body text-sm font-semibold text-teal">
+                ${{ formatNum((costos.horas || 0) * (costos.costo_hora || 0)) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Insumos -->
+        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+          <h3 class="font-body text-sm font-semibold text-gray-700 mb-3">🧪 Insumos utilizados</h3>
+
+          <!-- Agregar insumo -->
+          <div class="flex gap-2 mb-3">
+            <select
+              v-model="insumoSel"
+              class="flex-1 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+              @change="insumoSel && (insumoQty = 1)"
+            >
+              <option value="">— Seleccionar insumo —</option>
+              <option v-for="ins in catalogoInsumos" :key="ins.id" :value="ins.id">
+                {{ ins.nombre }} ({{ ins.unidad }}) — ${{ formatNum(ins.costo_unitario) }}
+              </option>
+            </select>
+            <input
+              v-model.number="insumoQty"
+              type="number" min="0.001" step="0.001" placeholder="Cant."
+              class="w-24 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+            />
+            <button
+              @click="agregarInsumo"
+              :disabled="!insumoSel || !insumoQty"
+              class="px-4 py-2 bg-teal text-gray-900 rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >+ Agregar</button>
+          </div>
+
+          <!-- Lista de insumos cargados -->
+          <div v-if="costos.insumos.length === 0" class="text-center py-4 text-gray-400 font-body text-sm">
+            Sin insumos cargados todavía
+          </div>
+          <div v-else class="space-y-2">
+            <div
+              v-for="(ins, i) in costos.insumos"
+              :key="i"
+              class="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gray-100"
+            >
+              <div class="flex-1 min-w-0">
+                <p class="font-body text-sm text-gray-900 truncate">{{ ins.nombre }}</p>
+                <p class="font-body text-xs text-gray-400">{{ ins.cantidad }} {{ ins.unidad }} × ${{ formatNum(ins.costo_unitario) }}</p>
+              </div>
+              <span class="font-body text-sm font-semibold text-gray-700 mx-3">
+                ${{ formatNum(ins.cantidad * ins.costo_unitario) }}
+              </span>
+              <button @click="costos.insumos.splice(i, 1)" class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen total -->
+        <div class="bg-gray-900 rounded-xl px-5 py-4 mb-4 flex justify-between items-center">
+          <span class="font-body text-sm text-gray-300">Costo total del lote</span>
+          <span class="font-display text-xl font-bold text-teal">${{ formatNum(costoTotal) }}</span>
+        </div>
+
+        <p v-if="costosMensaje" class="text-teal text-sm font-body text-center mb-3">{{ costosMensaje }}</p>
+        <p v-if="costosError" class="text-red-400 text-sm font-body text-center mb-3">{{ costosError }}</p>
+
         <button
-          @click="descargarPDFLote(loteDetalle)"
-          class="flex-1 py-2 border border-brand-green text-brand-green font-body text-sm rounded-xl hover:bg-brand-green hover:text-white transition-colors"
-        >⬇️ PDF</button>
-        <button
-          @click="descargarExcelLote(loteDetalle)"
-          class="flex-1 py-2 bg-green-600 text-white font-body text-sm rounded-xl hover:bg-green-700 transition-colors"
-        >📊 Excel</button>
-        <button
-          @click="confirmarEliminarLote(loteDetalle); loteDetalle = null"
-          class="flex-1 py-2 border border-red-200 text-red-400 font-body text-sm rounded-xl hover:bg-red-50 transition-colors"
-        >Eliminar lote</button>
+          @click="guardarCostos"
+          :disabled="guardandoCostos"
+          class="w-full py-3 bg-keto-orange text-gray-900 font-body font-semibold rounded-xl hover:bg-keto-orange/80 transition-colors disabled:opacity-50"
+        >{{ guardandoCostos ? 'Guardando...' : '💾 Guardar costos' }}</button>
       </div>
     </div>
   </div>
@@ -231,7 +335,27 @@ const loteDetalle      = ref(null)
 const loteAEliminar    = ref(null)
 const eliminando       = ref(false)
 
+// Costos
+const tabDetalle       = ref('productos')
+const catalogoInsumos  = ref([])
+const insumoSel        = ref('')
+const insumoQty        = ref(1)
+const costos           = ref({ horas: 0, costo_hora: 0, insumos: [] })
+const guardandoCostos  = ref(false)
+const costosMensaje    = ref('')
+const costosError      = ref('')
+
+const costoTotal = computed(() => {
+  const manoObra = (costos.value.horas || 0) * (costos.value.costo_hora || 0)
+  const insumosCosto = costos.value.insumos.reduce((sum, i) => sum + i.cantidad * i.costo_unitario, 0)
+  return manoObra + insumosCosto
+})
+
 const hoy = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
+
+function formatNum(n) {
+  return Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
 
 function formatFecha(f) {
   return new Date(f + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -438,7 +562,81 @@ async function descargarPDF() {
   document.body.removeChild(el)
 }
 
-function abrirDetalleLote(l) { loteDetalle.value = l }
+async function abrirDetalleLote(l) {
+  loteDetalle.value = l
+  tabDetalle.value = 'productos'
+  costosMensaje.value = ''
+  costosError.value = ''
+  insumoSel.value = ''
+  insumoQty.value = 1
+
+  // Cargar catálogo de insumos y costos existentes del lote
+  try {
+    const token = localStorage.getItem('ceketo_token')
+    const headers = { Authorization: `Bearer ${token}` }
+    const [catRes, costosRes] = await Promise.all([
+      axios.get('/api/insumos', { headers }),
+      axios.get(`/api/lote-costos/${l.lote_id}`, { headers }),
+    ])
+    catalogoInsumos.value = catRes.data
+    const data = costosRes.data
+    costos.value = {
+      horas:     data.horas ? Number(data.horas.horas) : 0,
+      costo_hora: data.horas ? Number(data.horas.costo_hora) : 0,
+      insumos:   (data.insumos || []).map(i => ({
+        insumo_id:     i.insumo_id,
+        nombre:        i.insumo?.nombre || '',
+        unidad:        i.insumo?.unidad || '',
+        cantidad:      Number(i.cantidad),
+        costo_unitario: Number(i.costo_unitario),
+      })),
+    }
+  } catch { /* si falla, empezar vacío */ }
+}
+
+function agregarInsumo() {
+  if (!insumoSel.value || !insumoQty.value) return
+  const ins = catalogoInsumos.value.find(i => i.id === insumoSel.value)
+  if (!ins) return
+  const existente = costos.value.insumos.find(i => i.insumo_id === ins.id)
+  if (existente) {
+    existente.cantidad += Number(insumoQty.value)
+  } else {
+    costos.value.insumos.push({
+      insumo_id:     ins.id,
+      nombre:        ins.nombre,
+      unidad:        ins.unidad,
+      cantidad:      Number(insumoQty.value),
+      costo_unitario: Number(ins.costo_unitario),
+    })
+  }
+  insumoSel.value = ''
+  insumoQty.value = 1
+}
+
+async function guardarCostos() {
+  guardandoCostos.value = true
+  costosMensaje.value = ''
+  costosError.value = ''
+  try {
+    const token = localStorage.getItem('ceketo_token')
+    await axios.post(`/api/lote-costos/${loteDetalle.value.lote_id}`, {
+      horas:      costos.value.horas,
+      costo_hora: costos.value.costo_hora,
+      insumos:    costos.value.insumos.map(i => ({
+        insumo_id:     i.insumo_id,
+        cantidad:      i.cantidad,
+        costo_unitario: i.costo_unitario,
+      })),
+    }, { headers: { Authorization: `Bearer ${token}` } })
+    costosMensaje.value = '✓ Costos guardados correctamente'
+    setTimeout(() => { costosMensaje.value = '' }, 3000)
+  } catch (err) {
+    costosError.value = err.response?.data?.error || 'Error al guardar costos'
+  } finally {
+    guardandoCostos.value = false
+  }
+}
 function confirmarEliminarLote(l) { loteAEliminar.value = l }
 
 async function eliminarLote() {
