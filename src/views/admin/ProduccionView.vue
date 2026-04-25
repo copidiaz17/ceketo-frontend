@@ -84,6 +84,75 @@
                    focus:outline-none focus:border-teal transition-colors mb-4 resize-none placeholder-gray-400"
           ></textarea>
 
+          <!-- Horas de trabajo -->
+          <div class="bg-gray-50 rounded-xl p-4 mb-4">
+            <p class="font-body text-sm font-semibold text-gray-700 mb-3">⏱ Mano de obra</p>
+            <div class="flex gap-3">
+              <div class="flex-1">
+                <label class="block font-body text-xs text-gray-400 mb-1">Horas trabajadas</label>
+                <input
+                  v-model.number="costos.horas"
+                  type="number" min="0" step="0.5" placeholder="0"
+                  class="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+                />
+              </div>
+              <div class="flex-1">
+                <label class="block font-body text-xs text-gray-400 mb-1">Costo por hora ($)</label>
+                <input
+                  v-model.number="costos.costo_hora"
+                  type="number" min="0" step="100" placeholder="0"
+                  class="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Insumos -->
+          <div class="bg-gray-50 rounded-xl p-4 mb-4">
+            <p class="font-body text-sm font-semibold text-gray-700 mb-3">🧪 Insumos utilizados</p>
+            <div class="flex gap-2 mb-3">
+              <select
+                v-model="insumoSel"
+                class="flex-1 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+              >
+                <option value="">— Seleccionar insumo —</option>
+                <option v-for="ins in catalogoInsumos" :key="ins.id" :value="ins.id">
+                  {{ ins.nombre }} ({{ ins.unidad }}) — ${{ formatNum(ins.costo_unitario) }}
+                </option>
+              </select>
+              <input
+                v-model.number="insumoQty"
+                type="number" min="0.001" step="0.001" placeholder="Cant."
+                class="w-24 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+              />
+              <button
+                @click="agregarInsumo"
+                :disabled="!insumoSel || !insumoQty"
+                class="px-4 py-2 bg-teal text-gray-900 rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >+ Agregar</button>
+            </div>
+            <div v-if="costos.insumos.length === 0" class="text-center py-2 text-gray-400 font-body text-xs">Sin insumos cargados</div>
+            <div v-else class="space-y-2">
+              <div
+                v-for="(ins, i) in costos.insumos"
+                :key="i"
+                class="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gray-100"
+              >
+                <div class="flex-1 min-w-0">
+                  <p class="font-body text-sm text-gray-900 truncate">{{ ins.nombre }}</p>
+                  <p class="font-body text-xs text-gray-400">{{ ins.cantidad }} {{ ins.unidad }} × ${{ formatNum(ins.costo_unitario) }}</p>
+                </div>
+                <span class="font-body text-sm font-semibold text-gray-700 mx-3">${{ formatNum(ins.cantidad * ins.costo_unitario) }}</span>
+                <button @click="costos.insumos.splice(i, 1)" class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">✕</button>
+              </div>
+            </div>
+            <!-- Total costos -->
+            <div v-if="costoTotal > 0" class="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+              <span class="font-body text-xs text-gray-500">Costo total del lote</span>
+              <span class="font-body text-sm font-bold text-gray-900">${{ formatNum(costoTotal) }}</span>
+            </div>
+          </div>
+
           <button
             @click="confirmarProduccion"
             :disabled="enviando"
@@ -398,18 +467,36 @@ async function confirmarProduccion() {
   mensajeErr.value = ''
   try {
     const token   = localStorage.getItem('ceketo_token')
+    const headers = { Authorization: `Bearer ${token}` }
     const lote_id = crypto.randomUUID()
-    // Usar fecha local Argentina para evitar desfase UTC
     const fechaLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+
     await axios.post('/api/produccion', {
       lote_id,
       fecha: fechaLocal,
       items: lote.value.map(i => ({ producto_id: i.producto_id, cantidad: i.cantidad })),
       nota: nota.value || undefined,
-    }, { headers: { Authorization: `Bearer ${token}` } })
+    }, { headers })
+
+    // Guardar costos si se cargaron horas o insumos
+    const tieneCostos = (costos.value.horas > 0 && costos.value.costo_hora > 0) || costos.value.insumos.length > 0
+    if (tieneCostos) {
+      await axios.post(`/api/lote-costos/${lote_id}`, {
+        horas:      costos.value.horas,
+        costo_hora: costos.value.costo_hora,
+        insumos:    costos.value.insumos.map(i => ({
+          insumo_id:      i.insumo_id,
+          cantidad:       i.cantidad,
+          costo_unitario: i.costo_unitario,
+        })),
+      }, { headers })
+    }
+
     mensajeOk.value = `✓ ${lote.value.length} producto(s) registrado(s) correctamente`
     lote.value  = []
     nota.value  = ''
+    costos.value = { horas: 0, costo_hora: 0, insumos: [] }
+    insumoSel.value = ''
     cargarLotes()
     cargarProductos()
   } catch (err) {
@@ -725,8 +812,14 @@ async function cargarLotes() {
   } catch { lotes.value = [] }
 }
 
+async function cargarCatalogoInsumos() {
+  try {
+    const { data } = await axios.get('/api/insumos', { headers: { Authorization: `Bearer ${localStorage.getItem('ceketo_token')}` } })
+    catalogoInsumos.value = data
+  } catch { /* si no hay insumos cargados aún, no es error crítico */ }
+}
+
 onMounted(async () => {
-  await cargarProductos()
-  await cargarLotes()
+  await Promise.all([cargarProductos(), cargarLotes(), cargarCatalogoInsumos()])
 })
 </script>
