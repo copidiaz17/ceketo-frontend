@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const FABRICA_ALLOWED = ['/admin/produccion', '/admin/stock']
-// Categorías solo admin — no hace falta agregar aquí; el guard bloquea todo lo que no esté en FABRICA_ALLOWED
+const VENTAS_ALLOWED  = ['/admin/ventas', '/admin/cuentas']
 
 function requireAdmin(to, from, next) {
   const token = localStorage.getItem('ceketo_token')
@@ -11,6 +11,10 @@ function requireAdmin(to, from, next) {
   if (rol === 'fabrica') {
     const allowed = FABRICA_ALLOWED.some(p => to.path.startsWith(p))
     if (!allowed) return next('/admin/produccion')
+  }
+  if (rol === 'ventas') {
+    const allowed = VENTAS_ALLOWED.some(p => to.path.startsWith(p))
+    if (!allowed) return next('/admin/ventas')
   }
   next()
 }

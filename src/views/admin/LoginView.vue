@@ -69,7 +69,8 @@ async function login() {
     localStorage.setItem('ceketo_token', data.token)
     localStorage.setItem('ceketo_admin', data.usuario)
     localStorage.setItem('ceketo_rol',   data.rol)
-    router.push('/admin/produccion')
+    const destino = { ventas: '/admin/ventas', fabrica: '/admin/produccion' }
+    router.push(destino[data.rol] || '/admin/dashboard')
   } catch (err) {
     error.value = err.response?.data?.error || 'Error al iniciar sesión'
   } finally {
