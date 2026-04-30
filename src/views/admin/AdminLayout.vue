@@ -100,12 +100,12 @@ const rolLabel = { admin: 'Admin', fabrica: 'Fábrica', ventas: 'Ventas' }[rolAc
 
 const ALL_LINKS = [
   { to: '/admin/dashboard',  icon: '📊', label: 'Dashboard',      roles: ['admin'] },
-  { to: '/admin/produccion', icon: '📦', label: 'Producción',     roles: ['admin', 'fabrica'] },
+  { to: '/admin/produccion', icon: '📦', label: 'Producción',     roles: ['admin', 'fabrica', 'ventas'] },
   { to: '/admin/ventas',     icon: '🛒', label: 'Ventas',         roles: ['admin', 'ventas'] },
   { to: '/admin/pedidos',    icon: '📋', label: 'Pedidos online',  roles: ['admin'] },
   { to: '/admin/productos',  icon: '🥑', label: 'Productos',      roles: ['admin'], badge: true },
   { to: '/admin/movimientos',icon: '↕️', label: 'Movimientos',    roles: ['admin'] },
-  { to: '/admin/stock',      icon: '🗃️', label: 'Stock',          roles: ['admin', 'fabrica'], badge: true },
+  { to: '/admin/stock',      icon: '🗃️', label: 'Stock',          roles: ['admin', 'fabrica', 'ventas'], badge: true },
   { to: '/admin/gastos',     icon: '💸', label: 'Gastos',         roles: ['admin'] },
   { to: '/admin/cuentas',    icon: '🤝', label: 'Cta. Corriente',  roles: ['admin', 'ventas'] },
   { to: '/admin/caja',        icon: '🏧', label: 'Caja',            roles: ['admin'] },

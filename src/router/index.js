@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const FABRICA_ALLOWED = ['/admin/produccion', '/admin/stock']
-const VENTAS_ALLOWED  = ['/admin/ventas', '/admin/cuentas']
+const VENTAS_ALLOWED  = ['/admin/ventas', '/admin/cuentas', '/admin/produccion', '/admin/stock']
 
 function requireAdmin(to, from, next) {
   const token = localStorage.getItem('ceketo_token')
