@@ -100,7 +100,7 @@ const rolLabel = { admin: 'Admin', fabrica: 'Fábrica', ventas: 'Ventas' }[rolAc
 
 const ALL_LINKS = [
   { to: '/admin/dashboard',  icon: '📊', label: 'Dashboard',      roles: ['admin'] },
-  { to: '/admin/produccion', icon: '📦', label: 'Producción',     roles: ['admin', 'fabrica', 'ventas'] },
+  { to: '/admin/produccion', icon: '📦', label: 'Producción',     roles: ['admin', 'fabrica'] },
   { to: '/admin/ventas',     icon: '🛒', label: 'Ventas',         roles: ['admin', 'ventas'] },
   { to: '/admin/pedidos',    icon: '📋', label: 'Pedidos online',  roles: ['admin'] },
   { to: '/admin/productos',  icon: '🥑', label: 'Productos',      roles: ['admin'], badge: true },
