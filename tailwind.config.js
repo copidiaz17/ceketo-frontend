@@ -22,7 +22,7 @@ export default {
         }
       },
       fontFamily: {
-        display: ['Playfair Display', 'serif'],
+        display: ['Mirza', 'serif'],
         body: ['Inter', 'sans-serif'],
       },
       animation: {

@@ -106,12 +106,15 @@
                 <th class="text-left px-4 py-3">Cliente</th>
                 <th class="text-left px-4 py-3">Pago</th>
                 <th class="text-left px-4 py-3">Entrega</th>
+                <th class="text-left px-4 py-3">Observación</th>
+                <th class="text-right px-4 py-3">Desc.</th>
                 <th class="text-right px-4 py-3">Total</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="operaciones.length === 0"><td colspan="7" class="text-center py-12 text-gray-400">Sin datos</td></tr>
-              <tr v-for="op in operaciones" :key="op.id" class="border-b border-gray-100 hover:bg-gray-50">
+              <tr v-if="operaciones.length === 0"><td colspan="9" class="text-center py-12 text-gray-400">Sin datos</td></tr>
+              <tr v-for="op in operaciones" :key="op.id" class="border-b border-gray-100 hover:bg-gray-50"
+                :class="op.descuento > 0 ? 'bg-orange-50/30' : ''">
                 <td class="px-4 py-3 font-mono text-xs text-gray-400">{{ op.id }}</td>
                 <td class="px-4 py-3 text-xs text-gray-500">{{ formatFecha(op.fecha) }}</td>
                 <td class="px-4 py-3">
@@ -128,12 +131,19 @@
                     {{ op.entrega }}
                   </span>
                 </td>
+                <td class="px-4 py-3 text-xs text-gray-500 max-w-[180px] truncate" :title="op.nota">{{ op.nota || '—' }}</td>
+                <td class="px-4 py-3 text-right">
+                  <span v-if="op.descuento > 0" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600">
+                    -{{ op.descuento }}%
+                  </span>
+                  <span v-else class="text-gray-300 text-xs">—</span>
+                </td>
                 <td class="px-4 py-3 text-right font-bold text-teal">${{ fmt(op.total) }}</td>
               </tr>
             </tbody>
             <tfoot v-if="operaciones.length > 0">
               <tr class="bg-teal/10 border-t-2 border-teal/30">
-                <td colspan="6" class="px-4 py-3 font-semibold text-gray-700 text-sm">TOTAL</td>
+                <td colspan="8" class="px-4 py-3 font-semibold text-gray-700 text-sm">TOTAL</td>
                 <td class="px-4 py-3 text-right font-display font-bold text-teal text-base">${{ fmt(kpis.total) }}</td>
               </tr>
             </tfoot>
@@ -152,19 +162,33 @@
                 <th class="text-left px-4 py-3">Código</th>
                 <th class="text-right px-4 py-3">Cant.</th>
                 <th class="text-right px-4 py-3">P. Unit.</th>
+                <th class="text-right px-4 py-3">Desc.</th>
                 <th class="text-right px-4 py-3">Subtotal</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="detalle.length === 0"><td colspan="8" class="text-center py-12 text-gray-400">Sin datos</td></tr>
-              <tr v-for="(d, i) in detalle" :key="i" class="border-b border-gray-100 hover:bg-gray-50">
+              <tr v-if="detalle.length === 0"><td colspan="9" class="text-center py-12 text-gray-400">Sin datos</td></tr>
+              <tr v-for="(d, i) in detalle" :key="i" class="border-b border-gray-100 hover:bg-gray-50"
+                :class="d.descuento_pct > 0 ? 'bg-orange-50/30' : ''">
                 <td class="px-4 py-2.5 font-mono text-xs text-gray-400">{{ d.operacion_id }}</td>
                 <td class="px-4 py-2.5 text-xs text-gray-500">{{ formatFecha(d.fecha) }}</td>
                 <td class="px-4 py-2.5 text-xs text-gray-500">{{ d.categoria }}</td>
-                <td class="px-4 py-2.5 text-gray-800">{{ d.producto }}</td>
+                <td class="px-4 py-2.5 text-gray-800">
+                  {{ d.producto }}
+                  <span v-if="d.nota" class="ml-1 text-xs text-gray-400 italic" :title="d.nota">· {{ d.nota.length > 20 ? d.nota.slice(0,20)+'…' : d.nota }}</span>
+                </td>
                 <td class="px-4 py-2.5 font-mono text-xs text-gray-400">{{ d.codigo }}</td>
                 <td class="px-4 py-2.5 text-right font-bold text-gray-700">{{ d.cantidad }}</td>
-                <td class="px-4 py-2.5 text-right text-gray-500">${{ fmt(d.precio_unit) }}</td>
+                <td class="px-4 py-2.5 text-right text-gray-500">
+                  <span v-if="d.descuento_pct > 0" class="line-through text-gray-300 text-xs mr-1">${{ fmt(d.subtotal_original / d.cantidad) }}</span>
+                  ${{ fmt(d.precio_unit) }}
+                </td>
+                <td class="px-4 py-2.5 text-right">
+                  <span v-if="d.descuento_pct > 0" class="px-1.5 py-0.5 rounded text-xs font-semibold bg-orange-100 text-orange-600">
+                    -{{ d.descuento_pct }}%
+                  </span>
+                  <span v-else class="text-gray-300 text-xs">—</span>
+                </td>
                 <td class="px-4 py-2.5 text-right font-bold text-teal">${{ fmt(d.subtotal) }}</td>
               </tr>
             </tbody>
@@ -479,43 +503,48 @@ async function exportarExcel() {
     // ── Hoja 1: Ventas ────────────────────────────────────────────────────────
     const ws1 = wb.addWorksheet('Ventas', { views: [{ state: 'frozen', ySplit: 3 }] })
     ws1.columns = [
-      { key: 'id',     width: 10 }, { key: 'fecha',   width: 18 },
-      { key: 'origen', width: 10 }, { key: 'cliente',  width: 26 },
-      { key: 'metodo', width: 16 }, { key: 'entrega',  width: 12 },
-      { key: 'total',  width: 16 },
+      { key: 'id',       width: 10 }, { key: 'fecha',     width: 18 },
+      { key: 'origen',   width: 10 }, { key: 'cliente',   width: 26 },
+      { key: 'metodo',   width: 16 }, { key: 'entrega',   width: 12 },
+      { key: 'nota',     width: 28 }, { key: 'descuento', width: 12 },
+      { key: 'total',    width: 16 },
     ]
-    addTitle(ws1, 'VENTAS', 7)
+    addTitle(ws1, 'VENTAS', 9)
     const h1 = ws1.getRow(3)
-    h1.values = ['#', 'Fecha', 'Origen', 'Cliente', 'Método de pago', 'Entrega', 'Total']
-    styleHeader(h1, 7)
+    h1.values = ['#', 'Fecha', 'Origen', 'Cliente', 'Método de pago', 'Entrega', 'Observación', 'Desc. %', 'Total']
+    styleHeader(h1, 9)
     operaciones.value.forEach((op, i) => {
-      const r = ws1.addRow([op.id, formatFechaCorta(op.fecha), op.origen, op.cliente, op.metodo_pago, op.entrega, op.total])
-      styleData(r, 7, i % 2 === 1)
-      numFmt(r, [7])
+      const r = ws1.addRow([op.id, formatFechaCorta(op.fecha), op.origen, op.cliente, op.metodo_pago, op.entrega, op.nota || '', op.descuento > 0 ? `-${op.descuento}%` : '', op.total])
+      styleData(r, 9, i % 2 === 1)
+      numFmt(r, [9])
+      if (op.descuento > 0) {
+        r.getCell(8).font = { bold: true, color: { argb: 'FFEA580C' }, size: 10 }
+        r.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' }
+      }
     })
-    const tot1 = ws1.addRow(['', '', '', '', '', 'TOTAL', kpis.value.total])
-    styleData(tot1, 7, false, true)
-    numFmt(tot1, [7])
+    const tot1 = ws1.addRow(['', '', '', '', '', '', '', 'TOTAL', kpis.value.total])
+    styleData(tot1, 9, false, true)
+    numFmt(tot1, [9])
 
     // ── Hoja 2: Detalle de productos ──────────────────────────────────────────
     const ws2 = wb.addWorksheet('Detalle de productos', { views: [{ state: 'frozen', ySplit: 3 }] })
     ws2.columns = [
-      { key: 'op',     width: 10 }, { key: 'fecha',    width: 16 },
-      { key: 'origen', width: 9  }, { key: 'cat',      width: 24 },
-      { key: 'prod',   width: 32 }, { key: 'cod',      width: 11 },
-      { key: 'cant',   width: 9  }, { key: 'precio',   width: 14 },
-      { key: 'sub',    width: 14 },
+      { key: 'op',       width: 10 }, { key: 'fecha',    width: 16 },
+      { key: 'origen',   width: 9  }, { key: 'cat',      width: 24 },
+      { key: 'prod',     width: 32 }, { key: 'cod',      width: 11 },
+      { key: 'cant',     width: 9  }, { key: 'precio',   width: 14 },
+      { key: 'desc',     width: 10 }, { key: 'sub',      width: 14 },
     ]
-    addTitle(ws2, 'DETALLE DE PRODUCTOS', 9)
+    addTitle(ws2, 'DETALLE DE PRODUCTOS', 10)
     const h2 = ws2.getRow(3)
-    h2.values = ['Operación', 'Fecha', 'Origen', 'Categoría', 'Producto', 'Código', 'Cant.', 'P. Unit.', 'Subtotal']
-    styleHeader(h2, 9)
+    h2.values = ['Operación', 'Fecha', 'Origen', 'Categoría', 'Producto', 'Código', 'Cant.', 'P. Unit.', 'Desc. %', 'Subtotal']
+    styleHeader(h2, 10)
     // Agrupar detalle por operación y agregar fila de subtotal al final de cada grupo
     let curOpId = null, opTotal = 0, opCant = 0, altIdx = 0
     const flushOpTotal = () => {
       if (curOpId === null) return
-      const tr = ws2.addRow(['', '', '', '', `TOTAL ${curOpId}`, '', opCant, '', opTotal])
-      for (let c = 1; c <= 9; c++) {
+      const tr = ws2.addRow(['', '', '', '', `TOTAL ${curOpId}`, '', opCant, '', '', opTotal])
+      for (let c = 1; c <= 10; c++) {
         const cell = tr.getCell(c)
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } }
         cell.font = { bold: true, size: 10 }
@@ -524,7 +553,7 @@ async function exportarExcel() {
       }
       tr.getCell(5).alignment = { horizontal: 'right', vertical: 'middle' }
       tr.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' }
-      tr.getCell(9).numFmt = '"$"#,##0'; tr.getCell(9).alignment = { horizontal: 'right', vertical: 'middle' }
+      tr.getCell(10).numFmt = '"$"#,##0'; tr.getCell(10).alignment = { horizontal: 'right', vertical: 'middle' }
       tr.height = 22
       altIdx = 0
     }
@@ -533,10 +562,15 @@ async function exportarExcel() {
         flushOpTotal()
         curOpId = d.operacion_id; opTotal = 0; opCant = 0
       }
-      const r = ws2.addRow([d.operacion_id, formatFechaCorta(d.fecha), d.origen, d.categoria, d.producto, d.codigo, d.cantidad, d.precio_unit, d.subtotal])
-      styleData(r, 9, altIdx % 2 === 1)
-      numFmt(r, [8, 9])
+      const descLabel = d.descuento_pct > 0 ? `-${d.descuento_pct}%` : ''
+      const r = ws2.addRow([d.operacion_id, formatFechaCorta(d.fecha), d.origen, d.categoria, d.producto, d.codigo, d.cantidad, d.precio_unit, descLabel, d.subtotal])
+      styleData(r, 10, altIdx % 2 === 1)
+      numFmt(r, [8, 10])
       r.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' }
+      if (d.descuento_pct > 0) {
+        r.getCell(9).font = { bold: true, color: { argb: 'FFEA580C' }, size: 10 }
+        r.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' }
+      }
       opTotal += d.subtotal; opCant += d.cantidad; altIdx++
     })
     flushOpTotal()

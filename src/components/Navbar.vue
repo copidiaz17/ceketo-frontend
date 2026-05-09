@@ -7,7 +7,7 @@
 
       <!-- Brand text (sin logo para no repetir el del hero) -->
       <RouterLink to="/" class="flex items-center gap-2 group">
-        <span class="text-brand-orange text-xl transition-all duration-300 group-hover:rotate-12 inline-block">🫒</span>
+        <img src="/isotipo.jpeg" alt="CEKETO" class="w-9 h-9 rounded-lg object-cover transition-all duration-300 group-hover:scale-110 flex-shrink-0" />
         <div class="flex flex-col leading-none gap-0.5">
           <span class="font-display font-bold text-gray-900 text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-brand-orange">
             CEKETO
