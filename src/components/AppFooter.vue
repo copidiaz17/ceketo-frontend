@@ -6,8 +6,8 @@
 
         <!-- Brand column -->
         <div class="md:col-span-2">
-          <div class="h-20 w-20 rounded-xl overflow-hidden mb-6 opacity-90 relative">
-            <img src="/isotipo.jpeg" alt="CEKETO" class="absolute" style="width: 240px; height: 240px; left: -80px; top: -26px;" />
+          <div class="h-20 w-20 rounded-xl overflow-hidden mb-6 opacity-90">
+            <img src="/isotipo.jpeg" alt="CEKETO" style="width:100%;height:100%;object-fit:cover;transform:scale(3);transform-origin:50% 25%;" />
           </div>
           <p class="font-body text-white/60 text-sm leading-relaxed max-w-xs mb-6">
             Alimentos cetogénicos artesanales para quienes eligen vivir mejor.
