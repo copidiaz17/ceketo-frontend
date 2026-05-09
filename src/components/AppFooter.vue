@@ -6,11 +6,9 @@
 
         <!-- Brand column -->
         <div class="md:col-span-2">
-          <img
-            src="/isotipo.jpeg"
-            alt="CEKETO"
-            class="h-20 w-20 rounded-xl object-cover mb-6 opacity-90"
-          />
+          <div class="h-20 w-20 rounded-xl overflow-hidden mb-6 opacity-90 relative">
+            <img src="/isotipo.jpeg" alt="CEKETO" class="absolute" style="width: 240px; height: 240px; left: -80px; top: -26px;" />
+          </div>
           <p class="font-body text-white/60 text-sm leading-relaxed max-w-xs mb-6">
             Alimentos cetogénicos artesanales para quienes eligen vivir mejor.
             Viví, Sentí, Comé — sin azúcar, sin culpas.
