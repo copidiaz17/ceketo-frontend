@@ -23,7 +23,7 @@ export default {
       },
       fontFamily: {
         display: ['Mirza', 'serif'],
-        body: ['Inter', 'sans-serif'],
+        body: ['Comodo', 'Inter', 'sans-serif'],
       },
       animation: {
         'fade-in-up': 'fadeInUp 0.8s ease forwards',

@@ -7,9 +7,9 @@
         <!-- Brand column -->
         <div class="md:col-span-2">
           <img
-            src="@/assets/images/logo.png"
+            src="/isotipo.jpeg"
             alt="CEKETO"
-            class="h-20 w-auto mb-6 brightness-0 invert opacity-90"
+            class="h-20 w-20 rounded-xl object-cover mb-6 opacity-90"
           />
           <p class="font-body text-white/60 text-sm leading-relaxed max-w-xs mb-6">
             Alimentos cetogénicos artesanales para quienes eligen vivir mejor.
