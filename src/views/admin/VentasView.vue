@@ -1160,12 +1160,8 @@ async function cargarClientesCta() {
 
 async function cargarHistorial() {
   try {
-    const { data } = await axios.get('/api/ventas')
+    const { data } = await axios.get('/api/ventas', { params: { fecha: filtroFecha.value } })
     historialVentas.value = data
-      .filter(v => {
-        const arDate = new Date(v.fecha).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
-        return arDate === filtroFecha.value
-      })
       .sort((a, b) => b.id - a.id)
       .slice(0, 50)
   } catch { historialVentas.value = [] }
