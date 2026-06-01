@@ -117,14 +117,19 @@
               >
                 <option value="">— Seleccionar insumo —</option>
                 <option v-for="ins in catalogoInsumos" :key="ins.id" :value="ins.id">
-                  {{ ins.nombre }} ({{ ins.unidad }}) — ${{ formatNum(ins.costo_unitario) }}
+                  {{ ins.nombre }}
                 </option>
               </select>
-              <input
-                v-model.number="insumoQty"
-                type="number" min="0.001" step="0.001" placeholder="Cant."
-                class="w-24 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
-              />
+              <div class="flex items-center gap-1">
+                <input
+                  v-model.number="insumoQty"
+                  type="number" min="0.001"
+                  :step="insumoSelObj?.unidad === 'unidad' ? 1 : 0.001"
+                  placeholder="0"
+                  class="w-24 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+                />
+                <span class="font-body text-xs text-gray-400 w-10 text-left">{{ insumoSelObj?.unidad || '' }}</span>
+              </div>
               <button
                 @click="agregarInsumo"
                 :disabled="!insumoSel || !insumoQty"
@@ -311,14 +316,19 @@
             >
               <option value="">— Seleccionar insumo —</option>
               <option v-for="ins in catalogoInsumos" :key="ins.id" :value="ins.id">
-                {{ ins.nombre }} ({{ ins.unidad }}) — ${{ formatNum(ins.costo_unitario) }}
+                {{ ins.nombre }}
               </option>
             </select>
-            <input
-              v-model.number="insumoQty"
-              type="number" min="0.001" step="0.001" placeholder="Cant."
-              class="w-24 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
-            />
+            <div class="flex items-center gap-1">
+              <input
+                v-model.number="insumoQty"
+                type="number" min="0.001"
+                :step="insumoSelObj?.unidad === 'unidad' ? 1 : 0.001"
+                placeholder="0"
+                class="w-24 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+              />
+              <span class="font-body text-xs text-gray-400 w-10 text-left">{{ insumoSelObj?.unidad || '' }}</span>
+            </div>
             <button
               @click="agregarInsumo"
               :disabled="!insumoSel || !insumoQty"
@@ -419,6 +429,10 @@ const costoTotal = computed(() => {
   const insumosCosto = costos.value.insumos.reduce((sum, i) => sum + i.cantidad * i.costo_unitario, 0)
   return manoObra + insumosCosto
 })
+
+const insumoSelObj = computed(() =>
+  catalogoInsumos.value.find(i => i.id === insumoSel.value) || null
+)
 
 const hoy = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
 
