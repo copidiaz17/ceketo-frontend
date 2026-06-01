@@ -702,35 +702,43 @@ async function cargar() {
     if (filtroCategoriaId.value) params.set('categoria_id', filtroCategoriaId.value)
     if (filtroProductoId.value)  params.set('producto_id',  filtroProductoId.value)
 
-    const [ventasRes, extrasRes] = await Promise.all([
+    const [ventasResult, extrasResult] = await Promise.allSettled([
       axios.get(`/api/admin/reportes?${params}`),
       axios.get(`/api/admin/reportes/extras?${params}`),
     ])
 
-    // Ventas
-    const v = ventasRes.data
-    kpis.value           = v.kpis
-    operaciones.value    = v.operaciones
-    detalle.value        = v.detalle
-    resumen.value        = v.resumen
-    por_categoria.value  = v.por_categoria
-    por_dia.value        = v.por_dia
-    ventasPorMetodo.value = v.ventasPorMetodo || {}
+    // Ventas — independiente de extras
+    if (ventasResult.status === 'fulfilled') {
+      const v = ventasResult.value.data
+      kpis.value            = v.kpis
+      operaciones.value     = v.operaciones
+      detalle.value         = v.detalle
+      resumen.value         = v.resumen
+      por_categoria.value   = v.por_categoria
+      por_dia.value         = v.por_dia
+      ventasPorMetodo.value = v.ventasPorMetodo || {}
+    } else {
+      console.error('reportes/ventas:', ventasResult.reason?.message)
+    }
 
-    // Extras
-    const e = extrasRes.data
-    gastos.value                 = e.gastos
-    gastosPorCategoria.value     = e.gastosPorCategoria
-    gastosPorDia.value           = e.gastosPorDia
-    totalGastos.value            = e.totalGastos
-    ivaTotal.value               = e.ivaTotal
-    lotes.value                  = e.lotes
-    produccionPorProducto.value  = e.produccionPorProducto
-    totalUnidadesProducidas.value = e.totalUnidadesProducidas
-    stock.value                  = e.stock
-    stockValorCosto.value        = e.stockValorCosto
-    stockValorVenta.value        = e.stockValorVenta
-    cajas.value                  = e.cajas
+    // Extras — independiente de ventas
+    if (extrasResult.status === 'fulfilled') {
+      const e = extrasResult.value.data
+      gastos.value                  = e.gastos || []
+      gastosPorCategoria.value      = e.gastosPorCategoria || {}
+      gastosPorDia.value            = e.gastosPorDia || []
+      totalGastos.value             = e.totalGastos || 0
+      ivaTotal.value                = e.ivaTotal || 0
+      lotes.value                   = e.lotes || []
+      produccionPorProducto.value   = e.produccionPorProducto || []
+      totalUnidadesProducidas.value  = e.totalUnidadesProducidas || 0
+      stock.value                   = e.stock || []
+      stockValorCosto.value         = e.stockValorCosto || 0
+      stockValorVenta.value         = e.stockValorVenta || 0
+      cajas.value                   = e.cajas || []
+    } else {
+      console.error('reportes/extras:', extrasResult.reason?.message)
+    }
 
     if (tabActivo.value === 'graficos') setTimeout(crearGraficos, 100)
   } catch (err) {
