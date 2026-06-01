@@ -283,7 +283,7 @@
           </div>
         </div>
 
-        <!-- Fecha y Descuento -->
+        <!-- Fecha, Descuento y Envío -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-body text-xs text-gray-500 mb-1">Fecha</label>
@@ -303,10 +303,31 @@
           </div>
         </div>
 
-        <!-- Total -->
-        <div class="bg-gray-50 rounded-xl px-4 py-3 flex justify-between items-center">
-          <span class="font-body text-sm text-gray-500">Total a cobrar</span>
-          <span class="font-display text-xl font-bold text-teal">${{ totalFinal.toLocaleString('es-AR') }}</span>
+        <!-- Costo de envío -->
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
+          <label class="block font-body text-xs text-blue-600 font-semibold mb-1">🚚 Costo de envío (a cargo del cliente)</label>
+          <input
+            v-model.number="costoEnvio"
+            type="number" min="0" placeholder="0"
+            class="w-full px-3 py-2 rounded-xl bg-white border border-blue-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
+          />
+          <p class="font-body text-xs text-blue-400 mt-1">Se suma al total del ticket. No afecta el stock.</p>
+        </div>
+
+        <!-- Desglose y Total -->
+        <div class="bg-gray-50 rounded-xl px-4 py-3 space-y-1.5">
+          <div v-if="descuentoPct > 0" class="flex justify-between font-body text-xs text-red-400">
+            <span>Descuento ({{ descuentoPct }}%)</span>
+            <span>- ${{ montoDescuento.toLocaleString('es-AR') }}</span>
+          </div>
+          <div v-if="costoEnvio > 0" class="flex justify-between font-body text-xs text-blue-500">
+            <span>🚚 Envío</span>
+            <span>+ ${{ (parseFloat(costoEnvio) || 0).toLocaleString('es-AR') }}</span>
+          </div>
+          <div class="flex justify-between items-center pt-1 border-t border-gray-200">
+            <span class="font-body text-sm text-gray-500">Total a cobrar</span>
+            <span class="font-display text-xl font-bold text-teal">${{ totalFinal.toLocaleString('es-AR') }}</span>
+          </div>
         </div>
 
         <!-- Vuelto (solo efectivo, pago simple) -->
@@ -491,6 +512,10 @@
             <span>Descuento ({{ ventaDetalle.descuento }}%)</span>
             <span>aplicado</span>
           </div>
+          <div v-if="parseFloat(ventaDetalle.costo_envio) > 0" class="flex justify-between font-body text-sm text-blue-500">
+            <span>🚚 Envío</span>
+            <span>+ ${{ parseFloat(ventaDetalle.costo_envio).toLocaleString('es-AR') }}</span>
+          </div>
           <div class="flex justify-between font-body font-bold text-gray-900">
             <span>Total</span>
             <span class="text-teal text-lg">${{ parseFloat(ventaDetalle.total).toLocaleString('es-AR') }}</span>
@@ -639,6 +664,7 @@ const dineroRecibido         = ref(null)
 const modalEditarPago        = ref(false)
 const editPago               = ref({ metodo_pago: '', metodo_pago2: '', monto_pago2: '', guardando: false })
 const descuentoPct           = ref(0)
+const costoEnvio             = ref(0)
 const fechaVenta             = ref('')
 const hoyISO                 = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
 const filtroFecha            = ref(hoyISO)
@@ -679,7 +705,7 @@ const montoDescuento = computed(() =>
 )
 
 const totalFinal = computed(() =>
-  totalCarrito.value - montoDescuento.value
+  totalCarrito.value - montoDescuento.value + (parseFloat(costoEnvio.value) || 0)
 )
 
 const resumenMetodos = computed(() => {
@@ -780,6 +806,7 @@ function abrirModalPago() {
   metodoPago2.value = ''
   montoPago2.value  = ''
   descuentoPct.value = 0
+  costoEnvio.value   = 0
   dineroRecibido.value = null
   fechaVenta.value   = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
   cuentaSeleccionada.value = ''
@@ -799,6 +826,7 @@ async function confirmarVenta() {
       metodo_pago2:  pagoDoble.value ? metodoPago2.value : undefined,
       monto_pago2:   pagoDoble.value ? montoPago2.value : undefined,
       descuento:     descuentoPct.value || 0,
+      costo_envio:   costoEnvio.value || 0,
       fecha:         fechaVenta.value !== hoyISO ? fechaVenta.value : undefined,
       cuenta_id:     metodoPagoSeleccionado.value === 'cuenta_corriente' ? (cuentaSeleccionada.value || undefined) : undefined,
       items: carrito.value.map(i => ({
@@ -812,6 +840,7 @@ async function confirmarVenta() {
       items:       [...carrito.value],
       total:       data.total,
       descuento:   descuentoPct.value,
+      costo_envio: costoEnvio.value || 0,
       metodo_pago: metodoPagoSeleccionado.value,
       fecha:       new Date(),
     }
@@ -986,6 +1015,12 @@ function imprimirTicketFallbackHistorial(v) {
       <td>aplicado</td>
     </tr>` : ''
 
+  const envioHtml = parseFloat(v.costo_envio) > 0 ? `
+    <tr class="descuento-row">
+      <td>Envio</td>
+      <td style="text-align:right">+ $${parseFloat(v.costo_envio).toLocaleString('es-AR')}</td>
+    </tr>` : ''
+
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -1023,6 +1058,7 @@ function imprimirTicketFallbackHistorial(v) {
     ${itemsHtml}
     <tr><td colspan="2"><div class="divider"></div></td></tr>
     ${descuentoHtml}
+    ${envioHtml}
     <tr class="total-row"><td>TOTAL</td><td>$${parseFloat(v.total).toLocaleString('es-AR')}</td></tr>
   </table>
   <div class="divider"></div>
@@ -1072,6 +1108,12 @@ function imprimirTicketFallback(v) {
     <tr class="descuento-row">
       <td>Descuento (${v.descuento}%)</td>
       <td>- $${(subtotalOriginal * v.descuento / 100).toLocaleString('es-AR')}</td>
+    </tr>` : ''
+
+  const envioHtml2 = parseFloat(v.costo_envio) > 0 ? `
+    <tr class="descuento-row">
+      <td>Envio</td>
+      <td style="text-align:right">+ $${parseFloat(v.costo_envio).toLocaleString('es-AR')}</td>
     </tr>` : ''
 
   const html = `<!DOCTYPE html>
@@ -1125,6 +1167,7 @@ function imprimirTicketFallback(v) {
     ${itemsHtml}
     <tr><td colspan="2"><div class="divider"></div></td></tr>
     ${descuentoHtml}
+    ${envioHtml2}
     <tr class="total-row">
       <td>TOTAL</td>
       <td>$${Number(v.total).toLocaleString('es-AR')}</td>
