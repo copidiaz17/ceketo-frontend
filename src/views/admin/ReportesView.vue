@@ -454,14 +454,29 @@
             <!-- Ventas por método -->
             <div class="bg-gray-50 rounded-2xl p-5">
               <h3 class="font-body text-sm font-semibold text-gray-700 mb-4">💰 Ventas por método de pago</h3>
-              <div class="space-y-2">
+              <div class="space-y-1.5">
+                <!-- Detalle por método -->
                 <div v-for="(monto, metodo) in ventasPorMetodo" :key="metodo"
-                  class="flex justify-between font-body text-sm">
-                  <span class="text-gray-600 capitalize">{{ labelMetodo(metodo) }}</span>
-                  <span class="font-bold text-teal">${{ fmt(monto) }}</span>
+                  class="flex justify-between font-body text-xs text-gray-500 pl-2">
+                  <span class="capitalize">{{ labelMetodo(metodo) }}</span>
+                  <span>${{ fmt(monto) }}</span>
                 </div>
-                <div class="flex justify-between font-body text-sm font-bold border-t border-gray-200 pt-2 mt-2">
-                  <span class="text-gray-700">Total ventas</span>
+
+                <!-- Subtotales por medio -->
+                <div class="pt-2 mt-1 border-t border-gray-200 space-y-1.5">
+                  <div class="flex justify-between font-body text-sm">
+                    <span class="text-gray-700 font-semibold">💵 Total efectivo</span>
+                    <span class="font-bold text-teal">${{ fmt(ventasEfectivo) }}</span>
+                  </div>
+                  <div class="flex justify-between font-body text-sm">
+                    <span class="text-gray-700 font-semibold">📲 Total billetera</span>
+                    <span class="font-bold text-blue-600">${{ fmt(ventasBilletera) }}</span>
+                  </div>
+                </div>
+
+                <!-- Gran total -->
+                <div class="flex justify-between font-body text-sm font-bold border-t border-gray-300 pt-2 mt-1">
+                  <span class="text-gray-800">TOTAL VENTAS</span>
                   <span class="text-teal text-base">${{ fmt(kpis.total) }}</span>
                 </div>
               </div>
@@ -469,25 +484,30 @@
 
             <!-- Gastos por método -->
             <div class="bg-red-50 rounded-2xl p-5">
-              <h3 class="font-body text-sm font-semibold text-gray-700 mb-4">💸 Gastos por método de pago</h3>
-              <div class="space-y-2">
+              <h3 class="font-body text-sm font-semibold text-gray-700 mb-4">💸 Gastos por categoría</h3>
+              <div class="space-y-1.5">
+                <!-- Detalle por categoría -->
                 <div v-for="(data, cat) in gastosPorCategoria" :key="cat"
-                  class="flex justify-between font-body text-sm">
-                  <span class="text-gray-600">{{ cat }}</span>
-                  <span class="font-bold text-red-500">-${{ fmt(data.total) }}</span>
+                  class="flex justify-between font-body text-xs text-gray-500 pl-2">
+                  <span>{{ cat }}</span>
+                  <span>-${{ fmt(data.total) }}</span>
                 </div>
-                <div class="space-y-1 pt-2 border-t border-red-100">
-                  <div class="flex justify-between font-body text-xs text-gray-500">
-                    <span>💵 Gastos en efectivo</span>
-                    <span>-${{ fmt(gastosPorMedio.efectivo) }}</span>
+
+                <!-- Subtotales por medio -->
+                <div class="pt-2 mt-1 border-t border-red-200 space-y-1.5">
+                  <div class="flex justify-between font-body text-sm">
+                    <span class="text-gray-700 font-semibold">💵 Total efectivo</span>
+                    <span class="font-bold text-red-500">-${{ fmt(gastosPorMedio.efectivo) }}</span>
                   </div>
-                  <div v-if="gastosPorMedio.digital > 0" class="flex justify-between font-body text-xs text-gray-500">
-                    <span>📲 Gastos digitales</span>
-                    <span>-${{ fmt(gastosPorMedio.digital) }}</span>
+                  <div class="flex justify-between font-body text-sm">
+                    <span class="text-gray-700 font-semibold">📲 Total billetera</span>
+                    <span class="font-bold text-red-400">-${{ fmt(gastosPorMedio.digital) }}</span>
                   </div>
                 </div>
-                <div class="flex justify-between font-body text-sm font-bold border-t border-red-200 pt-2">
-                  <span class="text-gray-700">Total gastos</span>
+
+                <!-- Gran total -->
+                <div class="flex justify-between font-body text-sm font-bold border-t border-red-300 pt-2 mt-1">
+                  <span class="text-gray-800">TOTAL GASTOS</span>
                   <span class="text-red-600 text-base">-${{ fmt(totalGastos) }}</span>
                 </div>
               </div>
@@ -791,6 +811,15 @@ const productosFiltrados = computed(() =>
 )
 
 const resultadoNeto = computed(() => (kpis.value.total || 0) - (totalGastos.value || 0))
+
+const METODOS_DIGITALES_SET = new Set(['transferencia', 'qr', 'debito', 'credito'])
+
+const ventasEfectivo = computed(() => ventasPorMetodo.value['efectivo'] || 0)
+const ventasBilletera = computed(() =>
+  Object.entries(ventasPorMetodo.value)
+    .filter(([m]) => METODOS_DIGITALES_SET.has(m))
+    .reduce((s, [, v]) => s + v, 0)
+)
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const fmt = n => Math.round(n || 0).toLocaleString('es-AR')
