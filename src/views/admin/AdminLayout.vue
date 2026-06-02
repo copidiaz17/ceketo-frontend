@@ -47,7 +47,6 @@
       <!-- Footer -->
       <div class="p-4 border-t border-white/20 space-y-1">
         <RouterLink
-          v-if="rolActual === 'admin'"
           to="/admin/configuracion"
           class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-body text-sm transition-all duration-200"
           :class="isActive('/admin/configuracion') ? 'bg-white/20 text-white font-semibold' : 'text-white/60 hover:text-white hover:bg-white/15'"

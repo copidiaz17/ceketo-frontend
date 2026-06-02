@@ -48,7 +48,8 @@
       </div>
     </div>
 
-    <!-- ── Usuarios del sistema ─────────────────────────────────────── -->
+    <!-- ── Usuarios del sistema (solo copidiaz17@gmail.com) ──────────── -->
+    <template v-if="usuarioActual === 'copidiaz17@gmail.com'">
     <div class="bg-white border border-gray-200 rounded-2xl p-6">
       <div class="flex items-center justify-between mb-5">
         <div>
@@ -82,6 +83,8 @@
         </div>
       </div>
     </div>
+
+    </template>
 
     <!-- Modal usuario -->
     <div v-if="modalUsuario" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
