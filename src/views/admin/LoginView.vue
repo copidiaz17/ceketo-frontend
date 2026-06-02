@@ -19,6 +19,9 @@
               type="text"
               required
               autocomplete="username"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
               class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body
                      focus:outline-none focus:border-brand-green transition-colors"
             />
@@ -65,7 +68,10 @@ async function login() {
   loading.value = true
   error.value = ''
   try {
-    const { data } = await axios.post('/api/auth/login', form.value)
+    const { data } = await axios.post('/api/auth/login', {
+      usuario: form.value.usuario.trim().toLowerCase(),
+      password: form.value.password,
+    })
     localStorage.setItem('ceketo_token', data.token)
     localStorage.setItem('ceketo_admin', data.usuario)
     localStorage.setItem('ceketo_rol',   data.rol)
