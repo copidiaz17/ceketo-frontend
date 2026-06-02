@@ -89,15 +89,12 @@
         </div>
       </div>
 
-      <!-- Resumen de ventas del turno -->
+      <!-- Ventas del turno -->
       <div>
         <h2 class="font-display text-lg font-semibold text-gray-900 mb-3">Ventas del turno</h2>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <div
-            v-for="(total, metodo) in cajaActual.ventasPorMetodo"
-            :key="metodo"
-            class="bg-white border border-gray-200 rounded-xl px-4 py-3"
-          >
+          <div v-for="(total, metodo) in cajaActual.ventasPorMetodo" :key="metodo"
+            class="bg-white border border-gray-200 rounded-xl px-4 py-3">
             <p class="font-body text-xs text-gray-400 mb-1">{{ metodoLabel(metodo) }}</p>
             <p class="font-display font-bold text-teal text-base">${{ total.toLocaleString('es-AR') }}</p>
           </div>
@@ -108,23 +105,36 @@
         </div>
       </div>
 
+      <!-- Gastos del turno -->
+      <div v-if="cajaActual.totalGastos > 0">
+        <h2 class="font-display text-lg font-semibold text-gray-900 mb-3">Gastos del turno</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div v-for="(monto, metodo) in cajaActual.gastosPorMetodo" :key="metodo"
+            class="bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+            <p class="font-body text-xs text-gray-400 mb-1">{{ metodoLabel(metodo) }}</p>
+            <p class="font-display font-bold text-red-500 text-base">-${{ monto.toLocaleString('es-AR') }}</p>
+          </div>
+          <div class="bg-red-100 border border-red-200 rounded-xl px-4 py-3">
+            <p class="font-body text-xs text-gray-500 mb-1">Total gastos</p>
+            <p class="font-display font-bold text-red-600 text-base">-${{ cajaActual.totalGastos.toLocaleString('es-AR') }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Movimientos manuales -->
       <div class="bg-white border border-gray-200 rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-display text-lg font-semibold text-gray-900">Movimientos manuales</h2>
-          <button
-            @click="modalMov = true"
-            class="px-4 py-2 bg-teal/10 text-teal border border-teal/30 rounded-xl font-body text-sm hover:bg-teal/20 transition-colors"
-          >+ Agregar</button>
+          <button @click="modalMov = true"
+            class="px-4 py-2 bg-teal/10 text-teal border border-teal/30 rounded-xl font-body text-sm hover:bg-teal/20 transition-colors">
+            + Agregar
+          </button>
         </div>
 
         <div v-if="!cajaActual.movimientos.length" class="text-gray-400 font-body text-sm">Sin movimientos manuales</div>
         <div v-else class="space-y-2">
-          <div
-            v-for="m in cajaActual.movimientos"
-            :key="m.id"
-            class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3"
-          >
+          <div v-for="m in cajaActual.movimientos" :key="m.id"
+            class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
             <div class="flex items-center gap-3">
               <span :class="m.tipo === 'ingreso' ? 'text-teal' : 'text-red-400'" class="text-lg">
                 {{ m.tipo === 'ingreso' ? '↑' : '↓' }}
@@ -143,15 +153,33 @@
           </div>
         </div>
 
-        <!-- Resumen movimientos -->
-        <div v-if="cajaActual.movimientos.length" class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-4 text-sm font-body">
-          <div>
-            <p class="text-gray-400 text-xs mb-0.5">Ingresos manuales</p>
-            <p class="font-bold text-teal">+${{ cajaActual.totalIngresos.toLocaleString('es-AR') }}</p>
-          </div>
-          <div>
-            <p class="text-gray-400 text-xs mb-0.5">Egresos manuales</p>
-            <p class="font-bold text-red-400">-${{ cajaActual.totalEgresos.toLocaleString('es-AR') }}</p>
+        <!-- Resumen movimientos separado por efectivo/billetera -->
+        <div v-if="cajaActual.movimientos.length" class="mt-4 pt-4 border-t border-gray-100">
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Efectivo -->
+            <div class="bg-amber-50 rounded-xl px-4 py-3">
+              <p class="font-body text-xs font-semibold text-gray-600 mb-2">💵 Efectivo</p>
+              <div class="flex justify-between font-body text-sm mb-1">
+                <span class="text-gray-500">Ingresos</span>
+                <span class="font-bold text-teal">+${{ cajaActual.totalIngresos.toLocaleString('es-AR') }}</span>
+              </div>
+              <div class="flex justify-between font-body text-sm">
+                <span class="text-gray-500">Egresos</span>
+                <span class="font-bold text-red-400">-${{ cajaActual.totalEgresos.toLocaleString('es-AR') }}</span>
+              </div>
+            </div>
+            <!-- Billetera -->
+            <div class="bg-blue-50 rounded-xl px-4 py-3">
+              <p class="font-body text-xs font-semibold text-gray-600 mb-2">📲 Billetera</p>
+              <div class="flex justify-between font-body text-sm mb-1">
+                <span class="text-gray-500">Ingresos</span>
+                <span class="font-bold text-teal">+${{ (cajaActual.totalIngresosBilletera || 0).toLocaleString('es-AR') }}</span>
+              </div>
+              <div class="flex justify-between font-body text-sm">
+                <span class="text-gray-500">Egresos</span>
+                <span class="font-bold text-red-400">-${{ (cajaActual.totalEgresosBilletera || 0).toLocaleString('es-AR') }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -214,6 +242,14 @@
             <div v-if="(cajaActual.billeteraGastos || 0) > 0" class="flex justify-between text-red-400">
               <span>Gastos digitales</span>
               <span>-${{ cajaActual.billeteraGastos.toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="(cajaActual.totalIngresosBilletera || 0) > 0" class="flex justify-between text-teal">
+              <span>Ingresos manuales billetera</span>
+              <span>+${{ cajaActual.totalIngresosBilletera.toLocaleString('es-AR') }}</span>
+            </div>
+            <div v-if="(cajaActual.totalEgresosBilletera || 0) > 0" class="flex justify-between text-red-400">
+              <span>Egresos manuales billetera</span>
+              <span>-${{ cajaActual.totalEgresosBilletera.toLocaleString('es-AR') }}</span>
             </div>
             <div class="flex justify-between font-bold text-gray-900 text-lg border-t border-gray-200 pt-3 mt-2">
               <span>Saldo final</span>

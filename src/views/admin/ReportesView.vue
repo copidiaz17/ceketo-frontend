@@ -446,46 +446,174 @@
         </div>
 
         <!-- ═══ TAB: CAJA ═════════════════════════════════════════════════════════ -->
-        <div v-if="tabActivo === 'caja'" ref="tablaRef" class="overflow-x-auto">
-          <table class="w-full font-body text-sm">
-            <thead>
-              <tr class="bg-gray-50 text-gray-400 text-xs border-b border-gray-200">
-                <th class="text-left px-4 py-3">#</th>
-                <th class="text-left px-4 py-3">Apertura</th>
-                <th class="text-left px-4 py-3">Cierre</th>
-                <th class="text-left px-4 py-3">Usuario</th>
-                <th class="text-right px-4 py-3">Saldo inicial</th>
-                <th class="text-right px-4 py-3">Arqueo efectivo</th>
-                <th class="text-right px-4 py-3">Arqueo billetera</th>
-                <th class="text-center px-4 py-3">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="cajas.length === 0"><td colspan="8" class="text-center py-12 text-gray-400">Sin cajas en el período</td></tr>
-              <tr v-for="(c, i) in cajas" :key="c.id" class="border-b border-gray-100 hover:bg-gray-50"
-                :class="i % 2 === 1 ? 'bg-gray-50/50' : ''">
-                <td class="px-4 py-3 text-xs text-gray-400">{{ c.id }}</td>
-                <td class="px-4 py-3 text-xs text-gray-600">{{ formatFechaCorta(c.fecha_apertura) }}</td>
-                <td class="px-4 py-3 text-xs text-gray-600">{{ c.fecha_cierre ? formatFechaCorta(c.fecha_cierre) : '—' }}</td>
-                <td class="px-4 py-3 text-gray-700">{{ c.usuario || '—' }}</td>
-                <td class="px-4 py-3 text-right">${{ fmt(c.saldo_inicial) }}</td>
-                <td class="px-4 py-3 text-right font-medium text-teal">
-                  <span v-if="c.arqueo_efectivo !== null">${{ fmt(c.arqueo_efectivo) }}</span>
-                  <span v-else class="text-gray-300">—</span>
-                </td>
-                <td class="px-4 py-3 text-right font-medium text-blue-600">
-                  <span v-if="c.arqueo_billetera !== null">${{ fmt(c.arqueo_billetera) }}</span>
-                  <span v-else class="text-gray-300">—</span>
-                </td>
-                <td class="px-4 py-3 text-center">
-                  <span class="px-2 py-0.5 rounded-full text-xs font-medium"
-                    :class="c.estado === 'abierta' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">
-                    {{ c.estado }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-if="tabActivo === 'caja'" class="p-6 space-y-6">
+
+          <!-- Resumen del período -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Ventas por método -->
+            <div class="bg-gray-50 rounded-2xl p-5">
+              <h3 class="font-body text-sm font-semibold text-gray-700 mb-4">💰 Ventas por método de pago</h3>
+              <div class="space-y-2">
+                <div v-for="(monto, metodo) in ventasPorMetodo" :key="metodo"
+                  class="flex justify-between font-body text-sm">
+                  <span class="text-gray-600 capitalize">{{ labelMetodo(metodo) }}</span>
+                  <span class="font-bold text-teal">${{ fmt(monto) }}</span>
+                </div>
+                <div class="flex justify-between font-body text-sm font-bold border-t border-gray-200 pt-2 mt-2">
+                  <span class="text-gray-700">Total ventas</span>
+                  <span class="text-teal text-base">${{ fmt(kpis.total) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gastos por método -->
+            <div class="bg-red-50 rounded-2xl p-5">
+              <h3 class="font-body text-sm font-semibold text-gray-700 mb-4">💸 Gastos por método de pago</h3>
+              <div class="space-y-2">
+                <div v-for="(data, cat) in gastosPorCategoria" :key="cat"
+                  class="flex justify-between font-body text-sm">
+                  <span class="text-gray-600">{{ cat }}</span>
+                  <span class="font-bold text-red-500">-${{ fmt(data.total) }}</span>
+                </div>
+                <div class="space-y-1 pt-2 border-t border-red-100">
+                  <div class="flex justify-between font-body text-xs text-gray-500">
+                    <span>💵 Gastos en efectivo</span>
+                    <span>-${{ fmt(gastosPorMedio.efectivo) }}</span>
+                  </div>
+                  <div v-if="gastosPorMedio.digital > 0" class="flex justify-between font-body text-xs text-gray-500">
+                    <span>📲 Gastos digitales</span>
+                    <span>-${{ fmt(gastosPorMedio.digital) }}</span>
+                  </div>
+                </div>
+                <div class="flex justify-between font-body text-sm font-bold border-t border-red-200 pt-2">
+                  <span class="text-gray-700">Total gastos</span>
+                  <span class="text-red-600 text-base">-${{ fmt(totalGastos) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Movimientos manuales -->
+            <div class="bg-blue-50 rounded-2xl p-5">
+              <h3 class="font-body text-sm font-semibold text-gray-700 mb-4">🔄 Movimientos manuales</h3>
+              <div class="space-y-3">
+                <!-- Efectivo -->
+                <div class="bg-white/70 rounded-xl px-4 py-3">
+                  <p class="font-body text-xs text-gray-500 font-semibold mb-2">💵 Efectivo</p>
+                  <div class="flex justify-between font-body text-sm mb-1">
+                    <span class="text-gray-600">Ingresos</span>
+                    <span class="font-bold text-teal">+${{ fmt(resumenMovimientos.ingresos_efectivo) }}</span>
+                  </div>
+                  <div class="flex justify-between font-body text-sm">
+                    <span class="text-gray-600">Egresos</span>
+                    <span class="font-bold text-red-500">-${{ fmt(resumenMovimientos.egresos_efectivo) }}</span>
+                  </div>
+                </div>
+                <!-- Billetera -->
+                <div class="bg-white/70 rounded-xl px-4 py-3">
+                  <p class="font-body text-xs text-gray-500 font-semibold mb-2">📲 Billetera</p>
+                  <div class="flex justify-between font-body text-sm mb-1">
+                    <span class="text-gray-600">Ingresos</span>
+                    <span class="font-bold text-teal">+${{ fmt(resumenMovimientos.ingresos_billetera) }}</span>
+                  </div>
+                  <div class="flex justify-between font-body text-sm">
+                    <span class="text-gray-600">Egresos</span>
+                    <span class="font-bold text-red-500">-${{ fmt(resumenMovimientos.egresos_billetera) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detalle de movimientos manuales del período -->
+          <div v-if="resumenMovimientos.detalle?.length">
+            <h3 class="font-body text-sm font-semibold text-gray-700 mb-3">Detalle movimientos manuales</h3>
+            <div class="overflow-x-auto" ref="tablaRef">
+              <table class="w-full font-body text-sm">
+                <thead>
+                  <tr class="bg-gray-50 text-gray-400 text-xs border-b border-gray-200">
+                    <th class="text-left px-4 py-3">Fecha/Hora</th>
+                    <th class="text-left px-4 py-3">Caja #</th>
+                    <th class="text-left px-4 py-3">Concepto</th>
+                    <th class="text-left px-4 py-3">Medio</th>
+                    <th class="text-left px-4 py-3">Tipo</th>
+                    <th class="text-right px-4 py-3">Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(m, i) in resumenMovimientos.detalle" :key="m.id"
+                    class="border-b border-gray-100 hover:bg-gray-50"
+                    :class="i % 2 === 1 ? 'bg-gray-50/50' : ''">
+                    <td class="px-4 py-2.5 text-xs text-gray-500">{{ formatFecha(m.fecha) }}</td>
+                    <td class="px-4 py-2.5 text-xs text-gray-400">#{{ m.caja_id }}</td>
+                    <td class="px-4 py-2.5 text-gray-800">{{ m.concepto }}</td>
+                    <td class="px-4 py-2.5 text-xs">
+                      <span class="px-2 py-0.5 rounded-full"
+                        :class="m.medio === 'billetera' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'">
+                        {{ m.medio === 'billetera' ? '📲 Billetera' : '💵 Efectivo' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-2.5">
+                      <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                        :class="m.tipo === 'ingreso' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                        {{ m.tipo }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-2.5 text-right font-bold"
+                      :class="m.tipo === 'ingreso' ? 'text-teal' : 'text-red-500'">
+                      {{ m.tipo === 'ingreso' ? '+' : '-' }}${{ fmt(m.monto) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Lista de cajas del período -->
+          <div>
+            <h3 class="font-body text-sm font-semibold text-gray-700 mb-3">Cajas del período ({{ cajas.length }})</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full font-body text-sm">
+                <thead>
+                  <tr class="bg-gray-50 text-gray-400 text-xs border-b border-gray-200">
+                    <th class="text-left px-4 py-3">#</th>
+                    <th class="text-left px-4 py-3">Apertura</th>
+                    <th class="text-left px-4 py-3">Cierre</th>
+                    <th class="text-left px-4 py-3">Usuario</th>
+                    <th class="text-right px-4 py-3">Saldo inicial</th>
+                    <th class="text-right px-4 py-3">Arqueo efectivo</th>
+                    <th class="text-right px-4 py-3">Arqueo billetera</th>
+                    <th class="text-center px-4 py-3">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="cajas.length === 0"><td colspan="8" class="text-center py-8 text-gray-400">Sin cajas en el período</td></tr>
+                  <tr v-for="(c, i) in cajas" :key="c.id" class="border-b border-gray-100 hover:bg-gray-50"
+                    :class="i % 2 === 1 ? 'bg-gray-50/50' : ''">
+                    <td class="px-4 py-3 text-xs text-gray-400">{{ c.id }}</td>
+                    <td class="px-4 py-3 text-xs text-gray-600">{{ formatFechaCorta(c.fecha_apertura) }}</td>
+                    <td class="px-4 py-3 text-xs text-gray-600">{{ c.fecha_cierre ? formatFechaCorta(c.fecha_cierre) : '—' }}</td>
+                    <td class="px-4 py-3 text-gray-700">{{ c.usuario || '—' }}</td>
+                    <td class="px-4 py-3 text-right">${{ fmt(c.saldo_inicial) }}</td>
+                    <td class="px-4 py-3 text-right font-medium text-teal">
+                      <span v-if="c.arqueo_efectivo !== null">${{ fmt(c.arqueo_efectivo) }}</span>
+                      <span v-else class="text-gray-300">—</span>
+                    </td>
+                    <td class="px-4 py-3 text-right font-medium text-blue-600">
+                      <span v-if="c.arqueo_billetera !== null">${{ fmt(c.arqueo_billetera) }}</span>
+                      <span v-else class="text-gray-300">—</span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                      <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                        :class="c.estado === 'abierta' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">
+                        {{ c.estado }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <!-- ═══ TAB: DETALLE PRODUCTOS ═══════════════════════════════════════════ -->
@@ -630,6 +758,8 @@ const stock                 = ref([])
 const stockValorCosto       = ref(0)
 const stockValorVenta       = ref(0)
 const cajas                 = ref([])
+const resumenMovimientos    = ref({ ingresos_efectivo: 0, egresos_efectivo: 0, ingresos_billetera: 0, egresos_billetera: 0, detalle: [] })
+const gastosPorMedio        = ref({ efectivo: 0, digital: 0, sin_metodo: 0 })
 
 // Charts
 const chartBarRef      = ref(null)
@@ -736,6 +866,8 @@ async function cargar() {
       stockValorCosto.value         = e.stockValorCosto || 0
       stockValorVenta.value         = e.stockValorVenta || 0
       cajas.value                   = e.cajas || []
+      resumenMovimientos.value      = e.resumenMovimientos || { ingresos_efectivo: 0, egresos_efectivo: 0, ingresos_billetera: 0, egresos_billetera: 0, detalle: [] }
+      gastosPorMedio.value          = e.gastosPorMedio || { efectivo: 0, digital: 0, sin_metodo: 0 }
     } else {
       console.error('reportes/extras:', extrasResult.reason?.message)
     }
