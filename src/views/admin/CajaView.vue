@@ -141,7 +141,7 @@
               </span>
               <div>
                 <p class="font-body text-sm text-gray-900">{{ m.concepto }}</p>
-                <p class="font-body text-xs text-gray-400">{{ m.tipo }} · {{ m.medio === 'billetera' ? '📲 Billetera' : '💵 Efectivo' }} · {{ formatHora(m.createdAt) }}</p>
+                <p class="font-body text-xs text-gray-400">{{ m.tipo }} · {{ m.medio === 'billetera' ? '📲 Billetera' : '💵 Efectivo' }} · {{ formatFecha(m.fecha) }}</p>
               </div>
             </div>
             <div class="flex items-center gap-3">
@@ -370,6 +370,16 @@
         </div>
 
         <div class="space-y-3">
+          <div>
+            <label class="block font-body text-sm text-gray-500 mb-1">Fecha</label>
+            <input
+              v-model="nuevoMov.fecha"
+              type="date"
+              :max="hoy"
+              class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm
+                     focus:outline-none focus:border-teal transition-colors"
+            />
+          </div>
           <div>
             <label class="block font-body text-sm text-gray-500 mb-1">Concepto</label>
             <input
@@ -610,7 +620,8 @@ const cargandoDetalle  = ref(false)
 
 const apertura = ref({ saldo_inicial: 0, saldo_billetera_inicial: 0, usuario: '' })
 const arqueo   = ref({ efectivo: null, billetera: null, nota: '' })
-const nuevoMov = ref({ tipo: 'ingreso', concepto: '', monto: null, medio: 'efectivo' })
+const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+const nuevoMov = ref({ tipo: 'ingreso', concepto: '', monto: null, medio: 'efectivo', fecha: hoy })
 
 const metodoLabels = {
   efectivo:      'Efectivo',
@@ -647,8 +658,14 @@ function formatHora(fecha) {
   return new Date(fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function formatFecha(fecha) {
+  if (!fecha) return ''
+  const [y, m, d] = (fecha.includes('T') ? fecha.split('T')[0] : fecha).split('-')
+  return `${d}/${m}/${y}`
+}
+
 function resetNuevoMov() {
-  nuevoMov.value = { tipo: 'ingreso', concepto: '', monto: null, medio: 'efectivo' }
+  nuevoMov.value = { tipo: 'ingreso', concepto: '', monto: null, medio: 'efectivo', fecha: hoy }
 }
 
 async function cargar() {
@@ -692,6 +709,7 @@ async function agregarMovimiento() {
       concepto: nuevoMov.value.concepto,
       monto:    nuevoMov.value.monto,
       medio:    nuevoMov.value.medio,
+      fecha:    nuevoMov.value.fecha,
     })
     modalMov.value = false
     resetNuevoMov()
