@@ -160,7 +160,7 @@
         </div>
 
         <!-- ═══ TAB: RESULTADO ═══════════════════════════════════════════════════ -->
-        <div v-if="tabActivo === 'resultado'" class="p-6">
+        <div v-if="tabActivo === 'resultado'" ref="tablaRef" class="p-6">
           <!-- Resumen grande -->
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
             <div class="bg-teal/10 border border-teal/30 rounded-2xl p-6 text-center">
@@ -227,7 +227,7 @@
         </div>
 
         <!-- ═══ TAB: MÉTODOS DE PAGO ═════════════════════════════════════════════ -->
-        <div v-if="tabActivo === 'metodos'" class="p-6">
+        <div v-if="tabActivo === 'metodos'" ref="tablaRef" class="p-6">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
               <h3 class="font-body text-sm font-semibold text-gray-700 mb-4">Ingresos por método</h3>
@@ -446,7 +446,7 @@
         </div>
 
         <!-- ═══ TAB: CAJA ═════════════════════════════════════════════════════════ -->
-        <div v-if="tabActivo === 'caja'" class="p-6 space-y-6">
+        <div v-if="tabActivo === 'caja'" ref="tablaRef" class="p-6 space-y-6">
 
           <!-- Resumen del período -->
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -548,7 +548,7 @@
           <!-- Detalle de movimientos manuales del período -->
           <div v-if="resumenMovimientos.detalle?.length">
             <h3 class="font-body text-sm font-semibold text-gray-700 mb-3">Detalle movimientos manuales</h3>
-            <div class="overflow-x-auto" ref="tablaRef">
+            <div class="overflow-x-auto">
               <table class="w-full font-body text-sm">
                 <thead>
                   <tr class="bg-gray-50 text-gray-400 text-xs border-b border-gray-200">
@@ -1224,6 +1224,96 @@ async function exportarExcel() {
     const tot5 = ws5.addRow(['', 'TOTAL', '', '', '', '', stockValorCosto.value, stockValorVenta.value])
     styleData(tot5, 8, false, true); numFmt(tot5, [7, 8])
 
+    // ── Hoja 6: Producción ────────────────────────────────────────────────
+    if (lotes.value.length) {
+      const ws6 = wb.addWorksheet('Producción', { views: [{ state: 'frozen', ySplit: 3 }] })
+      ws6.columns = [
+        { key: 'fecha', width: 12 }, { key: 'lote', width: 14 }, { key: 'productos', width: 52 },
+        { key: 'total', width: 16 }, { key: 'nota', width: 28 },
+      ]
+      addTitle(ws6, 'PRODUCCIÓN', 5)
+      const h6 = ws6.getRow(3)
+      h6.values = ['Fecha', 'Lote ID', 'Productos', 'Total unidades', 'Nota']
+      styleHeader(h6, 5)
+      lotes.value.forEach((lote, i) => {
+        const productosStr = (lote.items || []).map(it => `${it.producto} (${it.cantidad})`).join(', ')
+        const r = ws6.addRow([lote.fecha, lote.lote_id?.slice(0, 8) || '—', productosStr, lote.total_unidades, lote.nota || ''])
+        styleData(r, 5, i % 2 === 1)
+        r.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }
+      })
+      const tot6 = ws6.addRow(['', 'TOTAL', '', totalUnidadesProducidas.value, ''])
+      styleData(tot6, 5, false, true)
+      tot6.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }
+    }
+
+    // ── Hoja 7: Detalle items vendidos ────────────────────────────────────
+    if (detalle.value.length) {
+      const ws7 = wb.addWorksheet('Detalle items', { views: [{ state: 'frozen', ySplit: 3 }] })
+      ws7.columns = [
+        { key: 'op', width: 10 }, { key: 'fecha', width: 14 }, { key: 'cat', width: 20 },
+        { key: 'prod', width: 36 }, { key: 'cod', width: 11 }, { key: 'cant', width: 9 },
+        { key: 'precio', width: 14 }, { key: 'desc', width: 10 }, { key: 'subtotal', width: 16 },
+      ]
+      addTitle(ws7, 'DETALLE DE ITEMS VENDIDOS', 9)
+      const h7 = ws7.getRow(3)
+      h7.values = ['Operación', 'Fecha', 'Categoría', 'Producto', 'Código', 'Cant.', 'P. Unit.', 'Desc.%', 'Subtotal']
+      styleHeader(h7, 9)
+      detalle.value.forEach((d, i) => {
+        const r = ws7.addRow([d.operacion_id, formatFechaCorta(d.fecha), d.categoria, d.producto, d.codigo, d.cantidad, d.precio_unit, d.descuento_pct > 0 ? `-${d.descuento_pct}%` : '', d.subtotal])
+        styleData(r, 9, i % 2 === 1)
+        numFmt(r, [7, 9])
+        r.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' }
+      })
+    }
+
+    // ── Hoja 8: Caja ─────────────────────────────────────────────────────
+    if (cajas.value.length) {
+      const ws8 = wb.addWorksheet('Caja', { views: [{ state: 'frozen', ySplit: 3 }] })
+      ws8.columns = [
+        { key: 'id', width: 7 }, { key: 'apertura', width: 20 }, { key: 'cierre', width: 20 },
+        { key: 'usuario', width: 18 }, { key: 'saldo_ini', width: 16 },
+        { key: 'arq_efec', width: 18 }, { key: 'arq_bill', width: 18 }, { key: 'estado', width: 12 },
+      ]
+      addTitle(ws8, 'CAJAS DEL PERÍODO', 8)
+      const h8 = ws8.getRow(3)
+      h8.values = ['#', 'Apertura', 'Cierre', 'Usuario', 'Saldo inicial', 'Arqueo efectivo', 'Arqueo billetera', 'Estado']
+      styleHeader(h8, 8)
+      cajas.value.forEach((c, i) => {
+        const r = ws8.addRow([
+          c.id, formatFechaCorta(c.fecha_apertura),
+          c.fecha_cierre ? formatFechaCorta(c.fecha_cierre) : '—',
+          c.usuario || '—', Number(c.saldo_inicial),
+          c.arqueo_efectivo != null ? Number(c.arqueo_efectivo) : '—',
+          c.arqueo_billetera != null ? Number(c.arqueo_billetera) : '—',
+          c.estado,
+        ])
+        styleData(r, 8, i % 2 === 1)
+        numFmt(r, [5])
+        if (c.arqueo_efectivo != null) numFmt(r, [6])
+        if (c.arqueo_billetera != null) numFmt(r, [7])
+      })
+    }
+
+    // ── Hoja 9: Movimientos caja ──────────────────────────────────────────
+    if (resumenMovimientos.value.detalle?.length) {
+      const ws9 = wb.addWorksheet('Movimientos caja', { views: [{ state: 'frozen', ySplit: 3 }] })
+      ws9.columns = [
+        { key: 'fecha', width: 14 }, { key: 'caja', width: 9 }, { key: 'concepto', width: 36 },
+        { key: 'medio', width: 14 }, { key: 'tipo', width: 12 }, { key: 'monto', width: 16 },
+      ]
+      addTitle(ws9, 'MOVIMIENTOS MANUALES DE CAJA', 6)
+      const h9 = ws9.getRow(3)
+      h9.values = ['Fecha', 'Caja #', 'Concepto', 'Medio', 'Tipo', 'Monto']
+      styleHeader(h9, 6)
+      resumenMovimientos.value.detalle.forEach((m, i) => {
+        const monto = m.tipo === 'ingreso' ? Number(m.monto) : -Number(m.monto)
+        const r = ws9.addRow([formatFechaCorta(m.fecha), `#${m.caja_id}`, m.concepto, m.medio === 'billetera' ? 'Billetera' : 'Efectivo', m.tipo, monto])
+        styleData(r, 6, i % 2 === 1)
+        numFmt(r, [6])
+        r.getCell(5).font = { size: 10, color: { argb: m.tipo === 'ingreso' ? 'FF166534' : 'FF991B1B' } }
+      })
+    }
+
     // ── Gráficos como imágenes ─────────────────────────────────────────────
     const imgBar = await renderChartImage(
       'bar',
@@ -1281,17 +1371,23 @@ async function exportarExcel() {
 // ── Exportar PDF ───────────────────────────────────────────────────────────
 function exportarPDF() {
   const hoy       = new Date().toLocaleDateString('es-AR')
+  const rango     = [filtroDesde.value, filtroHasta.value].filter(Boolean).join(' al ') || 'Período completo'
   const nombreTab = tabs.find(t => t.id === tabActivo.value)?.label || tabActivo.value
-  if (!tablaRef.value) return alert('Cambiá a una pestaña de tabla para exportar PDF')
+  if (!tablaRef.value) return alert('Esta pestaña no tiene contenido exportable a PDF (ej: gráficos)')
   const clone = tablaRef.value.cloneNode(true)
+  // Eliminar botones y controles interactivos del clon
+  clone.querySelectorAll('button, input, select, canvas').forEach(el => el.remove())
   const wrap  = document.createElement('div')
-  wrap.style.cssText = 'font-family:sans-serif;font-size:10px'
-  const titulo = document.createElement('h2')
-  titulo.textContent = `Reporte CEKETO — ${nombreTab} — ${hoy}`
-  titulo.style.cssText = 'font-size:13px;margin-bottom:8px;color:#1A5F5A'
+  wrap.style.cssText = 'font-family:sans-serif;font-size:10px;color:#111'
+  const titulo = document.createElement('div')
+  titulo.innerHTML = `
+    <div style="margin-bottom:12px;border-bottom:2px solid #2a9d8f;padding-bottom:8px">
+      <h2 style="font-size:15px;font-weight:bold;color:#1A5F5A;margin:0">Reporte CEKETO — ${nombreTab}</h2>
+      <p style="font-size:10px;color:#6B7280;margin:4px 0 0">Período: ${rango} &nbsp;·&nbsp; Generado: ${hoy}</p>
+    </div>`
   wrap.appendChild(titulo); wrap.appendChild(clone)
   html2pdf().set({
-    margin: [10, 8, 10, 8], filename: `ceketo_reporte_${hoy.replace(/\//g, '-')}.pdf`,
+    margin: [10, 8, 10, 8], filename: `ceketo_reporte_${tabActivo.value}_${hoy.replace(/\//g, '-')}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },

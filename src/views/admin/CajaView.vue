@@ -260,6 +260,21 @@
 
       </div>
 
+      <!-- Saldo esperado -->
+      <div class="bg-brand-green rounded-2xl p-6">
+        <h2 class="font-display text-base font-semibold text-white mb-4">Saldo que debería haber ahora</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-white/15 rounded-xl px-5 py-4 text-center">
+            <p class="font-body text-sm text-white/70 mb-1">💵 Efectivo</p>
+            <p class="font-display text-2xl font-bold text-white">${{ cajaActual.saldoTeorico.toLocaleString('es-AR') }}</p>
+          </div>
+          <div class="bg-white/15 rounded-xl px-5 py-4 text-center">
+            <p class="font-body text-sm text-white/70 mb-1">📲 Billetera</p>
+            <p class="font-display text-2xl font-bold text-white">${{ cajaActual.saldoBilleteraFinal.toLocaleString('es-AR') }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Arqueo y cierre -->
       <div class="bg-white border border-red-100 rounded-2xl p-6">
         <h2 class="font-display text-lg font-semibold text-gray-900 mb-4">Arqueo y cierre de caja</h2>
@@ -875,20 +890,22 @@ function buildDatosCaja() {
   const fechaApertura = formatFechaHora(c.caja.fecha_apertura)
   const ahora = new Date().toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
 
-  // Ventas por método en orden
   const ventasMetodo = METODOS_ORDEN
     .filter(m => (c.ventasPorMetodo[m] || 0) > 0)
     .map(m => ({ metodo: metodoLabel(m), total: c.ventasPorMetodo[m] || 0 }))
 
-  // Movimientos manuales
+  const gastosMetodo = METODOS_ORDEN
+    .filter(m => (c.gastosPorMetodo?.[m] || 0) > 0)
+    .map(m => ({ metodo: metodoLabel(m), total: c.gastosPorMetodo[m] || 0 }))
+
   const movIngresos = c.movimientos.filter(m => m.tipo === 'ingreso')
   const movEgresos  = c.movimientos.filter(m => m.tipo === 'egreso')
 
-  return { c, fechaApertura, ahora, ventasMetodo, movIngresos, movEgresos }
+  return { c, fechaApertura, ahora, ventasMetodo, gastosMetodo, movIngresos, movEgresos }
 }
 
 function descargarPDF() {
-  const { c, fechaApertura, ahora, ventasMetodo, movIngresos, movEgresos } = buildDatosCaja()
+  const { c, fechaApertura, ahora, ventasMetodo, gastosMetodo, movIngresos, movEgresos } = buildDatosCaja()
 
   const filasVentas = ventasMetodo.map(v =>
     `<tr><td style="padding:5px 10px;border-bottom:1px solid #e5e7eb">${v.metodo}</td><td style="padding:5px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:bold;color:#2a9d8f">$${v.total.toLocaleString('es-AR')}</td></tr>`
@@ -922,14 +939,23 @@ function descargarPDF() {
       </tr></tfoot>
     </table>
 
+    ${gastosMetodo.length ? `
+    <h2 style="font-size:13px;font-weight:bold;margin-bottom:6px;color:#ef4444">Gastos del turno</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px">
+      <thead><tr style="background:#ef4444;color:white"><th style="padding:7px 10px;text-align:left">Método</th><th style="padding:7px 10px;text-align:right">Total</th></tr></thead>
+      <tbody>${gastosMetodo.map(g => `<tr><td style="padding:5px 10px;border-bottom:1px solid #fee2e2">${g.metodo}</td><td style="padding:5px 10px;border-bottom:1px solid #fee2e2;text-align:right;font-weight:bold;color:#ef4444">-$${g.total.toLocaleString('es-AR')}</td></tr>`).join('')}</tbody>
+      <tfoot><tr style="background:#fef2f2;font-weight:bold"><td style="padding:7px 10px;border-top:2px solid #ef4444">TOTAL GASTOS</td><td style="padding:7px 10px;border-top:2px solid #ef4444;text-align:right;color:#ef4444">-$${(c.totalGastos||0).toLocaleString('es-AR')}</td></tr></tfoot>
+    </table>` : ''}
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div style="background:#f9fafb;border-radius:8px;padding:12px">
         <p style="font-size:12px;font-weight:bold;margin-bottom:8px">💵 Efectivo</p>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Saldo inicial</span><span>$${parseFloat(c.caja.saldo_inicial).toLocaleString('es-AR')}</span></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Ventas efectivo</span><span style="color:#2a9d8f">+$${(c.ventasPorMetodo['efectivo'] || 0).toLocaleString('es-AR')}</span></div>
+        ${(c.gastosPorMetodo?.['efectivo']||0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Gastos efectivo</span><span style="color:#ef4444">-$${(c.gastosPorMetodo['efectivo']).toLocaleString('es-AR')}</span></div>` : ''}
         ${c.totalIngresos > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Ingresos manuales</span><span style="color:#2a9d8f">+$${c.totalIngresos.toLocaleString('es-AR')}</span></div>` : ''}
         ${c.totalEgresos > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Egresos manuales</span><span style="color:#ef4444">-$${c.totalEgresos.toLocaleString('es-AR')}</span></div>` : ''}
-        <div style="display:flex;justify-content:space-between;font-weight:bold;border-top:1px solid #e5e7eb;padding-top:6px;margin-top:4px"><span>Saldo teórico</span><span style="color:#2a9d8f">$${c.saldoTeorico.toLocaleString('es-AR')}</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:13px;background:#2a9d8f;color:white;border-radius:6px;padding:8px 6px;margin-top:8px"><span>Debería haber</span><span>$${c.saldoTeorico.toLocaleString('es-AR')}</span></div>
       </div>
       <div style="background:#f0f7ff;border-radius:8px;padding:12px">
         <p style="font-size:12px;font-weight:bold;margin-bottom:8px">📲 Billetera virtual</p>
@@ -938,7 +964,10 @@ function descargarPDF() {
         ${['transferencia','qr','debito','credito'].filter(m => (c.ventasPorMetodo[m]||0)>0).map(m =>
           `<div style="display:flex;justify-content:space-between;margin-bottom:2px;padding-left:12px;font-size:10px;color:#888"><span>${metodoLabel(m)}</span><span>$${(c.ventasPorMetodo[m]||0).toLocaleString('es-AR')}</span></div>`
         ).join('')}
-        <div style="display:flex;justify-content:space-between;font-weight:bold;border-top:1px solid #dbeafe;padding-top:6px;margin-top:4px"><span>Saldo final</span><span style="color:#2563eb">$${c.saldoBilleteraFinal.toLocaleString('es-AR')}</span></div>
+        ${(c.billeteraGastos||0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Gastos digitales</span><span style="color:#ef4444">-$${(c.billeteraGastos).toLocaleString('es-AR')}</span></div>` : ''}
+        ${c.totalIngresosBilletera > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Ingresos manuales</span><span style="color:#2a9d8f">+$${c.totalIngresosBilletera.toLocaleString('es-AR')}</span></div>` : ''}
+        ${c.totalEgresosBilletera > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#555">Egresos manuales</span><span style="color:#ef4444">-$${c.totalEgresosBilletera.toLocaleString('es-AR')}</span></div>` : ''}
+        <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:13px;background:#2563eb;color:white;border-radius:6px;padding:8px 6px;margin-top:8px"><span>Debería haber</span><span>$${c.saldoBilleteraFinal.toLocaleString('es-AR')}</span></div>
       </div>
     </div>
 
@@ -984,6 +1013,13 @@ function descargarExcel() {
     { 'Concepto': 'Saldo inicial billetera', 'Monto ($)': parseFloat(c.caja.saldo_billetera_inicial) },
     { 'Concepto': 'Cobros digitales', 'Monto ($)': c.billeteraVentas || 0 },
     { 'Concepto': 'Saldo final billetera', 'Monto ($)': c.saldoBilleteraFinal },
+    ...(c.totalGastos > 0 ? [
+      { 'Concepto': '', 'Monto ($)': '' },
+      { 'Concepto': 'GASTOS DEL TURNO', 'Monto ($)': '' },
+      ...METODOS_ORDEN.filter(m => (c.gastosPorMetodo?.[m] || 0) > 0)
+        .map(m => ({ 'Concepto': metodoLabel(m), 'Monto ($)': -(c.gastosPorMetodo[m]) })),
+      { 'Concepto': 'TOTAL GASTOS', 'Monto ($)': -c.totalGastos },
+    ] : []),
   ]
   const wsResumen = XLSX.utils.json_to_sheet(resumenFilas)
   wsResumen['!cols'] = [{ wch: 30 }, { wch: 16 }]
