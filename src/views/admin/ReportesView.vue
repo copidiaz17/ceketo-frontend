@@ -11,9 +11,9 @@
           class="px-4 py-2 bg-green-50 border border-green-200 text-green-700 rounded-xl font-body text-sm hover:bg-green-100 transition-colors disabled:opacity-50">
           {{ exportando ? 'Generando...' : '⬇ Excel' }}
         </button>
-        <button @click="exportarPDF"
-          class="px-4 py-2 bg-red-50 border border-red-200 text-red-600 rounded-xl font-body text-sm hover:bg-red-100 transition-colors">
-          ⬇ PDF
+        <button @click="exportarPDF" :disabled="exportando"
+          class="px-4 py-2 bg-red-50 border border-red-200 text-red-600 rounded-xl font-body text-sm hover:bg-red-100 transition-colors disabled:opacity-50">
+          {{ exportando ? 'Generando...' : '⬇ PDF' }}
         </button>
       </div>
     </div>
@@ -821,6 +821,47 @@ const ventasBilletera = computed(() =>
     .reduce((s, [, v]) => s + v, 0)
 )
 
+// Libro unificado de movimientos: ventas + gastos + movimientos manuales de caja
+const movimientosUnificados = computed(() => {
+  const items = []
+  operaciones.value.forEach(op => {
+    items.push({
+      fecha: op.fecha,
+      tipo: 'Venta',
+      origen: op.origen || '',
+      concepto: `Venta #${op.id}${op.cliente ? ' — ' + op.cliente : ''}`,
+      medio: labelMetodo(op.metodo_pago),
+      ingreso: Number(op.total) || 0,
+      egreso: 0,
+    })
+  })
+  gastos.value.forEach(g => {
+    items.push({
+      fecha: g.fecha,
+      tipo: 'Gasto',
+      origen: g.categoria || '',
+      concepto: g.descripcion || g.categoria || 'Gasto',
+      medio: g.metodo_pago ? labelMetodo(g.metodo_pago) : '—',
+      ingreso: 0,
+      egreso: Number(g.monto) || 0,
+    })
+  })
+  ;(resumenMovimientos.value.detalle || []).forEach(m => {
+    const monto = Number(m.monto) || 0
+    items.push({
+      fecha: m.fecha,
+      tipo: 'Mov. manual',
+      origen: m.tipo || '',
+      concepto: m.concepto || 'Movimiento de caja',
+      medio: m.medio === 'billetera' ? 'Billetera' : 'Efectivo',
+      ingreso: m.tipo === 'ingreso' ? monto : 0,
+      egreso: m.tipo === 'egreso' ? monto : 0,
+    })
+  })
+  items.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+  return items
+})
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 const fmt = n => Math.round(n || 0).toLocaleString('es-AR')
 
@@ -1122,6 +1163,32 @@ async function exportarExcel() {
       }
     })
 
+    // ── Hoja: Movimientos (todos) ──────────────────────────────────────────
+    const wsM = wb.addWorksheet('Movimientos (todos)', { views: [{ state: 'frozen', ySplit: 3 }] })
+    wsM.columns = [
+      { key: 'fecha', width: 18 }, { key: 'tipo', width: 14 }, { key: 'origen', width: 18 },
+      { key: 'concepto', width: 42 }, { key: 'medio', width: 16 },
+      { key: 'ingreso', width: 16 }, { key: 'egreso', width: 16 },
+    ]
+    addTitle(wsM, 'MOVIMIENTOS DEL PERÍODO (TODOS)', 7)
+    const hM = wsM.getRow(3)
+    hM.values = ['Fecha', 'Tipo', 'Origen / Categoría', 'Concepto', 'Medio', 'Ingreso', 'Egreso']
+    styleHeader(hM, 7)
+    let totIngM = 0, totEgrM = 0
+    movimientosUnificados.value.forEach((m, i) => {
+      totIngM += m.ingreso; totEgrM += m.egreso
+      const r = wsM.addRow([formatFechaCorta(m.fecha), m.tipo, m.origen, m.concepto, m.medio, m.ingreso || null, m.egreso || null])
+      styleData(r, 7, i % 2 === 1)
+      numFmt(r, [6, 7])
+    })
+    const totM = wsM.addRow(['', '', '', '', 'TOTALES', totIngM, totEgrM])
+    styleData(totM, 7, false, true)
+    numFmt(totM, [6, 7])
+    const netoM = wsM.addRow(['', '', '', '', 'RESULTADO NETO', totIngM - totEgrM, null])
+    styleData(netoM, 7, false, true, (totIngM - totEgrM) >= 0 ? 'DCFCE7' : ROJO_LIGHT)
+    numFmt(netoM, [6])
+    netoM.getCell(6).font = { bold: true, size: 12, color: { argb: (totIngM - totEgrM) >= 0 ? 'FF166534' : 'FF991B1B' } }
+
     // ── Hoja 2: Ventas ─────────────────────────────────────────────────────
     const ws1 = wb.addWorksheet('Ventas', { views: [{ state: 'frozen', ySplit: 3 }] })
     ws1.columns = [
@@ -1368,30 +1435,221 @@ async function exportarExcel() {
   }
 }
 
-// ── Exportar PDF ───────────────────────────────────────────────────────────
-function exportarPDF() {
-  const hoy       = new Date().toLocaleDateString('es-AR')
-  const rango     = [filtroDesde.value, filtroHasta.value].filter(Boolean).join(' al ') || 'Período completo'
-  const nombreTab = tabs.find(t => t.id === tabActivo.value)?.label || tabActivo.value
-  if (!tablaRef.value) return alert('Esta pestaña no tiene contenido exportable a PDF (ej: gráficos)')
-  const clone = tablaRef.value.cloneNode(true)
-  // Eliminar botones y controles interactivos del clon
-  clone.querySelectorAll('button, input, select, canvas').forEach(el => el.remove())
-  const wrap  = document.createElement('div')
-  wrap.style.cssText = 'font-family:sans-serif;font-size:10px;color:#111'
-  const titulo = document.createElement('div')
-  titulo.innerHTML = `
-    <div style="margin-bottom:12px;border-bottom:2px solid #2a9d8f;padding-bottom:8px">
-      <h2 style="font-size:15px;font-weight:bold;color:#1A5F5A;margin:0">Reporte CEKETO — ${nombreTab}</h2>
-      <p style="font-size:10px;color:#6B7280;margin:4px 0 0">Período: ${rango} &nbsp;·&nbsp; Generado: ${hoy}</p>
-    </div>`
-  wrap.appendChild(titulo); wrap.appendChild(clone)
-  html2pdf().set({
-    margin: [10, 8, 10, 8], filename: `ceketo_reporte_${tabActivo.value}_${hoy.replace(/\//g, '-')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-  }).from(wrap).save()
+// ── Exportar PDF (informe completo, todas las secciones) ─────────────────────
+async function exportarPDF() {
+  exportando.value = true
+  try {
+    const hoy   = new Date().toLocaleDateString('es-AR')
+    const rango = [filtroDesde.value, filtroHasta.value].filter(Boolean).join(' al ') || 'Período completo'
+    const money = n => '$' + fmt(n)
+
+    // Estilos reutilizables (inline para html2canvas)
+    const TH    = 'background:#1A5F5A;color:#fff;padding:5px 6px;font-size:9px;text-align:left;border:0.5px solid #145049'
+    const THR   = 'background:#991B1B;color:#fff;padding:5px 6px;font-size:9px;text-align:left;border:0.5px solid #7f1d1d'
+    const TD    = 'padding:4px 6px;font-size:9px;border:0.5px solid #E5E7EB'
+    const TFOOT = 'padding:5px 6px;font-size:9px;font-weight:bold;background:#E6FFFE;border:0.5px solid #2DD4BF'
+
+    function tabla(headers, rows, opts = {}) {
+      const aligns  = opts.aligns || headers.map(() => 'left')
+      const thStyle = opts.rojo ? THR : TH
+      const head = headers.map((h, i) => `<th style="${thStyle};text-align:${aligns[i]}">${h}</th>`).join('')
+      const body = rows.length
+        ? rows.map(r => `<tr>${r.map((c, i) => `<td style="${TD};text-align:${aligns[i]}">${c ?? ''}</td>`).join('')}</tr>`).join('')
+        : `<tr><td colspan="${headers.length}" style="${TD};text-align:center;color:#9CA3AF">Sin datos</td></tr>`
+      const foot = opts.foot
+        ? `<tfoot><tr>${opts.foot.map((c, i) => `<td style="${TFOOT};text-align:${aligns[i]}">${c ?? ''}</td>`).join('')}</tr></tfoot>`
+        : ''
+      return `<table style="width:100%;border-collapse:collapse;margin-bottom:6px">
+        <thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table>`
+    }
+
+    function seccion(titulo, contenido, nuevaPagina = true) {
+      return `<div style="${nuevaPagina ? 'page-break-before:always;' : ''}margin-bottom:14px">
+        <h3 style="font-size:13px;color:#1A5F5A;border-bottom:1.5px solid #2DD4BF;padding-bottom:4px;margin:0 0 8px">${titulo}</h3>
+        ${contenido}
+      </div>`
+    }
+
+    let html = `
+      <div style="border-bottom:2.5px solid #2a9d8f;padding-bottom:10px;margin-bottom:12px">
+        <h1 style="font-size:18px;font-weight:bold;color:#1A5F5A;margin:0">Reporte Integral — CEKETO</h1>
+        <p style="font-size:10px;color:#6B7280;margin:4px 0 0">Período: ${rango} &nbsp;·&nbsp; Generado: ${hoy}</p>
+      </div>`
+
+    // Resumen ejecutivo
+    html += seccion('Resumen ejecutivo', tabla(
+      ['Concepto', 'Valor'],
+      [
+        ['Total ingresos (ventas + pedidos)', money(kpis.value.total)],
+        ['— del cual: envíos cobrados', money(kpis.value.total_envios)],
+        ['Total gastos', money(totalGastos.value)],
+        ['— IVA discriminado (crédito fiscal)', money(ivaTotal.value)],
+        ['Resultado neto', money(resultadoNeto.value)],
+        ['Operaciones', kpis.value.n_operaciones],
+        ['Ticket promedio', money(kpis.value.ticket_promedio)],
+        ['Unidades vendidas', kpis.value.unidades],
+      ],
+      { aligns: ['left', 'right'] }
+    ), false)
+
+    // Movimientos del período (todos)
+    let ti = 0, te = 0
+    const movRows = movimientosUnificados.value.map(m => {
+      ti += m.ingreso; te += m.egreso
+      return [formatFechaCorta(m.fecha), m.tipo, m.concepto, m.medio,
+              m.ingreso ? money(m.ingreso) : '—', m.egreso ? money(m.egreso) : '—']
+    })
+    html += seccion('Movimientos del período (todos)', tabla(
+      ['Fecha', 'Tipo', 'Concepto', 'Medio', 'Ingreso', 'Egreso'],
+      movRows,
+      { aligns: ['left', 'left', 'left', 'left', 'right', 'right'],
+        foot: ['', '', '', 'TOTALES', money(ti), money(te)] }
+    ))
+
+    // Ventas
+    html += seccion('Ventas', tabla(
+      ['#', 'Fecha', 'Origen', 'Cliente', 'Pago', 'Entrega', 'Desc.', 'Envío', 'Total'],
+      operaciones.value.map(op => [
+        op.id, formatFechaCorta(op.fecha), op.origen, op.cliente || '—',
+        labelMetodo(op.metodo_pago), op.entrega,
+        op.descuento > 0 ? `-${op.descuento}%` : '—',
+        op.costo_envio > 0 ? money(op.costo_envio) : '—',
+        money(op.total),
+      ]),
+      { aligns: ['left', 'left', 'left', 'left', 'left', 'left', 'right', 'right', 'right'],
+        foot: ['', '', '', '', '', '', '', 'TOTAL', money(kpis.value.total)] }
+    ))
+
+    // Detalle de items vendidos
+    if (detalle.value.length) {
+      html += seccion('Detalle de items vendidos', tabla(
+        ['Op.', 'Fecha', 'Categoría', 'Producto', 'Código', 'Cant.', 'P. Unit.', 'Desc.', 'Subtotal'],
+        detalle.value.map(d => [
+          d.operacion_id, formatFechaCorta(d.fecha), d.categoria, d.producto, d.codigo,
+          d.cantidad, money(d.precio_unit), d.descuento_pct > 0 ? `-${d.descuento_pct}%` : '—', money(d.subtotal),
+        ]),
+        { aligns: ['left', 'left', 'left', 'left', 'left', 'right', 'right', 'right', 'right'] }
+      ))
+    }
+
+    // Resumen por producto
+    if (resumen.value.length) {
+      html += seccion('Resumen por producto', tabla(
+        ['Categoría', 'Producto', 'Código', 'Unidades', 'P. Unit.', 'Total', '% Total'],
+        resumen.value.map(r => [r.categoria, r.producto, r.codigo, r.cantidad, money(r.precio_unit), money(r.total), r.pct + '%']),
+        { aligns: ['left', 'left', 'left', 'right', 'right', 'right', 'right'] }
+      ))
+    }
+
+    // Gastos
+    html += seccion('Gastos', tabla(
+      ['Fecha', 'Categoría', 'Descripción', 'Proveedor', 'Método', 'Factura', 'IVA', 'Monto'],
+      gastos.value.map(g => [
+        g.fecha, g.categoria, g.descripcion, g.proveedor || '—', g.metodo_pago || '—',
+        g.es_factura ? `A ${g.alicuota_iva}%` : '—', g.iva_monto > 0 ? money(g.iva_monto) : '—', money(g.monto),
+      ]),
+      { aligns: ['left', 'left', 'left', 'left', 'left', 'left', 'right', 'right'], rojo: true,
+        foot: ['', '', '', '', '', '', 'TOTAL', money(totalGastos.value)] }
+    ))
+
+    // Resultado (P&L) y métodos de pago
+    const metodoRows = Object.entries(ventasPorMetodo.value).map(([m, v]) =>
+      [labelMetodo(m), money(v), (kpis.value.total > 0 ? Math.round(v / kpis.value.total * 100) : 0) + '%'])
+    const gastoCatRows = Object.entries(gastosPorCategoria.value).map(([c, d]) =>
+      [c, money(d.total), (totalGastos.value > 0 ? Math.round(d.total / totalGastos.value * 100) : 0) + '%'])
+    html += seccion('Resultado (P&L) y métodos de pago',
+      `<div style="display:flex;gap:12px">
+        <div style="flex:1">
+          <p style="font-size:10px;font-weight:bold;margin:0 0 4px">Ingresos por método de pago</p>
+          ${tabla(['Método', 'Monto', '%'], metodoRows, { aligns: ['left', 'right', 'right'] })}
+        </div>
+        <div style="flex:1">
+          <p style="font-size:10px;font-weight:bold;margin:0 0 4px">Gastos por categoría</p>
+          ${tabla(['Categoría', 'Monto', '%'], gastoCatRows, { aligns: ['left', 'right', 'right'], rojo: true })}
+        </div>
+      </div>
+      <table style="width:55%;border-collapse:collapse;margin-top:8px">
+        <tr><td style="${TFOOT}">Ingresos</td><td style="${TFOOT};text-align:right">${money(kpis.value.total)}</td></tr>
+        <tr><td style="${TFOOT}">Gastos</td><td style="${TFOOT};text-align:right">-${money(totalGastos.value)}</td></tr>
+        <tr><td style="${TFOOT}">Resultado neto</td><td style="${TFOOT};text-align:right">${money(resultadoNeto.value)}</td></tr>
+      </table>`
+    )
+
+    // Producción
+    if (lotes.value.length) {
+      html += seccion('Producción', tabla(
+        ['Fecha', 'Lote', 'Productos', 'Total unidades', 'Nota'],
+        lotes.value.map(l => [
+          l.fecha, l.lote_id?.slice(0, 8) || '—',
+          (l.items || []).map(it => `${it.producto} (${it.cantidad})`).join(', '),
+          l.total_unidades, l.nota || '—',
+        ]),
+        { aligns: ['left', 'left', 'left', 'right', 'left'],
+          foot: ['', '', 'TOTAL', totalUnidadesProducidas.value, ''] }
+      ))
+    }
+
+    // Stock valorizado
+    if (stock.value.length) {
+      html += seccion('Stock valorizado', tabla(
+        ['Categoría', 'Producto', 'Código', 'Stock', 'P. Costo', 'P. Venta', 'Val. Costo', 'Val. Venta'],
+        stock.value.map(p => [
+          p.categoria?.nombre || '—', p.nombre, p.codigo, p.stock,
+          money(p.precio_costo || 0), money(p.precio),
+          money(Number(p.stock) * Number(p.precio_costo || 0)), money(Number(p.stock) * Number(p.precio)),
+        ]),
+        { aligns: ['left', 'left', 'left', 'right', 'right', 'right', 'right', 'right'],
+          foot: ['', 'TOTAL', '', '', '', '', money(stockValorCosto.value), money(stockValorVenta.value)] }
+      ))
+    }
+
+    // Cajas del período
+    if (cajas.value.length) {
+      html += seccion('Cajas del período', tabla(
+        ['#', 'Apertura', 'Cierre', 'Usuario', 'Saldo inicial', 'Arqueo efectivo', 'Arqueo billetera', 'Estado'],
+        cajas.value.map(c => [
+          c.id, formatFechaCorta(c.fecha_apertura),
+          c.fecha_cierre ? formatFechaCorta(c.fecha_cierre) : '—',
+          c.usuario || '—', money(c.saldo_inicial),
+          c.arqueo_efectivo != null ? money(c.arqueo_efectivo) : '—',
+          c.arqueo_billetera != null ? money(c.arqueo_billetera) : '—',
+          c.estado,
+        ]),
+        { aligns: ['left', 'left', 'left', 'left', 'right', 'right', 'right', 'left'] }
+      ))
+    }
+
+    // Movimientos manuales de caja (detalle)
+    if (resumenMovimientos.value.detalle?.length) {
+      html += seccion('Movimientos manuales de caja', tabla(
+        ['Fecha', 'Caja', 'Concepto', 'Medio', 'Tipo', 'Monto'],
+        resumenMovimientos.value.detalle.map(m => [
+          formatFechaCorta(m.fecha), `#${m.caja_id}`, m.concepto,
+          m.medio === 'billetera' ? 'Billetera' : 'Efectivo', m.tipo,
+          (m.tipo === 'ingreso' ? '+' : '-') + money(m.monto),
+        ]),
+        { aligns: ['left', 'left', 'left', 'left', 'left', 'right'] }
+      ), false)
+    }
+
+    const wrap = document.createElement('div')
+    wrap.style.cssText = 'font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10px;width:100%'
+    wrap.innerHTML = html
+
+    await html2pdf().set({
+      margin: [8, 8, 10, 8],
+      filename: `ceketo_reporte_completo_${hoy.replace(/\//g, '-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      pagebreak: { mode: ['css', 'legacy'] },
+    }).from(wrap).save()
+  } catch (err) {
+    console.error(err)
+    alert('Error al generar PDF: ' + err.message)
+  } finally {
+    exportando.value = false
+  }
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────

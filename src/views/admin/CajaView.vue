@@ -273,6 +273,10 @@
             <p class="font-display text-2xl font-bold text-white">${{ cajaActual.saldoBilleteraFinal.toLocaleString('es-AR') }}</p>
           </div>
         </div>
+        <div class="bg-white/25 rounded-xl px-5 py-4 text-center mt-4">
+          <p class="font-body text-sm text-white/80 mb-1">🧾 Total caja (efectivo + billetera)</p>
+          <p class="font-display text-3xl font-bold text-white">${{ saldoTotalCaja.toLocaleString('es-AR') }}</p>
+        </div>
       </div>
 
       <!-- Arqueo y cierre -->
@@ -511,6 +515,12 @@
               </div>
             </div>
 
+            <!-- Total caja -->
+            <div class="bg-brand-green/10 border border-brand-green/30 rounded-xl px-4 py-3 mb-4 flex justify-between items-center">
+              <span class="font-body font-semibold text-gray-700 text-sm">🧾 Total caja (efectivo + billetera)</span>
+              <span class="font-display font-bold text-brand-green text-lg">${{ ((historialDetalle.saldoTeorico || 0) + (historialDetalle.saldoBilleteraFinal || 0)).toLocaleString('es-AR') }}</span>
+            </div>
+
             <!-- Movimientos -->
             <div v-if="historialDetalle.movimientos?.length" class="mb-4">
               <h3 class="font-display text-sm font-semibold text-gray-700 mb-2">Movimientos manuales</h3>
@@ -602,6 +612,14 @@
             </div>
             <div v-else class="text-teal text-xs">Cuadrada ✓</div>
           </div>
+
+          <!-- Total caja -->
+          <div class="border-t-2 border-gray-300 pt-2 flex justify-between items-center">
+            <span class="font-semibold text-gray-700">🧾 Total caja</span>
+            <span class="font-display font-bold text-brand-green text-lg">
+              ${{ (resumenCierre.saldoTeorico + resumenCierre.saldoBilleteraFinal).toLocaleString('es-AR') }}
+            </span>
+          </div>
         </div>
 
         <button
@@ -651,6 +669,10 @@ const metodoLabels = {
 function metodoLabel(m) {
   return metodoLabels[m] || m
 }
+
+const saldoTotalCaja = computed(() =>
+  (cajaActual.value?.saldoTeorico || 0) + (cajaActual.value?.saldoBilleteraFinal || 0)
+)
 
 const diferenciaEfectivo = computed(() => {
   if (arqueo.value.efectivo === null || arqueo.value.efectivo === '') return 0
@@ -830,6 +852,10 @@ function descargarPDFHistorialDetalle() {
         ${c.caja.arqueo_billetera != null ? `<div style="display:flex;justify-content:space-between;margin-top:4px"><span>Real</span><span>$${parseFloat(c.caja.arqueo_billetera).toLocaleString('es-AR')}</span></div>` : ''}
       </div>
     </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#2a9d8f;color:white;border-radius:8px;padding:10px 14px;margin-bottom:16px">
+      <span style="font-size:13px;font-weight:bold">🧾 Total caja (efectivo + billetera)</span>
+      <span style="font-size:16px;font-weight:bold">$${((c.saldoTeorico || 0) + (c.saldoBilleteraFinal || 0)).toLocaleString('es-AR')}</span>
+    </div>
     ${(movIngresos.length || movEgresos.length) ? `
     <h2 style="font-size:13px;font-weight:bold;margin-bottom:6px;color:#555">Movimientos manuales</h2>
     <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px">
@@ -862,6 +888,7 @@ function descargarExcelHistorialDetalle() {
   ventasFilas.push({ 'Método': '', 'Total ($)': '' })
   ventasFilas.push({ 'Método': 'Saldo teórico efectivo', 'Total ($)': c.saldoTeorico || 0 })
   ventasFilas.push({ 'Método': 'Saldo final billetera',  'Total ($)': c.saldoBilleteraFinal || 0 })
+  ventasFilas.push({ 'Método': 'TOTAL CAJA (efectivo + billetera)', 'Total ($)': (c.saldoTeorico || 0) + (c.saldoBilleteraFinal || 0) })
   if (c.caja.arqueo_efectivo != null) ventasFilas.push({ 'Método': 'Contado efectivo', 'Total ($)': parseFloat(c.caja.arqueo_efectivo) })
   if (c.caja.arqueo_billetera != null) ventasFilas.push({ 'Método': 'Real billetera',    'Total ($)': parseFloat(c.caja.arqueo_billetera) })
   const wsResumen = XLSX.utils.json_to_sheet(ventasFilas)
@@ -971,6 +998,11 @@ function descargarPDF() {
       </div>
     </div>
 
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#1A5F5A;color:white;border-radius:8px;padding:11px 14px;margin-bottom:16px">
+      <span style="font-size:14px;font-weight:bold">🧾 Total caja (efectivo + billetera)</span>
+      <span style="font-size:17px;font-weight:bold">$${((c.saldoTeorico || 0) + (c.saldoBilleteraFinal || 0)).toLocaleString('es-AR')}</span>
+    </div>
+
     ${(movIngresos.length || movEgresos.length) ? `
     <h2 style="font-size:13px;font-weight:bold;margin-bottom:6px;color:#555">Movimientos manuales</h2>
     <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px">
@@ -1013,6 +1045,8 @@ function descargarExcel() {
     { 'Concepto': 'Saldo inicial billetera', 'Monto ($)': parseFloat(c.caja.saldo_billetera_inicial) },
     { 'Concepto': 'Cobros digitales', 'Monto ($)': c.billeteraVentas || 0 },
     { 'Concepto': 'Saldo final billetera', 'Monto ($)': c.saldoBilleteraFinal },
+    { 'Concepto': '', 'Monto ($)': '' },
+    { 'Concepto': 'TOTAL CAJA (efectivo + billetera)', 'Monto ($)': (c.saldoTeorico || 0) + (c.saldoBilleteraFinal || 0) },
     ...(c.totalGastos > 0 ? [
       { 'Concepto': '', 'Monto ($)': '' },
       { 'Concepto': 'GASTOS DEL TURNO', 'Monto ($)': '' },
