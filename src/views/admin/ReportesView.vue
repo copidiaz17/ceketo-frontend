@@ -131,7 +131,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 text-gray-700">{{ op.cliente }}</td>
-                <td class="px-4 py-3 text-xs text-gray-500 capitalize">{{ op.metodo_pago }}</td>
+                <td class="px-4 py-3 text-xs text-gray-500 capitalize">{{ metodoOp(op) }}</td>
                 <td class="px-4 py-3">
                   <span class="px-2 py-0.5 rounded-full text-xs font-medium"
                     :class="op.entrega === 'Delivery' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-600'">
@@ -875,6 +875,13 @@ const METODOS_ICON = {
 }
 const labelMetodo = m => METODOS_LABEL[m] || m
 const iconMetodo  = m => METODOS_ICON[m]  || '💰'
+// Método(s) de una operación, mostrando el 2º cuando es pago dividido
+function metodoOp(op) {
+  if (!op || !op.metodo_pago) return '—'
+  let s = labelMetodo(op.metodo_pago)
+  if (op.metodo_pago2 && op.monto_pago2) s += ' + ' + labelMetodo(op.metodo_pago2)
+  return s
+}
 
 function formatFecha(f) {
   if (!f) return '—'
@@ -1201,7 +1208,7 @@ async function exportarExcel() {
     h1.values = ['#', 'Fecha', 'Origen', 'Cliente', 'Método pago', 'Entrega', 'Observación', 'Desc.%', 'Envío', 'Total']
     styleHeader(h1, 10)
     operaciones.value.forEach((op, i) => {
-      const r = ws1.addRow([op.id, formatFechaCorta(op.fecha), op.origen, op.cliente, op.metodo_pago, op.entrega, op.nota || '', op.descuento > 0 ? `-${op.descuento}%` : '', op.costo_envio || 0, op.total])
+      const r = ws1.addRow([op.id, formatFechaCorta(op.fecha), op.origen, op.cliente, metodoOp(op), op.entrega, op.nota || '', op.descuento > 0 ? `-${op.descuento}%` : '', op.costo_envio || 0, op.total])
       styleData(r, 10, i % 2 === 1)
       numFmt(r, [9, 10])
     })
@@ -1511,7 +1518,7 @@ async function exportarPDF() {
       ['#', 'Fecha', 'Origen', 'Cliente', 'Pago', 'Entrega', 'Desc.', 'Envío', 'Total'],
       operaciones.value.map(op => [
         op.id, formatFechaCorta(op.fecha), op.origen, op.cliente || '—',
-        labelMetodo(op.metodo_pago), op.entrega,
+        metodoOp(op), op.entrega,
         op.descuento > 0 ? `-${op.descuento}%` : '—',
         op.costo_envio > 0 ? money(op.costo_envio) : '—',
         money(op.total),
@@ -1641,7 +1648,7 @@ async function exportarPDF() {
       filename: `ceketo_reporte_completo_${hoy.replace(/\//g, '-')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['css', 'legacy'] },
     }).from(wrap).save()
   } catch (err) {

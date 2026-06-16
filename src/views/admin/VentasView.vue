@@ -710,13 +710,21 @@ const totalFinal = computed(() =>
 
 const resumenMetodos = computed(() => {
   const mapa = {}
-  for (const v of historialVentas.value) {
-    const key = v.metodo_pago || 'sin_metodo'
-    if (!mapa[key]) {
-      const m = metodosPago.find(x => x.value === key)
-      mapa[key] = { metodo: key, label: m?.label || key, total: 0 }
+  const acumular = (metodo, monto) => {
+    if (!metodo || monto <= 0) return
+    if (!mapa[metodo]) {
+      const m = metodosPago.find(x => x.value === metodo)
+      mapa[metodo] = { metodo, label: m?.label || metodo, total: 0 }
     }
-    mapa[key].total += parseFloat(v.total) || 0
+    mapa[metodo].total += monto
+  }
+  for (const v of historialVentas.value) {
+    // Pago dividido: monto_pago2 va al 2º método; el resto, al 1º (igual que el backend)
+    const total  = parseFloat(v.total) || 0
+    const monto2 = v.metodo_pago2 && v.monto_pago2 ? parseFloat(v.monto_pago2) : 0
+    const monto1 = total - monto2
+    acumular(v.metodo_pago || 'sin_metodo', monto1)
+    if (monto2 > 0) acumular(v.metodo_pago2, monto2)
   }
   return Object.values(mapa)
 })
