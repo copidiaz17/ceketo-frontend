@@ -67,8 +67,8 @@
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white border border-gray-200 rounded-2xl p-5">
           <p class="font-body text-xs text-gray-400 mb-1">Total ingresos</p>
-          <p class="font-display text-2xl font-bold text-teal">${{ fmt(kpis.total) }}</p>
-          <p v-if="kpis.total_envios > 0" class="font-body text-xs text-blue-500 mt-1">incl. ${{ fmt(kpis.total_envios) }} envíos</p>
+          <p class="font-display text-2xl font-bold text-teal">${{ fmt(totalIngresos) }}</p>
+          <p v-if="kpis.total_envios > 0" class="font-body text-xs text-gray-400 mt-1">Productos ${{ fmt(kpis.total) }} + Envíos <span class="text-blue-500">${{ fmt(kpis.total_envios) }}</span></p>
         </div>
         <div class="bg-white border border-gray-200 rounded-2xl p-5">
           <p class="font-body text-xs text-gray-400 mb-1">Total gastos</p>
@@ -152,8 +152,14 @@
             </tbody>
             <tfoot v-if="operaciones.length > 0">
               <tr class="bg-teal/10 border-t-2 border-teal/30">
-                <td colspan="9" class="px-4 py-3 font-semibold text-gray-700 text-sm">TOTAL</td>
-                <td class="px-4 py-3 text-right font-display font-bold text-teal text-base">${{ fmt(kpis.total) }}</td>
+                <td colspan="8" class="px-4 py-3 font-semibold text-gray-700 text-sm">TOTAL</td>
+                <td class="px-4 py-3 text-right font-semibold text-blue-600 text-sm">${{ fmt(kpis.total_envios) }}</td>
+                <td class="px-4 py-3 text-right font-display font-bold text-teal text-base">${{ fmt(totalIngresos) }}</td>
+              </tr>
+              <tr v-if="kpis.total_envios > 0" class="bg-teal/5">
+                <td colspan="10" class="px-4 py-2 text-right text-xs text-gray-500">
+                  Productos ${{ fmt(kpis.total) }} + Envíos ${{ fmt(kpis.total_envios) }} = <b class="text-teal">${{ fmt(totalIngresos) }}</b>
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -165,8 +171,9 @@
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
             <div class="bg-teal/10 border border-teal/30 rounded-2xl p-6 text-center">
               <p class="font-body text-sm text-gray-500 mb-1">↑ Ingresos totales</p>
-              <p class="font-display text-3xl font-bold text-teal">${{ fmt(kpis.total) }}</p>
-              <p class="font-body text-xs text-gray-400 mt-2">{{ kpis.n_operaciones }} operaciones</p>
+              <p class="font-display text-3xl font-bold text-teal">${{ fmt(totalIngresos) }}</p>
+              <p v-if="kpis.total_envios > 0" class="font-body text-xs text-gray-400 mt-1">Productos ${{ fmt(kpis.total) }} · Envíos ${{ fmt(kpis.total_envios) }}</p>
+              <p class="font-body text-xs text-gray-400 mt-1">{{ kpis.n_operaciones }} operaciones</p>
             </div>
             <div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
               <p class="font-body text-sm text-gray-500 mb-1">↓ Gastos totales</p>
@@ -198,7 +205,7 @@
                   </div>
                   <div class="text-right">
                     <span class="font-body font-bold text-teal">${{ fmt(monto) }}</span>
-                    <span class="font-body text-xs text-gray-400 ml-2">({{ kpis.total > 0 ? Math.round(monto/kpis.total*100) : 0 }}%)</span>
+                    <span class="font-body text-xs text-gray-400 ml-2">({{ totalIngresos > 0 ? Math.round(monto/totalIngresos*100) : 0 }}%)</span>
                   </div>
                 </div>
               </div>
@@ -242,10 +249,10 @@
                     <span class="font-display font-bold text-teal text-lg">${{ fmt(monto) }}</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-teal h-2 rounded-full transition-all" :style="{ width: Math.min(kpis.total > 0 ? monto/kpis.total*100 : 0, 100) + '%' }"></div>
+                    <div class="bg-teal h-2 rounded-full transition-all" :style="{ width: Math.min(totalIngresos > 0 ? monto/totalIngresos*100 : 0, 100) + '%' }"></div>
                   </div>
                   <p class="font-body text-xs text-gray-400 mt-1 text-right">
-                    {{ kpis.total > 0 ? (monto/kpis.total*100).toFixed(1) : 0 }}% del total
+                    {{ totalIngresos > 0 ? (monto/totalIngresos*100).toFixed(1) : 0 }}% del total
                   </p>
                 </div>
                 <div v-if="!Object.keys(ventasPorMetodo).length" class="text-center text-gray-400 py-8 font-body text-sm">Sin datos</div>
@@ -477,7 +484,7 @@
                 <!-- Gran total -->
                 <div class="flex justify-between font-body text-sm font-bold border-t border-gray-300 pt-2 mt-1">
                   <span class="text-gray-800">TOTAL VENTAS</span>
-                  <span class="text-teal text-base">${{ fmt(kpis.total) }}</span>
+                  <span class="text-teal text-base">${{ fmt(totalIngresos) }}</span>
                 </div>
               </div>
             </div>
@@ -810,7 +817,8 @@ const productosFiltrados = computed(() =>
     : productos.value
 )
 
-const resultadoNeto = computed(() => (kpis.value.total || 0) - (totalGastos.value || 0))
+const totalIngresos = computed(() => kpis.value.total_con_envios || 0) // productos + envíos (lo realmente cobrado)
+const resultadoNeto = computed(() => (kpis.value.total_con_envios || 0) - (totalGastos.value || 0))
 
 const METODOS_DIGITALES_SET = new Set(['transferencia', 'qr', 'debito', 'credito'])
 
@@ -1148,10 +1156,12 @@ async function exportarExcel() {
     hr0.values = ['Concepto', 'Monto', '%']
     styleHeader(hr0, 3)
 
+    const totConEnv = kpis.value.total_con_envios || 0
     const filas0 = [
-      ['Total Ingresos (ventas + pedidos)', kpis.value.total, 100],
-      ['  — del cual: envíos cobrados', kpis.value.total_envios, kpis.value.total > 0 ? kpis.value.total_envios/kpis.value.total*100 : 0],
-      ['Total Gastos', totalGastos.value, kpis.value.total > 0 ? totalGastos.value/kpis.value.total*100 : 0],
+      ['Total Ingresos (productos + envíos)', totConEnv, 100],
+      ['  — Productos (mercadería)', kpis.value.total, totConEnv > 0 ? kpis.value.total/totConEnv*100 : 0],
+      ['  — Envíos cobrados', kpis.value.total_envios, totConEnv > 0 ? kpis.value.total_envios/totConEnv*100 : 0],
+      ['Total Gastos', totalGastos.value, totConEnv > 0 ? totalGastos.value/totConEnv*100 : 0],
       ['  — IVA discriminado', ivaTotal.value, null],
       ['Resultado Neto', resultadoNeto.value, null],
       ['', null, null],
@@ -1212,9 +1222,12 @@ async function exportarExcel() {
       styleData(r, 10, i % 2 === 1)
       numFmt(r, [9, 10])
     })
-    const tot1 = ws1.addRow(['', '', '', '', '', '', '', '', 'TOTAL', kpis.value.total])
+    const totProd = ws1.addRow(['', '', '', '', '', '', '', '', 'Productos', kpis.value.total])
+    styleData(totProd, 10)
+    numFmt(totProd, [10])
+    const tot1 = ws1.addRow(['', '', '', '', '', '', '', 'TOTAL', kpis.value.total_envios, kpis.value.total_con_envios])
     styleData(tot1, 10, false, true)
-    numFmt(tot1, [10])
+    numFmt(tot1, [9, 10])
 
     // ── Hoja 3: Gastos ─────────────────────────────────────────────────────
     const ws2 = wb.addWorksheet('Gastos', { views: [{ state: 'frozen', ySplit: 3 }] })
@@ -1245,14 +1258,14 @@ async function exportarExcel() {
     h3.values = ['Categoría', 'Monto', '% Ingresos']
     styleHeader(h3, 3)
     const filasR = [
-      ...Object.entries(gastosPorCategoria.value).map(([cat, d]) => [cat, d.total, kpis.value.total > 0 ? d.total/kpis.value.total : 0]),
+      ...Object.entries(gastosPorCategoria.value).map(([cat, d]) => [cat, d.total, kpis.value.total_con_envios > 0 ? d.total/kpis.value.total_con_envios : 0]),
     ]
     filasR.forEach((f, i) => {
       const r = ws3.addRow(f)
       styleData(r, 3, i % 2 === 1)
       numFmt(r, [2]); r.getCell(3).numFmt = '0.0%'; r.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' }
     })
-    const totR = ws3.addRow(['TOTAL GASTOS', totalGastos.value, kpis.value.total > 0 ? totalGastos.value/kpis.value.total : 0])
+    const totR = ws3.addRow(['TOTAL GASTOS', totalGastos.value, kpis.value.total_con_envios > 0 ? totalGastos.value/kpis.value.total_con_envios : 0])
     styleData(totR, 3, false, true, ROJO_LIGHT)
     numFmt(totR, [2]); totR.getCell(3).numFmt = '0.0%'
     ws3.addRow([])
@@ -1487,8 +1500,9 @@ async function exportarPDF() {
     html += seccion('Resumen ejecutivo', tabla(
       ['Concepto', 'Valor'],
       [
-        ['Total ingresos (ventas + pedidos)', money(kpis.value.total)],
-        ['— del cual: envíos cobrados', money(kpis.value.total_envios)],
+        ['Total ingresos (productos + envíos)', money(kpis.value.total_con_envios)],
+        ['— Productos (mercadería)', money(kpis.value.total)],
+        ['— Envíos cobrados', money(kpis.value.total_envios)],
         ['Total gastos', money(totalGastos.value)],
         ['— IVA discriminado (crédito fiscal)', money(ivaTotal.value)],
         ['Resultado neto', money(resultadoNeto.value)],
@@ -1524,7 +1538,7 @@ async function exportarPDF() {
         money(op.total),
       ]),
       { aligns: ['left', 'left', 'left', 'left', 'left', 'left', 'right', 'right', 'right'],
-        foot: ['', '', '', '', '', '', '', 'TOTAL', money(kpis.value.total)] }
+        foot: ['', '', '', '', '', 'Productos ' + money(kpis.value.total), 'TOTAL', money(kpis.value.total_envios), money(kpis.value.total_con_envios)] }
     ))
 
     // Detalle de items vendidos
@@ -1561,7 +1575,7 @@ async function exportarPDF() {
 
     // Resultado (P&L) y métodos de pago
     const metodoRows = Object.entries(ventasPorMetodo.value).map(([m, v]) =>
-      [labelMetodo(m), money(v), (kpis.value.total > 0 ? Math.round(v / kpis.value.total * 100) : 0) + '%'])
+      [labelMetodo(m), money(v), (kpis.value.total_con_envios > 0 ? Math.round(v / kpis.value.total_con_envios * 100) : 0) + '%'])
     const gastoCatRows = Object.entries(gastosPorCategoria.value).map(([c, d]) =>
       [c, money(d.total), (totalGastos.value > 0 ? Math.round(d.total / totalGastos.value * 100) : 0) + '%'])
     html += seccion('Resultado (P&L) y métodos de pago',
@@ -1576,7 +1590,7 @@ async function exportarPDF() {
         </div>
       </div>
       <table style="width:55%;border-collapse:collapse;margin-top:8px">
-        <tr><td style="${TFOOT}">Ingresos</td><td style="${TFOOT};text-align:right">${money(kpis.value.total)}</td></tr>
+        <tr><td style="${TFOOT}">Ingresos (productos + envíos)</td><td style="${TFOOT};text-align:right">${money(kpis.value.total_con_envios)}</td></tr>
         <tr><td style="${TFOOT}">Gastos</td><td style="${TFOOT};text-align:right">-${money(totalGastos.value)}</td></tr>
         <tr><td style="${TFOOT}">Resultado neto</td><td style="${TFOOT};text-align:right">${money(resultadoNeto.value)}</td></tr>
       </table>`
