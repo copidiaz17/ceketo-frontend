@@ -10,7 +10,7 @@
         loading="lazy"
         width="400"
         height="256"
-        @error="$event.target.src = '/images/prod1.jpg'"
+        @error="$event.target.onerror=null; $event.target.src='/images/sin-imagen.svg'"
       />
 
       <span class="absolute top-4 left-4 badge bg-white/90 backdrop-blur-sm text-gray-700 font-medium border border-gray-200/60">
@@ -102,7 +102,7 @@ const showAdded = ref(false)
 
 // Aplica transformaciones de Cloudinary para reducir tamaño en mobile
 function optimizedImage(url) {
-  if (!url || !url.includes('cloudinary.com')) return url || '/images/prod1.jpg'
+  if (!url || !url.includes('cloudinary.com')) return url || '/images/sin-imagen.svg'
   // Inserta parámetros: ancho 400px, calidad automática, formato WebP automático
   return url.replace('/upload/', '/upload/c_scale,w_400,q_auto,f_auto/')
 }

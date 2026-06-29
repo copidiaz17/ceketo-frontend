@@ -98,26 +98,17 @@ const loading        = ref(true)
 // Categorías que NO se muestran en la tienda online (sí siguen en el admin)
 const CATEGORIAS_OCULTAS = ['MKT']
 
-const CATEGORIA_IMG = {
-  'BYM': '/images/prod1.jpg',
-  'CHY': '/images/prod2.jpg',
-  'DUK': '/images/prod3.jpg',
-  'PY0': '/images/prod4.jpg',
-  'PYE': '/images/prod5.png',
-  'PYT': '/images/prod6.jpg',
-}
+const SIN_IMAGEN = '/images/sin-imagen.svg'
 
 function adaptProduct(p) {
-  const cat     = p.categoria?.codigo || ''
-  const fallback = CATEGORIA_IMG[cat] || '/images/prod1.jpg'
   return {
     id:          p.id,
     name:        p.nombre,
     description: p.categoria?.nombre || '',
     price:       parseFloat(p.precio),
-    category:    cat,
+    category:    p.categoria?.codigo || '',
     stock:       p.stock,
-    image:       p.imagen || fallback,
+    image:       p.imagen || SIN_IMAGEN,
   }
 }
 
