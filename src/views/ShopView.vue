@@ -95,6 +95,9 @@ const allProducts    = ref([])
 const categories     = ref([])
 const loading        = ref(true)
 
+// Categorías que NO se muestran en la tienda online (sí siguen en el admin)
+const CATEGORIAS_OCULTAS = ['MKT']
+
 const CATEGORIA_IMG = {
   'BYM': '/images/prod1.jpg',
   'CHY': '/images/prod2.jpg',
@@ -120,7 +123,9 @@ function adaptProduct(p) {
 
 const filteredProducts = computed(() =>
   allProducts.value.filter(p => {
-    const matchCat    = !activeCategory.value || p.categoria?.codigo === activeCategory.value
+    const cat = p.categoria?.codigo || ''
+    if (CATEGORIAS_OCULTAS.includes(cat)) return false   // ocultar Market en la tienda
+    const matchCat    = !activeCategory.value || cat === activeCategory.value
     const matchSearch = !search.value ||
       p.nombre.toLowerCase().includes(search.value.toLowerCase()) ||
       p.codigo.toLowerCase().includes(search.value.toLowerCase())
@@ -139,7 +144,7 @@ onMounted(async () => {
       axios.get('/api/categorias'),
     ])
     allProducts.value = prods
-    categories.value  = cats
+    categories.value  = cats.filter(c => !CATEGORIAS_OCULTAS.includes(c.codigo))
   } catch {
     allProducts.value = []
   } finally {
