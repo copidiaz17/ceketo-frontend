@@ -23,6 +23,52 @@
       <p v-if="impresoraError" class="w-full text-red-400 text-xs font-body">{{ impresoraError }}</p>
     </div>
 
+    <!-- Pedidos online pendientes -->
+    <div v-if="pedidosPendientes.length" class="mb-6 bg-white border-2 border-keto-orange/40 rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display text-lg font-semibold text-gray-900 flex items-center gap-2">
+          🛎️ Pedidos online pendientes
+          <span class="bg-keto-orange text-gray-900 text-sm font-bold rounded-full px-2.5 py-0.5">{{ pedidosPendientes.length }}</span>
+        </h2>
+        <button @click="cargarPedidosPendientes" class="text-gray-400 hover:text-teal text-sm font-body">↻ Actualizar</button>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div
+          v-for="p in pedidosPendientes"
+          :key="p.id"
+          class="border rounded-xl p-4 flex flex-col"
+          :class="pedidoActivo?.id === p.id ? 'border-teal bg-teal/5' : 'border-gray-200'"
+        >
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <p class="font-body font-semibold text-gray-900 leading-tight">{{ p.nombre }}</p>
+              <p class="font-body text-xs text-gray-400">#{{ p.id }} · {{ formatHora(p.fecha) }}</p>
+            </div>
+            <span class="font-display font-bold text-teal text-sm whitespace-nowrap">${{ parseFloat(p.total).toLocaleString('es-AR') }}</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 mb-3">
+            <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
+              {{ p.tipo_entrega === 'envio' ? '🛵 Envío' : '🏪 Retiro' }}
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
+              {{ metodosPago.find(m => m.value === p.metodo_pago)?.label || p.metodo_pago }}
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">{{ p.items?.length || 0 }} item(s)</span>
+          </div>
+          <div class="mt-auto flex gap-2">
+            <button
+              @click="cargarPedidoEnPOS(p)"
+              class="flex-1 py-2 bg-teal text-gray-900 rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors"
+            >{{ pedidoActivo?.id === p.id ? '✓ Cargado' : 'Cargar' }}</button>
+            <button
+              @click="pedidoARechazar = p"
+              class="px-3 py-2 border border-red-200 text-red-400 rounded-lg font-body text-sm hover:bg-red-50 transition-colors"
+            >Rechazar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="grid lg:grid-cols-2 gap-8">
       <!-- Panel izquierdo: agregar producto -->
       <div class="space-y-4">
@@ -143,6 +189,24 @@
       <!-- Panel derecho: carrito de venta -->
       <div class="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col">
         <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Ticket de venta</h2>
+
+        <!-- Banner del pedido online cargado -->
+        <div v-if="pedidoActivo" class="mb-4 bg-teal/5 border border-teal/30 rounded-xl p-3">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="font-body text-sm font-semibold text-gray-900">🛎️ Pedido online #{{ pedidoActivo.id }} — {{ pedidoActivo.nombre }}</p>
+              <p class="font-body text-xs text-gray-500 mt-0.5">
+                {{ pedidoActivo.tipo_entrega === 'envio' ? '🛵 Envío a domicilio' : '🏪 Retiro en el local' }}
+                · 📱 {{ pedidoActivo.telefono }}
+              </p>
+              <p v-if="pedidoActivo.tipo_entrega === 'envio' && pedidoActivo.direccion" class="font-body text-xs text-gray-500">
+                📍 {{ pedidoActivo.direccion }}{{ pedidoActivo.localidad ? ', ' + pedidoActivo.localidad : '' }}
+              </p>
+              <p v-if="pedidoActivo.nota" class="font-body text-xs text-gray-500">📝 {{ pedidoActivo.nota }}</p>
+            </div>
+            <button @click="cancelarCargaPedido" class="text-gray-400 hover:text-red-400 text-sm" title="Quitar pedido">✕</button>
+          </div>
+        </div>
 
         <div v-if="carrito.length === 0" class="flex-1 flex items-center justify-center text-gray-400 font-body text-sm">
           Sin productos en la venta
@@ -622,11 +686,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal rechazar pedido online -->
+    <div v-if="pedidoARechazar" class="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4">
+      <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm">
+        <h2 class="font-display text-lg font-bold text-gray-900 mb-2">Rechazar pedido #{{ pedidoARechazar.id }}</h2>
+        <p class="font-body text-sm text-gray-500 mb-1">
+          {{ pedidoARechazar.nombre }} · <span class="font-bold text-gray-900">${{ parseFloat(pedidoARechazar.total).toLocaleString('es-AR') }}</span>
+        </p>
+        <p class="font-body text-sm text-gray-400 mb-6">El pedido se marcará como cancelado y saldrá de la lista. No afecta el stock.</p>
+        <div class="flex gap-3">
+          <button
+            @click="pedidoARechazar = null"
+            class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors"
+          >Cancelar</button>
+          <button
+            @click="rechazarPedido"
+            :disabled="rechazando"
+            class="flex-1 py-3 bg-red-500 text-white font-body text-sm font-semibold rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
+          >{{ rechazando ? 'Rechazando...' : 'Confirmar rechazo' }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
 import html2pdf from 'html2pdf.js'
 import * as XLSX from 'xlsx'
@@ -671,6 +757,11 @@ const filtroFecha            = ref(hoyISO)
 const clientesCta            = ref([])
 const cuentaSeleccionada     = ref('')
 const categoriaActiva        = ref('')
+const pedidosPendientes      = ref([])
+const pedidoActivo           = ref(null)
+const pedidoARechazar        = ref(null)
+const rechazando             = ref(false)
+let   pollPedidos            = null
 
 const metodosPago = [
   { value: 'efectivo',          label: 'Efectivo',       icon: '💵' },
@@ -807,6 +898,54 @@ function agregarAlCarrito(prod, cant) {
   }
 }
 
+async function cargarPedidosPendientes() {
+  try {
+    const token = localStorage.getItem('ceketo_token')
+    const { data } = await axios.get('/api/pedidos?estado=pendiente', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    pedidosPendientes.value = data
+  } catch { pedidosPendientes.value = [] }
+}
+
+function cargarPedidoEnPOS(p) {
+  carrito.value = (p.items || []).map(it => ({
+    producto_id: it.producto_id,
+    nombre:      it.producto?.nombre || 'Producto',
+    codigo:      it.producto?.codigo || '',
+    precio:      parseFloat(it.precio_unit),
+    cantidad:    it.cantidad,
+    categoria:   it.producto?.categoria?.nombre || 'Otros',
+  }))
+  pedidoActivo.value = p
+  tipoVenta.value    = 'online'
+  ventaErr.value     = ''
+  ventaOk.value      = ''
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function cancelarCargaPedido() {
+  pedidoActivo.value = null
+  carrito.value = []
+  tipoVenta.value = 'local'
+}
+
+async function rechazarPedido() {
+  if (!pedidoARechazar.value) return
+  rechazando.value = true
+  try {
+    const token = localStorage.getItem('ceketo_token')
+    await axios.patch(`/api/pedidos/${pedidoARechazar.value.id}/estado`,
+      { estado: 'cancelado' },
+      { headers: { Authorization: `Bearer ${token}` } })
+    if (pedidoActivo.value?.id === pedidoARechazar.value.id) cancelarCargaPedido()
+    pedidoARechazar.value = null
+    await cargarPedidosPendientes()
+  } catch (err) {
+    alert(err.response?.data?.error || 'Error al rechazar el pedido')
+  } finally { rechazando.value = false }
+}
+
 function abrirModalPago() {
   if (!carrito.value.length) return
   metodoPagoSeleccionado.value = ''
@@ -818,6 +957,10 @@ function abrirModalPago() {
   dineroRecibido.value = null
   fechaVenta.value   = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
   cuentaSeleccionada.value = ''
+  // Si viene de un pedido online, pre-seleccionamos la forma de pago que eligió el cliente (editable)
+  if (pedidoActivo.value && ['efectivo', 'transferencia'].includes(pedidoActivo.value.metodo_pago)) {
+    metodoPagoSeleccionado.value = pedidoActivo.value.metodo_pago
+  }
   modalPago.value = true
 }
 
@@ -855,6 +998,17 @@ async function confirmarVenta() {
     modalPago.value = false
     ventaOk.value = `✓ Venta #${data.venta_id} registrada — Total $${data.total.toLocaleString('es-AR')}`
     carrito.value = []
+    // Si veníamos de un pedido online, lo marcamos como facturado y lo sacamos de pendientes
+    if (pedidoActivo.value) {
+      try {
+        await axios.patch(`/api/pedidos/${pedidoActivo.value.id}/estado`,
+          { estado: 'en_preparacion', venta_id: data.venta_id },
+          { headers: { Authorization: `Bearer ${token}` } })
+      } catch { /* la venta ya se registró; el pedido se puede gestionar desde Pedidos */ }
+      pedidoActivo.value = null
+      tipoVenta.value = 'local'
+      cargarPedidosPendientes()
+    }
     cargarHistorial()
     cargarProductos()
     setTimeout(() => { ventaOk.value = '' }, 6000)
@@ -1332,6 +1486,9 @@ onMounted(async () => {
   await cargarProductos()
   await cargarHistorial()
   await cargarClientesCta()
+  await cargarPedidosPendientes()
+  // Refresca los pedidos online cada 60s para que la dueña vea los nuevos sin recargar
+  pollPedidos = setInterval(cargarPedidosPendientes, 60000)
   // Intentar reconectar impresora automáticamente si ya fue autorizada antes
   try {
     const devices = await navigator.usb?.getDevices()
@@ -1339,5 +1496,9 @@ onMounted(async () => {
       await conectar()
     }
   } catch {}
+})
+
+onUnmounted(() => {
+  if (pollPedidos) clearInterval(pollPedidos)
 })
 </script>

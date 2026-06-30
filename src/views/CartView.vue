@@ -42,7 +42,9 @@
                     <span class="font-body font-medium w-6 text-center text-sm text-gray-800">{{ item.quantity }}</span>
                     <button
                       @click="cartStore.updateQuantity(item.id, item.quantity + 1)"
-                      class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-brand-orange transition-colors font-bold"
+                      :disabled="enStockMaximo(item)"
+                      class="w-6 h-6 flex items-center justify-center transition-colors font-bold"
+                      :class="enStockMaximo(item) ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-brand-orange'"
                     >+</button>
                   </div>
                   <!-- Price + Delete -->
@@ -115,9 +117,13 @@ import { computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 const cartStore = useCartStore()
 
+function enStockMaximo(item) {
+  return Number.isFinite(item.stock) && item.quantity >= item.stock
+}
+
 const whatsappLink = computed(() => {
-  const lineas = cartStore.items.map(i => `• ${i.name} x${i.quantity} = $${(i.price * i.quantity).toLocaleString('es-AR')}`).join('\n')
-  const msg = `Hola CEKETO! Quiero hacer el siguiente pedido:\n\n${lineas}\n\n*Total: $${cartStore.totalPrice.toLocaleString('es-AR')}*`
+  const lineas = cartStore.items.map(i => `• ${i.quantity}x ${i.name} — $${(i.price * i.quantity).toLocaleString('es-AR')}`).join('\n')
+  const msg = `¡Hola Ceketo! 🥑 Te paso mi pedido:\n\n🛒 *PEDIDO*\n${lineas}\n\n💰 *Total: $${cartStore.totalPrice.toLocaleString('es-AR')}*`
   return `https://wa.me/543854133969?text=${encodeURIComponent(msg)}`
 })
 </script>

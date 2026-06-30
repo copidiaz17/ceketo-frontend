@@ -18,7 +18,13 @@
       </span>
 
       <span
-        v-if="product.stock <= 5 && product.stock > 0"
+        v-if="sinStock"
+        class="absolute top-4 right-4 badge bg-gray-700 text-white"
+      >
+        Sin stock
+      </span>
+      <span
+        v-else-if="product.stock <= 5 && product.stock > 0"
         class="absolute top-4 right-4 badge bg-brand-orange text-white"
       >
         Últimas unidades
@@ -28,11 +34,15 @@
       <div class="absolute inset-0 bg-white/85 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-400 flex flex-col items-center justify-center gap-3 px-6">
         <button
           @click.prevent="addToCart"
-          class="w-full bg-brand-orange text-white py-3 rounded-full font-medium text-sm tracking-wide
+          :disabled="sinStock"
+          class="w-full py-3 rounded-full font-medium text-sm tracking-wide
                  transform translate-y-4 group-hover:translate-y-0 transition-all duration-400
-                 hover:bg-orange-600 active:scale-95 shadow-lg"
+                 active:scale-95 shadow-lg"
+          :class="sinStock
+            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : 'bg-brand-orange text-white hover:bg-orange-600'"
         >
-          + Agregar al carrito
+          {{ sinStock ? 'Sin stock' : '+ Agregar al carrito' }}
         </button>
         <RouterLink
           :to="`/producto/${product.id}`"
@@ -65,8 +75,11 @@
         </div>
         <button
           @click="addToCart"
-          class="w-10 h-10 rounded-full bg-brand-orange/15 text-brand-orange border border-brand-orange/20 flex items-center justify-center
-                 hover:bg-brand-orange hover:text-white transition-all duration-300 hover:scale-110 active:scale-95"
+          :disabled="sinStock"
+          class="w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-300 active:scale-95"
+          :class="sinStock
+            ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed'
+            : 'bg-brand-orange/15 text-brand-orange border-brand-orange/20 hover:bg-brand-orange hover:text-white hover:scale-110'"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -86,11 +99,23 @@
         </div>
       </div>
     </Transition>
+
+    <!-- Sin stock disponible feedback -->
+    <Transition name="added-flash">
+      <div
+        v-if="showMax"
+        class="absolute inset-0 bg-gray-900/10 pointer-events-none rounded-3xl border-2 border-gray-400 flex items-center justify-center"
+      >
+        <div class="bg-gray-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg text-center">
+          No hay más stock disponible
+        </div>
+      </div>
+    </Transition>
   </article>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 
 const props = defineProps({
@@ -99,6 +124,9 @@ const props = defineProps({
 
 const cartStore = useCartStore()
 const showAdded = ref(false)
+const showMax   = ref(false)
+
+const sinStock = computed(() => Number.isFinite(props.product.stock) && props.product.stock <= 0)
 
 // Aplica transformaciones de Cloudinary para reducir tamaño en mobile
 function optimizedImage(url) {
@@ -108,9 +136,15 @@ function optimizedImage(url) {
 }
 
 function addToCart() {
-  cartStore.addItem(props.product)
-  showAdded.value = true
-  setTimeout(() => { showAdded.value = false }, 1500)
+  if (sinStock.value) return
+  const ok = cartStore.addItem(props.product)
+  if (ok) {
+    showAdded.value = true
+    setTimeout(() => { showAdded.value = false }, 1500)
+  } else {
+    showMax.value = true
+    setTimeout(() => { showMax.value = false }, 1800)
+  }
 }
 </script>
 

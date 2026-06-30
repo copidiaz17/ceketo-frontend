@@ -12,14 +12,20 @@ export const useCartStore = defineStore('cart', () => {
     items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
   )
 
+  // Devuelve true si pudo agregar, false si no hay stock disponible
   function addItem(product) {
+    const stock = Number.isFinite(product.stock) ? product.stock : Infinity
     const existing = items.value.find(i => i.id === product.id)
     if (existing) {
+      const max = Number.isFinite(existing.stock) ? existing.stock : stock
+      if (existing.quantity >= max) return false   // ya llegó al máximo de stock
       existing.quantity++
     } else {
+      if (stock <= 0) return false                 // sin stock
       items.value.push({ ...product, quantity: 1 })
     }
     saveToStorage()
+    return true
   }
 
   function removeItem(productId) {
@@ -33,7 +39,8 @@ export const useCartStore = defineStore('cart', () => {
       if (quantity <= 0) {
         removeItem(productId)
       } else {
-        item.quantity = quantity
+        const max = Number.isFinite(item.stock) ? item.stock : Infinity
+        item.quantity = Math.min(quantity, max)   // nunca por encima del stock
         saveToStorage()
       }
     }

@@ -50,7 +50,12 @@
             <div class="flex items-center gap-3 bg-gray-100 border border-gray-200 rounded-full px-4 py-2">
               <button @click="qty > 1 && qty--" class="text-gray-400 hover:text-brand-orange font-bold text-lg w-6">−</button>
               <span class="font-body font-medium w-8 text-center text-gray-800">{{ qty }}</span>
-              <button @click="qty++" class="text-gray-400 hover:text-brand-orange font-bold text-lg w-6">+</button>
+              <button
+                @click="qty < product.stock && qty++"
+                :disabled="qty >= product.stock"
+                class="font-bold text-lg w-6"
+                :class="qty >= product.stock ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-brand-orange'"
+              >+</button>
             </div>
             <button
               @click="addToCart"
