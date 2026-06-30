@@ -60,32 +60,28 @@ const cardRefs = ref([])
 
 useScrollReveal([headerRef])
 
-const CATEGORIA_IMG = {
-  'BYM': new URL('@/assets/images/prod1.jpg', import.meta.url).href,
-  'CHY': new URL('@/assets/images/prod2.jpg', import.meta.url).href,
-  'DUK': new URL('@/assets/images/prod3.jpg', import.meta.url).href,
-  'PY0': new URL('@/assets/images/prod4.jpg', import.meta.url).href,
-  'PYE': new URL('@/assets/images/prod5.png', import.meta.url).href,
-  'PYT': new URL('@/assets/images/prod6.jpg', import.meta.url).href,
-}
+// Categorías que NO se muestran en la web (sí siguen en el admin)
+const CATEGORIAS_OCULTAS = ['MKT']
 
 function adaptProduct(p) {
-  const cat = p.categoria?.codigo || ''
   return {
     id:          p.id,
     name:        p.nombre,
     description: p.categoria?.nombre || '',
     price:       parseFloat(p.precio),
-    category:    cat,
+    category:    p.categoria?.codigo || '',
     stock:       p.stock,
-    image:       p.imagen || CATEGORIA_IMG[cat] || new URL('@/assets/images/prod1.jpg', import.meta.url).href,
+    image:       p.imagen || '/images/sin-imagen.svg',
   }
 }
 
 onMounted(async () => {
   try {
-    const { data } = await axios.get('/api/productos?limit=6')
-    products.value = data.map(adaptProduct)
+    const { data } = await axios.get('/api/productos?limit=500')
+    products.value = data
+      .filter(p => !CATEGORIAS_OCULTAS.includes(p.categoria?.codigo))
+      .slice(0, 6)
+      .map(adaptProduct)
   } catch {
     products.value = featuredFallback
   } finally {
