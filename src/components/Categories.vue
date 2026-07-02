@@ -80,6 +80,9 @@ const BGS = [
 // Emoji de respaldo por código (si la categoría no tiene ningún producto con foto)
 const EMOJI = { BYM: '🧁', CHY: '🍫', CON: '🍬', DUK: '🍯', PAK: '🍞', PYE: '🥟', PYT: '🥧' }
 
+// Producto preferido para la miniatura de ciertas categorías (busca por palabra en el nombre)
+const PREFERIDO = { PYE: 'sorrentino' }
+
 const categories = ref([])
 
 // Miniatura optimizada de Cloudinary (recorte cuadrado chico)
@@ -97,8 +100,11 @@ onMounted(async () => {
     categories.value = cats
       .filter(c => !OCULTAS.includes(c.codigo))
       .map((c, i) => {
-        // Primer producto de esa categoría que tenga imagen → se usa de miniatura
-        const prod = prods.find(p => p.categoria?.codigo === c.codigo && p.imagen)
+        // Productos de esa categoría que tengan imagen
+        const conFoto = prods.filter(p => p.categoria?.codigo === c.codigo && p.imagen)
+        // Si hay un producto preferido para la miniatura (por palabra), usarlo; si no, el primero
+        const key  = PREFERIDO[c.codigo]
+        const prod = (key && conFoto.find(p => p.nombre.toLowerCase().includes(key))) || conFoto[0]
         return {
           codigo: c.codigo,
           nombre: c.nombre,
