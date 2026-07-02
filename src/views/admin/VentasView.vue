@@ -55,6 +55,19 @@
             </span>
             <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">{{ p.items?.length || 0 }} item(s)</span>
           </div>
+          <div class="mb-3 space-y-1 text-xs">
+            <a
+              v-if="p.telefono"
+              :href="waLink(p.telefono)"
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-1 text-[#128C7E] hover:underline font-medium"
+              title="Escribir por WhatsApp"
+            >💬 {{ p.telefono }}</a>
+            <p v-if="p.tipo_entrega === 'envio' && p.direccion" class="text-gray-500">
+              📍 {{ p.direccion }}{{ p.localidad ? ', ' + p.localidad : '' }}
+            </p>
+          </div>
           <div class="mt-auto flex gap-2">
             <button
               @click="cargarPedidoEnPOS(p)"
@@ -197,7 +210,10 @@
               <p class="font-body text-sm font-semibold text-gray-900">🛎️ Pedido online #{{ pedidoActivo.id }} — {{ pedidoActivo.nombre }}</p>
               <p class="font-body text-xs text-gray-500 mt-0.5">
                 {{ pedidoActivo.tipo_entrega === 'envio' ? '🛵 Envío a domicilio' : '🏪 Retiro en el local' }}
-                · 📱 {{ pedidoActivo.telefono }}
+                <template v-if="pedidoActivo.telefono">
+                  · <a :href="waLink(pedidoActivo.telefono)" target="_blank" rel="noopener"
+                       class="text-[#128C7E] font-semibold hover:underline" title="Escribir por WhatsApp">💬 {{ pedidoActivo.telefono }}</a>
+                </template>
               </p>
               <p v-if="pedidoActivo.tipo_entrega === 'envio' && pedidoActivo.direccion" class="font-body text-xs text-gray-500">
                 📍 {{ pedidoActivo.direccion }}{{ pedidoActivo.localidad ? ', ' + pedidoActivo.localidad : '' }}
@@ -898,6 +914,20 @@ function agregarAlCarrito(prod, cant) {
   }
 }
 
+// Normaliza un teléfono cargado por el cliente a formato internacional para el link de WhatsApp.
+// Mejor esfuerzo: agrega 54 9 (Argentina). El número original igual queda visible.
+function normalizarTel(tel) {
+  let d = String(tel || '').replace(/\D/g, '')   // solo dígitos
+  if (!d) return ''
+  d = d.replace(/^0+/, '')                        // saca 0 inicial (0385 → 385)
+  if (d.startsWith('54')) return d.startsWith('549') ? d : '549' + d.slice(2)
+  return '549' + d                                // número local → 54 9 ...
+}
+function waLink(tel) {
+  const n = normalizarTel(tel)
+  return n ? `https://wa.me/${n}` : '#'
+}
+
 async function cargarPedidosPendientes() {
   try {
     const token = localStorage.getItem('ceketo_token')
@@ -994,6 +1024,14 @@ async function confirmarVenta() {
       costo_envio: costoEnvio.value || 0,
       metodo_pago: metodoPagoSeleccionado.value,
       fecha:       new Date(),
+      // Datos del cliente (solo si la venta viene de un pedido online) → van en el ticket
+      cliente:     pedidoActivo.value ? {
+        nombre:       pedidoActivo.value.nombre,
+        telefono:     pedidoActivo.value.telefono,
+        tipo_entrega: pedidoActivo.value.tipo_entrega,
+        direccion:    pedidoActivo.value.direccion,
+        localidad:    pedidoActivo.value.localidad,
+      } : null,
     }
     modalPago.value = false
     ventaOk.value = `✓ Venta #${data.venta_id} registrada — Total $${data.total.toLocaleString('es-AR')}`
@@ -1042,6 +1080,7 @@ async function imprimirTicket() {
       descuento:   v.descuento,
       metodo_pago: v.metodo_pago,
       fecha:       v.fecha,
+      cliente:     v.cliente,
     })
     impresoraConectada.value = true
   } catch (e) {
@@ -1150,6 +1189,7 @@ async function anularVenta() {
 
 function imprimirTicketFallbackHistorial(v) {
   const metodoLabel = metodosPago.find(m => m.value === v.metodo_pago)?.label || v.metodo_pago || '—'
+  const clienteHtml = '' // las ventas del historial no guardan datos de cliente
   const fecha = new Date(v.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
   const hora  = new Date(v.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
 
@@ -1215,6 +1255,7 @@ function imprimirTicketFallbackHistorial(v) {
   <div class="info">Pedido #${v.id}</div>
   <div class="info">Fecha: ${fecha} - ${hora} hs</div>
   <div class="info">Forma de pago: <span>${metodoLabel}</span></div>
+  ${clienteHtml}
   <div class="divider"></div>
   <table>
     ${itemsHtml}
@@ -1278,6 +1319,14 @@ function imprimirTicketFallback(v) {
       <td style="text-align:right">+ $${parseFloat(v.costo_envio).toLocaleString('es-AR')}</td>
     </tr>` : ''
 
+  const clienteHtml = v.cliente ? `
+  <div class="divider"></div>
+  <div class="info">Cliente: <span>${(v.cliente.nombre || '').substring(0, 28)}</span></div>
+  ${v.cliente.telefono ? `<div class="info">Tel: <span>${v.cliente.telefono}</span></div>` : ''}
+  <div class="info">${v.cliente.tipo_entrega === 'envio'
+    ? 'Envio: ' + (v.cliente.direccion || '') + (v.cliente.localidad ? ', ' + v.cliente.localidad : '')
+    : 'Retiro en el local'}</div>` : ''
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -1324,6 +1373,7 @@ function imprimirTicketFallback(v) {
   <div class="info">Pedido #${v.id}</div>
   <div class="info">Fecha: ${fecha} - ${hora} hs</div>
   <div class="info">Forma de pago: <span>${metodoLabel}</span></div>
+  ${clienteHtml}
   <div class="divider"></div>
   <table>
     ${itemsHtml}

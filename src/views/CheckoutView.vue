@@ -50,7 +50,8 @@
                 <div>
                   <label class="block font-body text-sm text-gray-600 mb-2">WhatsApp *</label>
                   <input v-model="form.telefono" type="tel" required
-                    class="input-dark w-full" placeholder="385 400 0000" />
+                    class="input-dark w-full" placeholder="385 412 3456" />
+                  <p class="font-body text-xs text-gray-400 mt-1">Con característica, sin el 0 ni el 15. Ej: 385 412 3456</p>
                   <p v-if="errores.telefono" class="text-red-400 text-xs mt-1">{{ errores.telefono }}</p>
                 </div>
                 <div class="sm:col-span-2">

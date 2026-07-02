@@ -105,7 +105,7 @@ async function enviar(data) {
   await device.transferOut(endpoint, data)
 }
 
-export async function imprimirTicketESCPOS({ id, items, total, descuento, metodo_pago, fecha }) {
+export async function imprimirTicketESCPOS({ id, items, total, descuento, metodo_pago, fecha, cliente }) {
   const metodoLabel = {
     efectivo: 'Efectivo', transferencia: 'Transferencia',
     debito: 'Debito', credito: 'Credito', qr: 'QR',
@@ -142,6 +142,16 @@ export async function imprimirTicketESCPOS({ id, items, total, descuento, metodo
     linea(`Pago: ${metodoLabel}`),
     separador('-'),
   ]
+
+  // Datos del cliente (solo en pedidos online)
+  if (cliente && (cliente.nombre || cliente.telefono)) {
+    if (cliente.nombre)   partes.push(linea(`Cliente: ${String(cliente.nombre).substring(0, 28)}`))
+    if (cliente.telefono) partes.push(linea(`Tel: ${cliente.telefono}`))
+    partes.push(linea(cliente.tipo_entrega === 'envio'
+      ? `Envio: ${cliente.direccion || ''}${cliente.localidad ? ', ' + cliente.localidad : ''}`
+      : 'Retiro en el local'))
+    partes.push(separador('-'))
+  }
 
   for (const [cat, catItems] of Object.entries(grupos)) {
     partes.push(bytes(ESC, 0x45, 0x01)) // bold on
