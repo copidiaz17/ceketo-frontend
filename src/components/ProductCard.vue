@@ -131,8 +131,9 @@ const sinStock = computed(() => Number.isFinite(props.product.stock) && props.pr
 // Aplica transformaciones de Cloudinary para reducir tamaño en mobile
 function optimizedImage(url) {
   if (!url || !url.includes('cloudinary.com')) return url || '/images/sin-imagen.svg'
-  // Inserta parámetros: ancho 400px, calidad automática, formato WebP automático
-  return url.replace('/upload/', '/upload/c_scale,w_400,q_auto,f_auto/')
+  // e_trim: recorta el borde de fondo (blanco/color) para que el producto llene el campo.
+  // + ancho 400px, calidad y formato automáticos.
+  return url.replace('/upload/', '/upload/e_trim/c_scale,w_400,q_auto,f_auto/')
 }
 
 function addToCart() {

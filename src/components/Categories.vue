@@ -88,7 +88,8 @@ const categories = ref([])
 // Miniatura optimizada de Cloudinary (recorte cuadrado chico)
 function thumb(url) {
   if (!url || !url.includes('cloudinary.com')) return url
-  return url.replace('/upload/', '/upload/c_fill,w_200,h_200,q_auto,f_auto/')
+  // e_trim recorta el borde de fondo para que el producto llene la miniatura
+  return url.replace('/upload/', '/upload/e_trim/c_fill,w_200,h_200,q_auto,f_auto/')
 }
 
 onMounted(async () => {
