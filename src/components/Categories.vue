@@ -25,9 +25,21 @@
           <div class="absolute inset-0 bg-keto-dark/30 group-hover:bg-keto-dark/10 transition-all duration-300"></div>
 
           <div class="relative z-10 h-full flex flex-col items-center justify-center gap-3 p-4">
-            <span class="text-4xl md:text-5xl transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-1">
-              {{ cat.icon }}
-            </span>
+            <!-- Miniatura de un producto real de la categoría -->
+            <img
+              v-if="cat.imagen"
+              :src="thumb(cat.imagen)"
+              :alt="cat.nombre"
+              loading="lazy"
+              class="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover ring-2 ring-white/70 shadow-lg
+                     transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-1"
+            />
+            <!-- Respaldo: emoji si la categoría no tiene ningún producto con foto -->
+            <span
+              v-else
+              class="text-4xl md:text-5xl transition-transform duration-300 group-hover:scale-125 group-hover:-translate-y-1"
+            >{{ cat.emoji }}</span>
+
             <span class="font-body font-semibold text-xs md:text-sm text-center text-white leading-tight transition-all duration-300">
               {{ cat.nombre }}
             </span>
@@ -43,20 +55,62 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
 import { useScrollReveal } from '@/composables/useScrollReveal'
 
 const headerRef = ref(null)
 useScrollReveal([headerRef])
 
-const categories = [
-  { codigo: 'BYM', nombre: 'Budines y Muffins', icon: '🧁', bg: 'bg-purple-600/40 group-hover:bg-purple-600/60' },
-  { codigo: 'CHC', nombre: 'Chocolates',         icon: '🍫', bg: 'bg-amber-800/40 group-hover:bg-amber-800/60' },
-  { codigo: 'DUL', nombre: 'Dulces',              icon: '🍯', bg: 'bg-amber-500/40 group-hover:bg-amber-500/60' },
-  { codigo: 'PY0', nombre: 'Panes y Otros',       icon: '🍞', bg: 'bg-teal/40 group-hover:bg-teal/60' },
-  { codigo: 'PAS', nombre: 'Pastas',              icon: '🍝', bg: 'bg-orange-500/40 group-hover:bg-orange-500/60' },
-  { codigo: 'PYT', nombre: 'Postres y Tartas',    icon: '🥧', bg: 'bg-pink-700/40 group-hover:bg-pink-700/60' },
+// Categorías que NO se muestran en la web (sí siguen en el admin)
+const OCULTAS = ['MKT']
+
+// Paleta de fondos (se asigna por posición)
+const BGS = [
+  'bg-purple-600/40 group-hover:bg-purple-600/60',
+  'bg-amber-800/40 group-hover:bg-amber-800/60',
+  'bg-amber-500/40 group-hover:bg-amber-500/60',
+  'bg-teal/40 group-hover:bg-teal/60',
+  'bg-orange-500/40 group-hover:bg-orange-500/60',
+  'bg-pink-700/40 group-hover:bg-pink-700/60',
+  'bg-emerald-600/40 group-hover:bg-emerald-600/60',
+  'bg-rose-600/40 group-hover:bg-rose-600/60',
 ]
+
+// Emoji de respaldo por código (si la categoría no tiene ningún producto con foto)
+const EMOJI = { BYM: '🧁', CHY: '🍫', CON: '🍬', DUK: '🍯', PAK: '🍞', PYE: '🥟', PYT: '🥧' }
+
+const categories = ref([])
+
+// Miniatura optimizada de Cloudinary (recorte cuadrado chico)
+function thumb(url) {
+  if (!url || !url.includes('cloudinary.com')) return url
+  return url.replace('/upload/', '/upload/c_fill,w_200,h_200,q_auto,f_auto/')
+}
+
+onMounted(async () => {
+  try {
+    const [{ data: cats }, { data: prods }] = await Promise.all([
+      axios.get('/api/categorias'),
+      axios.get('/api/productos?limit=500'),
+    ])
+    categories.value = cats
+      .filter(c => !OCULTAS.includes(c.codigo))
+      .map((c, i) => {
+        // Primer producto de esa categoría que tenga imagen → se usa de miniatura
+        const prod = prods.find(p => p.categoria?.codigo === c.codigo && p.imagen)
+        return {
+          codigo: c.codigo,
+          nombre: c.nombre,
+          imagen: prod?.imagen || null,
+          emoji:  EMOJI[c.codigo] || '🥑',
+          bg:     BGS[i % BGS.length],
+        }
+      })
+  } catch {
+    categories.value = []
+  }
+})
 </script>
 
 <style scoped>
@@ -65,7 +119,6 @@ const categories = [
   transform: translateY(16px);
   animation: catFadeIn 0.5s ease forwards;
 }
-
 @keyframes catFadeIn {
   to {
     opacity: 1;
