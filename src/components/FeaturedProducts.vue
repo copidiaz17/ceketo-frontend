@@ -77,13 +77,20 @@ function adaptProduct(p) {
 
 onMounted(async () => {
   try {
-    const { data } = await axios.get('/api/productos?limit=500')
-    products.value = data
-      .filter(p => !CATEGORIAS_OCULTAS.includes(p.categoria?.codigo))
-      .slice(0, 6)
-      .map(adaptProduct)
+    // Best-sellers reales (suma de ventas, excluye Market)
+    const { data } = await axios.get('/api/productos/mas-vendidos?limit=6')
+    products.value = data.map(adaptProduct)
   } catch {
-    products.value = featuredFallback
+    // Fallback: primeros 6 del catálogo (por si el endpoint falla)
+    try {
+      const { data } = await axios.get('/api/productos?limit=500')
+      products.value = data
+        .filter(p => !CATEGORIAS_OCULTAS.includes(p.categoria?.codigo))
+        .slice(0, 6)
+        .map(adaptProduct)
+    } catch {
+      products.value = featuredFallback
+    }
   } finally {
     loading.value = false
     setTimeout(() => {
