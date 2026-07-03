@@ -127,18 +127,14 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
-import hero1 from '@/assets/images/hero1.jpg'
-import hero2 from '@/assets/images/hero2.jpg'
-import hero3 from '@/assets/images/hero3.jpg'
-import hero4 from '@/assets/images/hero4.jpg'
-import muffins from '@/assets/images/prod4.jpg'
-
+// Carrusel con fotos reales de productos (Cloudinary, recorte panorámico)
+const CLD = 'https://res.cloudinary.com/de3y7ybrg/image/upload/c_fill,g_auto,w_1600,h_900,q_auto,f_auto'
 const slides = [
-  { image: hero1, alt: 'Pan keto de naranja artesanal' },
-  { image: hero2, alt: 'Café keto cremoso' },
-  { image: hero3, alt: 'Tostadas de aguacate keto' },
-  { image: hero4, alt: 'Lifestyle cetogénico' },
-  { image: muffins, alt: 'Muffins proteicos sin azúcar' },
+  { image: `${CLD}/ceketo/productos/prod_72.png`, alt: 'Cheesecake keto de chocolate' },
+  { image: `${CLD}/ceketo/productos/prod_74.png`, alt: 'Cheesecake keto de frutos rojos' },
+  { image: `${CLD}/ceketo/productos/prod_39.png`, alt: 'Carrot cake keto' },
+  { image: `${CLD}/ceketo/productos/prod_35.jpg`, alt: 'Alfajor chocotorta low carb' },
+  { image: `${CLD}/ceketo/productos/prod_21.jpg`, alt: 'Cookies keto' },
 ]
 
 const currentSlide = ref(0)

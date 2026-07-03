@@ -7,8 +7,8 @@
 
       <!-- Brand text (sin logo para no repetir el del hero) -->
       <RouterLink to="/" class="flex items-center gap-2 group">
-        <div class="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:scale-110">
-          <img src="/isotipo.jpeg" alt="CEKETO" style="width:100%;height:100%;object-fit:cover;transform:scale(3);transform-origin:50% 25%;" />
+        <div class="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:scale-110">
+          <img src="https://res.cloudinary.com/de3y7ybrg/image/upload/e_trim/c_fill,w_120,h_120,q_auto,f_auto/ceketo/logo-badge.jpg" alt="CEKETO" class="w-full h-full object-cover" />
         </div>
         <div class="flex flex-col leading-none gap-0.5">
           <span class="font-display font-bold text-gray-900 text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-brand-orange">
