@@ -27,15 +27,9 @@
           <div
             v-for="(benefit, i) in benefits"
             :key="i"
-            class="group flex gap-5 p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 cursor-default"
+            class="group p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 cursor-default"
             :class="benefit.bgClass"
           >
-            <div
-              class="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-transform duration-300 group-hover:scale-110"
-              :class="benefit.iconBg"
-            >
-              {{ benefit.icon }}
-            </div>
             <div>
               <h3 class="font-display text-xl font-semibold text-gray-900 mb-1">
                 {{ benefit.title }}
@@ -81,9 +75,6 @@
       <div class="mt-20 bg-white/70 border border-gray-200 rounded-3xl p-10 md:p-14 reveal shadow-sm" ref="infoRef">
         <div class="grid md:grid-cols-3 gap-8">
           <div v-for="(info, i) in ketoInfo" :key="i" class="group">
-            <div class="text-brand-orange text-4xl mb-4 transition-transform duration-300 group-hover:scale-110 inline-block">
-              {{ info.icon }}
-            </div>
             <h4 class="font-display text-xl font-semibold mb-3 text-gray-900">{{ info.title }}</h4>
             <p class="font-body text-gray-500 text-sm leading-relaxed">{{ info.desc }}</p>
           </div>
