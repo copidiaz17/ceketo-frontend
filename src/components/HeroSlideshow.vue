@@ -127,8 +127,10 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
-// Carrusel con fotos reales de productos (Cloudinary, recorte panorámico)
-const CLD = 'https://res.cloudinary.com/de3y7ybrg/image/upload/c_fill,g_auto,w_1600,h_900,q_auto,f_auto'
+// Carrusel con fotos reales de productos (Cloudinary).
+// c_pad + b_auto: muestra el producto COMPLETO y extiende el fondo de color a los lados
+// (sin zoom/recorte agresivo, para que se aprecie la foto).
+const CLD = 'https://res.cloudinary.com/de3y7ybrg/image/upload/c_pad,b_auto,w_1600,h_900,q_auto,f_auto'
 const slides = [
   { image: `${CLD}/ceketo/productos/prod_72.png`, alt: 'Cheesecake keto de chocolate' },
   { image: `${CLD}/ceketo/productos/prod_74.png`, alt: 'Cheesecake keto de frutos rojos' },
