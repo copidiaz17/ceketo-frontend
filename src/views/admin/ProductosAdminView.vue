@@ -186,6 +186,23 @@
             <span class="font-body text-sm text-gray-500">Producto activo (visible en tienda)</span>
           </div>
 
+          <!-- Imagen del producto -->
+          <div>
+            <label class="block font-body text-xs text-gray-500 mb-1">Imagen del producto</label>
+            <div class="flex items-center gap-4">
+              <div class="w-20 h-20 rounded-xl overflow-hidden bg-gray-50 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                <img v-if="modal.imagenPreview || modal.imagenActual" :src="modal.imagenPreview || modal.imagenActual" class="w-full h-full object-cover" alt="preview" />
+                <span v-else class="text-gray-300 text-2xl">📷</span>
+              </div>
+              <label class="px-4 py-2 bg-gray-50 border border-gray-200 text-gray-600 rounded-xl font-body text-sm cursor-pointer hover:border-teal transition-colors">
+                {{ modal.imagenFile ? 'Cambiar imagen' : 'Elegir imagen' }}
+                <input type="file" accept="image/*" class="hidden" @change="seleccionarImagen" />
+              </label>
+              <button v-if="modal.imagenFile" type="button" @click="quitarImagen" class="text-xs text-red-400 hover:underline">Quitar</button>
+            </div>
+            <p class="text-gray-300 text-xs mt-1">JPG, PNG o WEBP · máx 5MB. Se sube sola al guardar.</p>
+          </div>
+
           <p v-if="modal.error" class="text-red-400 text-sm font-body">{{ modal.error }}</p>
         </div>
 
@@ -246,7 +263,7 @@ const toast           = ref('')
 
 const FORM_VACIO = () => ({ nombre: '', codigo: '', codigo_barras: '', categoria_id: '', precio: 0, stock: 0, activo: true })
 
-const modal = ref({ abierto: false, modo: 'crear', productoId: null, form: FORM_VACIO(), error: '', guardando: false })
+const modal = ref({ abierto: false, modo: 'crear', productoId: null, form: FORM_VACIO(), error: '', guardando: false, imagenFile: null, imagenPreview: '', imagenActual: '' })
 const eliminarModal = ref({ abierto: false, producto: null, cargando: false })
 
 const categoriasFiltro = computed(() => {
@@ -265,7 +282,7 @@ const productosFiltrados = computed(() =>
 )
 
 function abrirModalNuevo() {
-  modal.value = { abierto: true, modo: 'crear', productoId: null, form: FORM_VACIO(), error: '', guardando: false }
+  modal.value = { abierto: true, modo: 'crear', productoId: null, form: FORM_VACIO(), error: '', guardando: false, imagenFile: null, imagenPreview: '', imagenActual: '' }
 }
 
 function abrirModalEditar(p) {
@@ -284,7 +301,37 @@ function abrirModalEditar(p) {
     },
     error: '',
     guardando: false,
+    imagenFile: null,
+    imagenPreview: '',
+    imagenActual: p.imagen || '',
   }
+}
+
+function seleccionarImagen(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  if (file.size > 5 * 1024 * 1024) {
+    modal.value.error = 'La imagen supera los 5MB'
+    event.target.value = ''
+    return
+  }
+  modal.value.error = ''
+  modal.value.imagenFile = file
+  modal.value.imagenPreview = URL.createObjectURL(file)
+}
+
+function quitarImagen() {
+  modal.value.imagenFile = null
+  modal.value.imagenPreview = ''
+}
+
+async function subirImagenCloudinary(id, file, token) {
+  const form = new FormData()
+  form.append('imagen', file)
+  const { data } = await axios.post(`/api/uploads/producto/${id}`, form, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+  })
+  return data.imagen + '?t=' + Date.now()
 }
 
 async function guardarModal() {
@@ -303,11 +350,19 @@ async function guardarModal() {
     }
     if (modal.value.modo === 'crear') {
       const { data } = await axios.post('/api/productos', body, { headers: { Authorization: `Bearer ${token}` } })
+      // Si se eligió imagen, subirla automáticamente a Cloudinary
+      if (modal.value.imagenFile) {
+        data.imagen = await subirImagenCloudinary(data.id, modal.value.imagenFile, token)
+      }
       productos.value.unshift(data)
       mostrarToast('✓ Producto creado')
     } else {
       const { stock: _stock, ...bodySinStock } = body
       await axios.put(`/api/productos/${modal.value.productoId}`, bodySinStock, { headers: { Authorization: `Bearer ${token}` } })
+      // Si se eligió una imagen nueva, subirla automáticamente a Cloudinary
+      if (modal.value.imagenFile) {
+        await subirImagenCloudinary(modal.value.productoId, modal.value.imagenFile, token)
+      }
       const idx = productos.value.findIndex(p => p.id === modal.value.productoId)
       if (idx !== -1) {
         // Recargar producto con categoría incluida
