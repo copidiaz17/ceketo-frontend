@@ -127,7 +127,7 @@
               </div>
               <div v-if="form.metodo_pago === 'transferencia'" class="mt-4 p-4 bg-brand-orange/10 border border-brand-orange/20 rounded-xl">
                 <p class="font-body text-sm text-gray-700">
-                  <span class="text-brand-orange font-semibold">Alias:</span> ceketo.sgo
+                  <span class="text-brand-orange font-semibold">Alias:</span> ceketo11
                 </p>
                 <p class="font-body text-xs text-gray-400 mt-1">Enviá el comprobante por WhatsApp una vez realizada la transferencia.</p>
               </div>
@@ -248,7 +248,7 @@ function construirMensaje() {
     : `Envío a domicilio — ${form.direccion}${form.localidad ? ', ' + form.localidad : ''}`
 
   const pago = form.metodo_pago === 'transferencia'
-    ? 'Transferencia (alias: ceketo.sgo)'
+    ? 'Transferencia (alias: ceketo11)'
     : 'Efectivo'
 
   const partes = [
