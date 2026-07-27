@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const FABRICA_ALLOWED = ['/admin/produccion', '/admin/stock', '/admin/configuracion']
 const VENTAS_ALLOWED  = ['/admin/ventas', '/admin/cuentas', '/admin/stock', '/admin/configuracion']
+// Community manager: solo Productos (y su propia clave en Configuración)
+const CONTENIDO_ALLOWED = ['/admin/productos', '/admin/configuracion']
 
 function requireAdmin(to, from, next) {
   const token = localStorage.getItem('ceketo_token')
@@ -15,6 +17,10 @@ function requireAdmin(to, from, next) {
   if (rol === 'ventas') {
     const allowed = VENTAS_ALLOWED.some(p => to.path.startsWith(p))
     if (!allowed) return next('/admin/ventas')
+  }
+  if (rol === 'contenido') {
+    const allowed = CONTENIDO_ALLOWED.some(p => to.path.startsWith(p))
+    if (!allowed) return next('/admin/productos')
   }
   next()
 }

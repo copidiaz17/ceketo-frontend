@@ -109,8 +109,8 @@
 
         <div>
           <label class="block font-body text-sm text-gray-500 mb-1.5">Rol</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button v-for="r in ['admin','fabrica','ventas']" :key="r"
+          <div class="grid grid-cols-2 gap-2">
+            <button v-for="r in ['admin','fabrica','ventas','contenido']" :key="r"
               @click="uForm.rol = r"
               class="py-2 rounded-xl border-2 font-body text-sm capitalize transition-all"
               :class="uForm.rol === r ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"

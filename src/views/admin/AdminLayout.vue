@@ -105,14 +105,14 @@ const sidebarOpen    = ref(false)
 const usuarioActual = localStorage.getItem('ceketo_admin') || ''
 const rolActual     = localStorage.getItem('ceketo_rol') || 'admin'
 
-const rolLabel = { admin: 'Admin', fabrica: 'Fábrica', ventas: 'Ventas' }[rolActual] || 'Admin'
+const rolLabel = { admin: 'Admin', fabrica: 'Fábrica', ventas: 'Ventas', contenido: 'Contenido' }[rolActual] || 'Admin'
 
 const ALL_LINKS = [
   { to: '/admin/dashboard',  icon: '📊', label: 'Dashboard',      roles: ['admin'] },
   { to: '/admin/produccion', icon: '📦', label: 'Producción',     roles: ['admin', 'fabrica'] },
   { to: '/admin/ventas',     icon: '🛒', label: 'Ventas',         roles: ['admin', 'ventas'] },
   { to: '/admin/pedidos',    icon: '📋', label: 'Pedidos online',  roles: ['admin'] },
-  { to: '/admin/productos',  icon: '🥑', label: 'Productos',      roles: ['admin'], badge: true },
+  { to: '/admin/productos',  icon: '🥑', label: 'Productos',      roles: ['admin', 'contenido'], badge: true },
   { to: '/admin/movimientos',icon: '↕️', label: 'Movimientos',    roles: ['admin'] },
   { to: '/admin/stock',      icon: '🗃️', label: 'Stock',          roles: ['admin', 'fabrica', 'ventas'], badge: true },
   { to: '/admin/gastos',     icon: '💸', label: 'Gastos',         roles: ['admin'] },
