@@ -48,13 +48,15 @@
       </div>
     </div>
 
-    <!-- ── Usuarios del sistema (solo copidiaz17@gmail.com) ──────────── -->
-    <template v-if="usuarioActual === 'copidiaz17@gmail.com'">
+    <!-- ── Usuarios del sistema (solo admin) ─────────────────────────── -->
+    <!-- Antes estaba atado a un email fijo, así que ningún otro admin
+         podía crear usuarios. El backend ya exige rol admin en /api/usuarios. -->
+    <template v-if="rolActual === 'admin'">
     <div class="bg-white border border-gray-200 rounded-2xl p-6">
       <div class="flex items-center justify-between mb-5">
         <div>
           <h2 class="font-display text-lg font-semibold text-gray-900">👥 Usuarios del sistema</h2>
-          <p class="font-body text-xs text-gray-400 mt-0.5">Roles: admin · fabrica · ventas</p>
+          <p class="font-body text-xs text-gray-400 mt-0.5">Roles: admin · fabrica · ventas · contenido</p>
         </div>
         <button
           @click="abrirModalUsuario()"
@@ -231,5 +233,6 @@ async function guardarUsuario() {
   }
 }
 
-onMounted(cargarUsuarios)
+// Solo el admin ve la lista; para los demás el pedido daría 403 al pedo
+onMounted(() => { if (rolActual === 'admin') cargarUsuarios() })
 </script>
