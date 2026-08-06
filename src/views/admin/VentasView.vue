@@ -1416,9 +1416,9 @@ async function cargarClientesCta() {
 async function cargarHistorial() {
   try {
     const { data } = await axios.get('/api/ventas', { params: { fecha: filtroFecha.value } })
-    historialVentas.value = data
-      .sort((a, b) => b.id - a.id)
-      .slice(0, 50)
+    // Sin recortar: el total del día y el resumen por método se calculan sobre esta lista,
+    // así que cortarla dejaba ventas afuera y la caja no cerraba.
+    historialVentas.value = data.sort((a, b) => b.id - a.id)
   } catch { historialVentas.value = [] }
 }
 
