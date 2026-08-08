@@ -94,14 +94,6 @@
             <RouterLink to="/checkout" class="w-full btn-primary justify-center text-base py-4 mb-3 text-center block">
               Finalizar compra
             </RouterLink>
-            <a
-              :href="whatsappLink"
-              target="_blank"
-              rel="noopener"
-              class="w-full flex items-center justify-center gap-2 py-3 rounded-full border-2 border-gray-200 text-gray-500 hover:border-brand-orange hover:text-brand-orange transition-all duration-300 font-body text-sm mb-3"
-            >
-              💬 Pedir por WhatsApp
-            </a>
             <RouterLink to="/tienda" class="w-full text-center block font-body text-sm text-gray-400 hover:text-gray-600 transition-colors py-2">
               Seguir comprando
             </RouterLink>
@@ -117,19 +109,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 const cartStore = useCartStore()
 
 function enStockMaximo(item) {
   return Number.isFinite(item.stock) && item.quantity >= item.stock
 }
-
-const whatsappLink = computed(() => {
-  const lineas = cartStore.items.map(i => `• ${i.quantity}x ${i.name} — $${(i.price * i.quantity).toLocaleString('es-AR')}`).join('\n')
-  const msg = `¡Hola Ceketo! 🥑 Te paso mi pedido:\n\n🛒 *PEDIDO*\n${lineas}\n\n💰 *Total: $${cartStore.totalPrice.toLocaleString('es-AR')}*`
-  return `https://wa.me/543854133969?text=${encodeURIComponent(msg)}`
-})
 </script>
 
 <style scoped>

@@ -253,14 +253,16 @@ function validar() {
   return !Object.values(errores).some(Boolean)
 }
 
-function construirMensaje() {
+function construirMensaje(pedidoId) {
+  const esEnvio = form.tipo_entrega === 'envio'
+
   const lineas = cartStore.items
     .map(i => `• ${i.quantity}x ${i.name} — $${(i.price * i.quantity).toLocaleString('es-AR')}`)
     .join('\n')
 
-  const entrega = form.tipo_entrega === 'retiro'
-    ? 'Retiro en el local (Independencia 663)'
-    : `Envío a domicilio — ${form.direccion}${form.localidad ? ', ' + form.localidad : ''}`
+  const entrega = esEnvio
+    ? `Envío a domicilio — ${form.direccion}${form.localidad ? ', ' + form.localidad : ''}`
+    : 'Retiro en el local (Independencia 663)'
 
   const pago = form.metodo_pago === 'transferencia'
     ? 'Transferencia (alias: ceketo11)'
@@ -269,16 +271,23 @@ function construirMensaje() {
   const partes = [
     '¡Hola Ceketo! 🥑 Te paso mi pedido:',
     '',
+    `🧾 *Pedido N° ${pedidoId}*`,
+    '',
     '🛒 *PEDIDO*',
     lineas,
     '',
-    `💰 *Total: $${cartStore.totalPrice.toLocaleString('es-AR')}*`,
+    `💰 *Total productos: $${cartStore.totalPrice.toLocaleString('es-AR')}*`,
+  ]
+  // El costo del envío no está en el total: se coordina por WhatsApp.
+  if (esEnvio) partes.push('🛵 _El costo del envío lo coordinamos por acá._')
+  partes.push(
     '',
     `👤 *Nombre:* ${form.nombre}`,
     `📱 *Tel:* ${form.telefono}`,
+    `✉️ *Email:* ${form.email}`,
     `💳 *Pago:* ${pago}`,
     `📦 *Entrega:* ${entrega}`,
-  ]
+  )
   if (form.nota.trim()) partes.push(`📝 *Nota:* ${form.nota.trim()}`)
   partes.push('', '¡Quedo a la espera de la confirmación! 🙌')
 
@@ -312,7 +321,7 @@ async function confirmarPedido() {
     }
     const { data } = await axios.post('/api/pedidos', payload)
 
-    const url = `https://wa.me/${WHATSAPP_CEKETO}?text=${encodeURIComponent(construirMensaje())}`
+    const url = `https://wa.me/${WHATSAPP_CEKETO}?text=${encodeURIComponent(construirMensaje(data.pedido_id))}`
     waUrl.value = url
     if (waWin) waWin.location.href = url
     else window.location.href = url   // fallback si el popup fue bloqueado
