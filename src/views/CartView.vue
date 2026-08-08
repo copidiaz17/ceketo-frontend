@@ -79,12 +79,16 @@
               </div>
               <div class="flex justify-between font-body text-sm text-gray-500">
                 <span>Envío</span>
-                <span class="text-brand-green font-medium">Gratis</span>
+                <span class="text-gray-400">A coordinar</span>
               </div>
               <div class="border-t border-gray-200 pt-3 flex justify-between font-display text-xl font-bold text-gray-900">
-                <span>Total</span>
+                <span>Total productos</span>
                 <span class="text-brand-orange">${{ cartStore.totalPrice.toLocaleString('es-AR') }}</span>
               </div>
+              <p class="font-body text-xs text-gray-400 leading-snug">
+                Si elegís envío a domicilio, el costo se coordina por WhatsApp y no está incluido en este total.
+                Retirando en el local no tiene costo.
+              </p>
             </div>
 
             <RouterLink to="/checkout" class="w-full btn-primary justify-center text-base py-4 mb-3 text-center block">
