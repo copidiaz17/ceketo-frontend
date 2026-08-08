@@ -55,9 +55,10 @@
                   <p v-if="errores.telefono" class="text-red-400 text-xs mt-1">{{ errores.telefono }}</p>
                 </div>
                 <div class="sm:col-span-2">
-                  <label class="block font-body text-sm text-gray-600 mb-2">Email (opcional)</label>
-                  <input v-model="form.email" type="email"
+                  <label class="block font-body text-sm text-gray-600 mb-2">Email *</label>
+                  <input v-model="form.email" type="email" required
                     class="input-dark w-full" placeholder="juan@email.com" />
+                  <p v-if="errores.email" class="text-red-400 text-xs mt-1">{{ errores.email }}</p>
                 </div>
               </div>
             </div>
@@ -80,6 +81,7 @@
                   {{ te.label }}
                 </button>
               </div>
+              <p v-if="errores.tipo_entrega" class="text-red-400 text-xs mt-2">{{ errores.tipo_entrega }}</p>
 
               <!-- Retiro en el local -->
               <div v-if="form.tipo_entrega === 'retiro'" class="mt-4 p-4 bg-brand-green/5 border border-brand-green/20 rounded-xl">
@@ -89,7 +91,7 @@
               </div>
 
               <!-- Envío a domicilio -->
-              <div v-else class="mt-4 grid sm:grid-cols-2 gap-4">
+              <div v-else-if="form.tipo_entrega === 'envio'" class="mt-4 grid sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
                   <label class="block font-body text-sm text-gray-600 mb-2">Dirección *</label>
                   <input v-model="form.direccion" type="text"
@@ -97,9 +99,10 @@
                   <p v-if="errores.direccion" class="text-red-400 text-xs mt-1">{{ errores.direccion }}</p>
                 </div>
                 <div class="sm:col-span-2">
-                  <label class="block font-body text-sm text-gray-600 mb-2">Barrio / Localidad</label>
+                  <label class="block font-body text-sm text-gray-600 mb-2">Barrio / Localidad *</label>
                   <input v-model="form.localidad" type="text"
                     class="input-dark w-full" placeholder="Centro" />
+                  <p v-if="errores.localidad" class="text-red-400 text-xs mt-1">{{ errores.localidad }}</p>
                 </div>
                 <p class="sm:col-span-2 font-body text-xs text-gray-400">
                   El costo de envío lo coordinás con Ceketo por WhatsApp.
@@ -125,6 +128,7 @@
                   {{ mp.label }}
                 </button>
               </div>
+              <p v-if="errores.metodo_pago" class="text-red-400 text-xs mt-2">{{ errores.metodo_pago }}</p>
               <div v-if="form.metodo_pago === 'transferencia'" class="mt-4 p-4 bg-brand-orange/10 border border-brand-orange/20 rounded-xl">
                 <p class="font-body text-sm text-gray-700">
                   <span class="text-brand-orange font-semibold">Alias:</span> ceketo11
@@ -207,18 +211,23 @@ const pedidoConfirmado = ref(null)
 const waUrl            = ref('')
 const errorGeneral     = ref('')
 
+// Entrega y pago arrancan vacíos a propósito: el cliente tiene que elegir.
+// Con un valor por defecto, alguien que quería envío terminaba pidiendo retiro sin darse cuenta.
 const form = reactive({
   nombre:       '',
   telefono:     '',
   email:        '',
-  tipo_entrega: 'retiro',
+  tipo_entrega: '',
   direccion:    '',
   localidad:    '',
-  metodo_pago:  'transferencia',
+  metodo_pago:  '',
   nota:         '',
 })
 
-const errores = reactive({ nombre: '', telefono: '', direccion: '' })
+const errores = reactive({
+  nombre: '', telefono: '', email: '',
+  tipo_entrega: '', direccion: '', localidad: '', metodo_pago: '',
+})
 
 const tiposEntrega = [
   { val: 'retiro', icon: '🏪', label: 'Retiro en el local' },
@@ -231,11 +240,17 @@ const metodosPago = [
 ]
 
 function validar() {
-  errores.nombre    = form.nombre.trim()   ? '' : 'El nombre es requerido'
-  errores.telefono  = form.telefono.trim() ? '' : 'El teléfono es requerido'
-  errores.direccion = (form.tipo_entrega === 'envio' && !form.direccion.trim())
-    ? 'La dirección es requerida para el envío' : ''
-  return !errores.nombre && !errores.telefono && !errores.direccion
+  const esEnvio = form.tipo_entrega === 'envio'
+  errores.nombre       = form.nombre.trim()   ? '' : 'El nombre es requerido'
+  errores.telefono     = form.telefono.trim() ? '' : 'El teléfono es requerido'
+  errores.email        = !form.email.trim()
+    ? 'El email es requerido'
+    : (/^\S+@\S+\.\S+$/.test(form.email.trim()) ? '' : 'Revisá el email, no parece válido')
+  errores.tipo_entrega = form.tipo_entrega ? '' : 'Elegí si retirás en el local o querés envío'
+  errores.direccion    = (esEnvio && !form.direccion.trim())  ? 'La dirección es requerida para el envío' : ''
+  errores.localidad    = (esEnvio && !form.localidad.trim())  ? 'El barrio o localidad es requerido' : ''
+  errores.metodo_pago  = form.metodo_pago ? '' : 'Elegí una forma de pago'
+  return !Object.values(errores).some(Boolean)
 }
 
 function construirMensaje() {
