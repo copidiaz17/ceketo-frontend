@@ -95,8 +95,9 @@ const allProducts    = ref([])
 const categories     = ref([])
 const loading        = ref(true)
 
-// Categorías que NO se muestran en la tienda online (sí siguen en el admin)
-const CATEGORIAS_OCULTAS = ['MKT']
+// Categorías que NO se muestran en la tienda online (sí siguen en el admin).
+// Market (MKT) se volvió a mostrar el 18/09/2026.
+const CATEGORIAS_OCULTAS = []
 
 const SIN_IMAGEN = '/images/sin-imagen.svg'
 
@@ -115,7 +116,7 @@ function adaptProduct(p) {
 const filteredProducts = computed(() =>
   allProducts.value.filter(p => {
     const cat = p.categoria?.codigo || ''
-    if (CATEGORIAS_OCULTAS.includes(cat)) return false   // ocultar Market en la tienda
+    if (CATEGORIAS_OCULTAS.includes(cat)) return false
     const matchCat    = !activeCategory.value || cat === activeCategory.value
     const matchSearch = !search.value ||
       p.nombre.toLowerCase().includes(search.value.toLowerCase()) ||

@@ -62,8 +62,9 @@ import { useScrollReveal } from '@/composables/useScrollReveal'
 const headerRef = ref(null)
 useScrollReveal([headerRef])
 
-// Categorías que NO se muestran en la web (sí siguen en el admin)
-const OCULTAS = ['MKT']
+// Categorías que NO se muestran en la web (sí siguen en el admin).
+// Market (MKT) se volvió a mostrar el 18/09/2026.
+const OCULTAS = []
 
 // Paleta de fondos (se asigna por posición)
 const BGS = [
@@ -78,7 +79,7 @@ const BGS = [
 ]
 
 // Emoji de respaldo por código (si la categoría no tiene ningún producto con foto)
-const EMOJI = { BYM: '🧁', CHY: '🍫', CON: '🍬', DUK: '🍯', PAK: '🍞', PYE: '🥟', PYT: '🥧' }
+const EMOJI = { BYM: '🧁', CHY: '🍫', CON: '🍬', DUK: '🍯', PAK: '🍞', PYE: '🥟', PYT: '🥧', MKT: '🛒' }
 
 // Producto preferido para la miniatura de ciertas categorías (busca por palabra en el nombre)
 const PREFERIDO = { PYE: 'sorrentino' }
