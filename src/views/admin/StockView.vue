@@ -182,6 +182,7 @@
               <th class="text-center py-2 px-3">Anterior</th>
               <th class="text-center py-2 px-3">Nuevo</th>
               <th class="text-center py-2 px-3">Dif.</th>
+              <th class="text-left py-2 px-3">Quién</th>
               <th class="text-left py-2 px-3">Obs.</th>
             </tr>
           </thead>
@@ -194,6 +195,7 @@
                 :class="a.diferencia > 0 ? 'text-teal' : a.diferencia < 0 ? 'text-red-400' : 'text-gray-400'">
                 {{ a.diferencia > 0 ? '+' : '' }}{{ a.diferencia }}
               </td>
+              <td class="py-2 px-3 text-gray-600 text-xs whitespace-nowrap">{{ a.usuario ? a.usuario.split('@')[0] : '—' }}</td>
               <td class="py-2 px-3 text-gray-500 text-xs">{{ a.observacion || '—' }}</td>
             </tr>
           </tbody>
@@ -257,7 +259,6 @@ async function guardarAjuste() {
     const { data } = await axios.put(`/api/productos/${productoAjuste.value.id}/ajuste-stock`, {
       stock_nuevo: Number(ajusteForm.value.stock_nuevo),
       observacion: ajusteForm.value.observacion || null,
-      usuario: null,
     })
     // Actualizar stock en lista local
     const idx = productos.value.findIndex(p => p.id === productoAjuste.value.id)
