@@ -20,7 +20,7 @@ import { computed } from 'vue'
 import BrandIcon from './BrandIcon.vue'
 
 const props = defineProps({
-  fondo: { type: String, default: 'verde' },     // verde | crema | naranja | violeta
+  fondo: { type: String, default: 'verde' },     // verde | noche | crema | naranja | violeta
   reversa: { type: Boolean, default: false },
   inclinado: { type: Boolean, default: false },
   duracion: { type: Number, default: 38 },
@@ -33,6 +33,7 @@ const ICONOS = ['palta', 'hojas', 'rama', 'melon', 'cuchara', 'gota']
 // Colores de las palabras según el fondo (siempre de la paleta)
 const COLORES = {
   verde:   ['#FFFDF8', '#9CCC66', '#FFFDF8'],
+  noche:   ['#FFFDF8', '#9CCC66', '#FFFDF8'],
   crema:   ['#F6521D', '#058D76', '#885784'],
   naranja: ['#FFFDF8', '#17302B', '#FFFDF8'],
   violeta: ['#FFFDF8', '#9CCC66', '#FFFDF8'],
@@ -61,6 +62,7 @@ const secuencia = computed(() => {
   user-select: none;
 }
 .sm-verde   { background: #058D76; }
+.sm-noche   { background: #0B3B34; }
 .sm-crema   { background: #F7F1E6; }
 .sm-naranja { background: #F6521D; }
 .sm-violeta { background: #885784; }

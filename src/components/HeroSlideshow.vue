@@ -13,17 +13,18 @@
           <span class="text-ck-violeta">COME</span>
         </p>
 
+        <!-- Texto pedido por Celia (27/09): "Tu estilo de vida saludable comienza acá" -->
         <h1 class="hero-titulo font-marca text-ck-tinta">
-          <span class="hero-linea"><span class="hero-palabra" style="--d: 120ms">Tu estilo</span></span>
-          <span class="hero-linea"><span class="hero-palabra" style="--d: 220ms">de vida</span>
-            <span class="hero-palabra hero-keto text-ck-naranja" style="--d: 340ms">
-              keto
+          <span class="hero-linea"><span class="hero-palabra" style="--d: 120ms">Tu estilo</span> <span class="hero-palabra" style="--d: 200ms">de vida</span></span>
+          <span class="hero-linea">
+            <span class="hero-palabra hero-destacada text-ck-naranja" style="--d: 320ms">
+              saludable
               <svg class="hero-subrayado" viewBox="0 0 220 24" preserveAspectRatio="none" aria-hidden="true">
                 <path d="M4 16 C 60 4, 120 4, 216 14" />
               </svg>
             </span>
           </span>
-          <span class="hero-linea"><span class="hero-palabra" style="--d: 460ms">empieza acá</span></span>
+          <span class="hero-linea"><span class="hero-palabra" style="--d: 440ms">comienza acá</span></span>
         </h1>
 
         <p class="hero-entra font-texto text-ck-tinta/70 text-lg md:text-xl leading-relaxed max-w-md mx-auto lg:mx-0 mt-6" style="--d: 620ms">
@@ -144,7 +145,7 @@ onUnmounted(() => clearInterval(timer))
 
 /* ── Título: cada línea sube desde abajo (máscara) ── */
 .hero-titulo {
-  font-size: clamp(2.6rem, 4.9vw, 4.5rem);
+  font-size: clamp(2.6rem, 4.4vw, 4.1rem);
   line-height: 1;
   letter-spacing: .005em;
 }
@@ -156,7 +157,7 @@ onUnmounted(() => clearInterval(timer))
   animation: hero-subir .9s cubic-bezier(.2,.8,.2,1) forwards;
   animation-delay: var(--d);
 }
-.hero-keto { position: relative; margin-left: .22em; }
+.hero-destacada { position: relative; }
 .hero-subrayado {
   position: absolute;
   left: -2%; bottom: -.12em;

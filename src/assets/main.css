@@ -129,6 +129,7 @@
 
   .ck-titulo {
     @apply font-marca text-[2.4rem] leading-[1.05] md:text-6xl text-ck-tinta;
+    text-wrap: balance;   /* títulos largos: renglones parejos */
   }
 }
 

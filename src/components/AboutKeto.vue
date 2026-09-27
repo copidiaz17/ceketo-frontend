@@ -6,9 +6,10 @@
 
       <div class="text-center mb-16 md:mb-20">
         <span v-reveal class="ck-eyebrow text-ck-lima mb-4">¿Por qué cetogénico?</span>
+        <!-- Texto pedido por Celia (27/09) -->
         <h2 v-reveal="100" class="ck-titulo !text-ck-blanco">
           Transformá tu cuerpo,<br />
-          <span class="text-ck-lima">descubrí la dieta keto</span>
+          <span class="text-ck-lima">descubrí una alimentación consciente</span>
         </h2>
         <p v-reveal="180" class="font-texto text-ck-blanco/75 text-lg leading-relaxed max-w-xl mx-auto mt-5">
           La alimentación cetogénica es mucho más que una dieta. Es un estilo de vida
