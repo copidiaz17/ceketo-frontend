@@ -1,6 +1,6 @@
 <template>
   <!-- Pedido de Celia (27/09): franja VIVI SENTI COME en verde oscuro, datos de contacto en el verde claro de la marca -->
-  <footer id="contacto" class="relative bg-ck-verde text-white overflow-hidden">
+  <footer id="contacto" class="relative bg-ck-violeta text-white overflow-hidden">
     <SloganMarquee fondo="noche" :duracion="46" reversa />
 
     <div class="relative max-w-7xl mx-auto px-5 md:px-6 py-16 md:py-20">
@@ -83,7 +83,7 @@ const esDemo = !!import.meta.env.VITE_DEMO
 
 // Íconos de redes en SVG (antes eran emojis)
 const socials = [
-  { name: 'Instagram', color: '#885784', url: 'https://instagram.com',
+  { name: 'Instagram', color: '#058D76', url: 'https://instagram.com',
     icon: 'M12 7.2A4.8 4.8 0 1 0 12 16.8 4.8 4.8 0 0 0 12 7.2zm0 7.9a3.1 3.1 0 1 1 0-6.2 3.1 3.1 0 0 1 0 6.2zM17 5.8a1.1 1.1 0 1 0 0 2.3 1.1 1.1 0 0 0 0-2.3zM21.9 7.9c-.1-1.6-.4-3-1.6-4.2S17.7 2.1 16.1 2c-1.6-.1-6.6-.1-8.2 0-1.6.1-3 .4-4.2 1.6S2.1 6.3 2 7.9c-.1 1.6-.1 6.6 0 8.2.1 1.6.4 3 1.6 4.2S6.3 21.9 7.9 22c1.6.1 6.6.1 8.2 0 1.6-.1 3-.4 4.2-1.6s1.5-2.6 1.6-4.2c.1-1.6.1-6.6 0-8.2zm-2.2 10.1a3.3 3.3 0 0 1-1.9 1.9c-1.3.5-4.4.4-5.8.4s-4.5.1-5.8-.4a3.3 3.3 0 0 1-1.9-1.9c-.5-1.3-.4-4.4-.4-5.8s-.1-4.5.4-5.8a3.3 3.3 0 0 1 1.9-1.9C7.5 4 10.6 4.1 12 4.1s4.5-.1 5.8.4a3.3 3.3 0 0 1 1.9 1.9c.5 1.3.4 4.4.4 5.8s.1 4.5-.4 5.8z' },
   { name: 'Facebook', color: '#0B3B34', url: 'https://facebook.com',
     icon: 'M13.5 21.9v-7.4H16l.4-2.9h-2.9V9.8c0-.8.2-1.4 1.4-1.4h1.5V5.8a20 20 0 0 0-2.2-.1c-2.2 0-3.7 1.3-3.7 3.8v2.1H8v2.9h2.5v7.4a10 10 0 1 1 3 0z' },
