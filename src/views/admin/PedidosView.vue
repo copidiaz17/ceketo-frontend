@@ -87,6 +87,11 @@
                 class="px-2 py-0.5 rounded-full text-xs font-body"
                 :class="colorEstado(p.estado)"
               >{{ p.estado }}</span>
+              <span
+                v-if="p.estado === 'pendiente' && p.whatsapp_recibido === false"
+                class="px-2 py-0.5 rounded-full text-xs font-body bg-gray-100 text-gray-500"
+                title="El cliente armó el pedido en la web pero todavía no llegó su WhatsApp"
+              >⏳ sin WhatsApp</span>
             </div>
             <p class="font-body text-sm text-gray-500">
               {{ p.nombre }} · {{ p.telefono }}

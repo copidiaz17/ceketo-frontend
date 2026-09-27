@@ -23,7 +23,43 @@
       <p v-if="impresoraError" class="w-full text-red-400 text-xs font-body">{{ impresoraError }}</p>
     </div>
 
-    <!-- Pedidos online pendientes -->
+    <!-- Pedidos web que todavía NO mandaron el WhatsApp (el cliente pudo arrepentirse) -->
+    <div v-if="pedidosSinWhatsApp.length" class="mb-6 bg-white/70 border-2 border-dashed border-gray-300 rounded-2xl p-5">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <h2 class="font-display text-lg font-semibold text-gray-700 flex items-center gap-2">
+            ⏳ Esperando el WhatsApp del cliente
+            <span class="bg-gray-200 text-gray-700 text-sm font-bold rounded-full px-2.5 py-0.5">{{ pedidosSinWhatsApp.length }}</span>
+          </h2>
+          <p class="font-body text-xs text-gray-500 mt-1 max-w-2xl">
+            Armaron el pedido en la web pero todavía no sabemos si mandaron el WhatsApp.
+            Cuando te llegue el mensaje con el N° de pedido, tocá <b>Llegó el WhatsApp</b> y pasa a pendientes.
+            Si no llega, no hace falta hacer nada: a los 3 días desaparece de acá.
+          </p>
+        </div>
+        <button @click="cargarPedidosPendientes" class="text-gray-400 hover:text-teal text-sm font-body whitespace-nowrap">↻ Actualizar</button>
+      </div>
+      <div class="divide-y divide-gray-100">
+        <div v-for="p in pedidosSinWhatsApp" :key="p.id" class="py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span class="font-display font-bold text-gray-900">#{{ p.id }}</span>
+          <span class="font-body text-sm text-gray-700 flex-1 min-w-[10rem]">
+            {{ p.nombre }} <span class="text-gray-400">· {{ cuandoPedido(p.fecha) }} · {{ p.items?.length || 0 }} item(s)</span>
+          </span>
+          <span class="font-body text-sm font-semibold text-gray-700">${{ parseFloat(p.total).toLocaleString('es-AR') }}</span>
+          <button
+            @click="marcarWhatsApp(p)"
+            :disabled="confirmandoWa === p.id"
+            class="px-3 py-1.5 bg-[#25D366] text-white rounded-lg font-body text-sm font-medium hover:brightness-95 transition disabled:opacity-50"
+          >{{ confirmandoWa === p.id ? 'Guardando...' : '✓ Llegó el WhatsApp' }}</button>
+          <button
+            @click="pedidoARechazar = p"
+            class="px-3 py-1.5 border border-gray-200 text-gray-400 rounded-lg font-body text-sm hover:border-red-200 hover:text-red-400 transition-colors"
+          >Descartar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pedidos online pendientes (ya llegó el WhatsApp) -->
     <div v-if="pedidosPendientes.length" class="mb-6 bg-white border-2 border-keto-orange/40 rounded-2xl p-5">
       <div class="flex items-center justify-between mb-4">
         <h2 class="font-display text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -773,7 +809,14 @@ const filtroFecha            = ref(hoyISO)
 const clientesCta            = ref([])
 const cuentaSeleccionada     = ref('')
 const categoriaActiva        = ref('')
-const pedidosPendientes      = ref([])
+// Pedidos web en estado "pendiente". Se separan en dos listas según si ya llegó el WhatsApp
+// del cliente (si el backend todavía no manda el dato, cuentan como llegados: igual que antes).
+const pedidosWeb             = ref([])
+const pedidosPendientes      = computed(() => pedidosWeb.value.filter(p => p.whatsapp_recibido !== false))
+const TRES_DIAS_MS           = 3 * 24 * 60 * 60 * 1000
+const pedidosSinWhatsApp     = computed(() => pedidosWeb.value.filter(p =>
+  p.whatsapp_recibido === false && Date.now() - new Date(p.fecha).getTime() < TRES_DIAS_MS))
+const confirmandoWa          = ref(null)
 const pedidoActivo           = ref(null)
 const pedidoARechazar        = ref(null)
 const rechazando             = ref(false)
@@ -934,8 +977,32 @@ async function cargarPedidosPendientes() {
     const { data } = await axios.get('/api/pedidos?estado=pendiente', {
       headers: { Authorization: `Bearer ${token}` },
     })
-    pedidosPendientes.value = data
-  } catch { pedidosPendientes.value = [] }
+    pedidosWeb.value = data
+  } catch { pedidosWeb.value = [] }
+}
+
+// Llegó el WhatsApp del cliente → el pedido pasa a "Pedidos online pendientes"
+async function marcarWhatsApp(p) {
+  confirmandoWa.value = p.id
+  try {
+    const token = localStorage.getItem('ceketo_token')
+    await axios.patch(`/api/pedidos/${p.id}/whatsapp`, {}, { headers: { Authorization: `Bearer ${token}` } })
+    p.whatsapp_recibido = true
+  } catch (err) {
+    alert(err.response?.data?.error || 'No se pudo marcar el pedido')
+  } finally { confirmandoWa.value = null }
+}
+
+// "hoy 14:32", "ayer 21:10" o "sáb 26/09 21:10"
+function cuandoPedido(fecha) {
+  const tz = 'America/Argentina/Buenos_Aires'
+  const dia = d => d.toLocaleDateString('en-CA', { timeZone: tz })
+  const f = new Date(fecha)
+  const hoy = new Date()
+  const ayer = new Date(hoy.getTime() - 24 * 60 * 60 * 1000)
+  if (dia(f) === dia(hoy)) return `hoy ${formatHora(f)}`
+  if (dia(f) === dia(ayer)) return `ayer ${formatHora(f)}`
+  return `${f.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: tz })} ${formatHora(f)}`
 }
 
 function cargarPedidoEnPOS(p) {

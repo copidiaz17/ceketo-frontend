@@ -4,13 +4,14 @@
 
       <!-- Éxito -->
       <div v-if="pedidoConfirmado" class="text-center py-20">
-        <div class="text-8xl mb-6">🎉</div>
-        <h1 class="font-marca text-4xl font-bold text-ck-tinta mb-4">¡Pedido enviado!</h1>
-        <p class="font-texto text-gray-600 text-lg mb-2">
-          Tu pedido #{{ pedidoConfirmado }} quedó registrado.
+        <!-- El pedido se confirma recién cuando a Ceketo le llega el WhatsApp (no antes) -->
+        <div class="text-8xl mb-6">📲</div>
+        <h1 class="font-marca text-4xl font-bold text-ck-tinta mb-4">¡Último paso!</h1>
+        <p class="font-texto text-gray-600 text-lg mb-2 max-w-md mx-auto">
+          Enviá el mensaje de WhatsApp para confirmar tu pedido #{{ pedidoConfirmado }}.
         </p>
         <p class="font-texto text-gray-400 mb-8 max-w-md mx-auto">
-          Terminá de enviarlo por WhatsApp para que Ceketo lo confirme. Si no se abrió solo, tocá el botón:
+          Ceketo lo recibe y lo prepara cuando le llega tu mensaje. Si WhatsApp no se abrió solo, tocá el botón:
         </p>
         <a
           :href="waUrl"
