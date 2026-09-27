@@ -1,63 +1,59 @@
 <template>
-  <main class="min-h-screen bg-[#FCDFD2] relative pt-28 overflow-hidden">
+  <main class="min-h-screen bg-ck-crema relative pt-28 overflow-hidden">
+    <BrandBackdrop variante="tienda" />
 
-    <!-- Logo difuminado de fondo -->
-    <div class="pointer-events-none fixed inset-0 flex items-center justify-center z-0 select-none">
-      <span class="font-display font-bold text-brand-green/10 select-none"
-            style="font-size: clamp(8rem, 30vw, 22rem); letter-spacing: 0.15em; white-space: nowrap;">
-        CEKETO
-      </span>
-    </div>
+    <div class="relative z-10 max-w-7xl mx-auto px-5 md:px-6 py-10">
 
-    <div class="relative z-10 max-w-7xl mx-auto px-6 py-10">
-
-      <!-- Header -->
-      <div class="mb-10">
-        <h1 class="font-display text-3xl font-bold text-gray-900 mb-1">Tienda</h1>
-        <p class="font-body text-gray-500">Todos nuestros productos cetogénicos artesanales</p>
-      </div>
-
-      <!-- Filtros -->
-      <div class="flex flex-wrap gap-3 mb-10">
-        <button
-          @click="activeCategory = ''"
-          class="py-2 px-5 rounded-full text-sm font-body font-medium border-2 transition-all duration-200"
-          :class="activeCategory === ''
-            ? 'bg-brand-green border-brand-green text-white shadow-md'
-            : 'bg-white/70 border-gray-200 text-gray-600 hover:border-brand-green hover:text-brand-green'"
-        >Todos</button>
-        <button
-          v-for="cat in categories"
-          :key="cat.codigo"
-          @click="activeCategory = cat.codigo"
-          class="py-2 px-5 rounded-full text-sm font-body font-medium border-2 transition-all duration-200"
-          :class="activeCategory === cat.codigo
-            ? 'bg-brand-green border-brand-green text-white shadow-md'
-            : 'bg-white/70 border-gray-200 text-gray-600 hover:border-brand-green hover:text-brand-green'"
-        >{{ cat.nombre }}</button>
+      <!-- Encabezado -->
+      <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <span class="ck-eyebrow text-ck-naranja-t mb-3">Tienda online</span>
+          <h1 class="ck-titulo">Tienda</h1>
+          <p class="font-texto text-ck-tinta/60 mt-2">Todos nuestros productos cetogénicos artesanales</p>
+        </div>
 
         <!-- Búsqueda -->
-        <div class="w-full sm:w-auto sm:ml-auto relative">
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Buscar productos..."
-            class="w-full pl-10 pr-4 py-2 rounded-full border-2 border-gray-200 bg-white/70
-                   focus:border-brand-green focus:outline-none font-body text-sm transition-all
-                   text-gray-800 placeholder-gray-400"
-          />
-          <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <label class="tienda-buscar">
+          <svg class="h-5 w-5 text-ck-tinta/40" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
+          <input v-model="search" type="text" placeholder="Buscar productos..." aria-label="Buscar productos" />
+        </label>
+      </div>
+
+      <!-- Filtros: cada categoría con su color y su ícono -->
+      <div class="flex flex-wrap gap-2.5 mb-10">
+        <button
+          @click="activeCategory = ''"
+          class="chip"
+          :class="{ activo: activeCategory === '' }"
+          style="--c: #17302B; --ct: #FFFDF8"
+        >Todos</button>
+        <button
+          v-for="(cat, i) in categories"
+          :key="cat.codigo"
+          @click="activeCategory = cat.codigo"
+          class="chip"
+          :class="{ activo: activeCategory === cat.codigo }"
+          :style="{ '--c': estiloCategoria(cat.codigo, i).hex, '--ct': estiloCategoria(cat.codigo, i).texto }"
+        >
+          <span class="chip-icono"><BrandIcon :nombre="estiloCategoria(cat.codigo, i).icono" /></span>
+          {{ cat.nombre }}
+        </button>
+      </div>
+
+      <!-- Cargando -->
+      <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div v-for="i in 8" :key="i" class="rounded-[26px] bg-ck-blanco p-2.5 animate-pulse">
+          <div class="h-56 rounded-[20px] bg-ck-tinta/[.06]"></div>
+          <div class="p-4 space-y-3">
+            <div class="h-4 bg-ck-tinta/[.07] rounded-full w-3/4"></div>
+            <div class="h-7 bg-ck-tinta/[.07] rounded-full w-1/3 mt-4"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <div v-for="i in 8" :key="i" class="rounded-2xl bg-white/50 aspect-[3/4] animate-pulse"></div>
-      </div>
-
-      <!-- Grid -->
+      <!-- Grilla -->
       <TransitionGroup
         v-else
         name="product-list"
@@ -71,11 +67,11 @@
         />
       </TransitionGroup>
 
-      <!-- Empty state -->
+      <!-- Sin resultados -->
       <div v-if="!loading && filteredProducts.length === 0" class="text-center py-20">
-        <span class="text-6xl mb-4 block">🔍</span>
-        <p class="font-display text-2xl text-gray-500">No encontramos productos</p>
-        <p class="font-body text-gray-400 mt-2">Probá con otra búsqueda o categoría</p>
+        <div class="w-24 h-24 mx-auto mb-5 opacity-80"><BrandIcon nombre="palta" /></div>
+        <p class="font-marca text-3xl text-ck-tinta/70">No encontramos productos</p>
+        <p class="font-texto text-ck-tinta/50 mt-2">Probá con otra búsqueda o categoría</p>
       </div>
 
     </div>
@@ -83,10 +79,14 @@
 </template>
 
 <script setup>
+import { publico } from '@/brand/publico'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import ProductCard from '@/components/ProductCard.vue'
 import axios from 'axios'
+import ProductCard from '@/components/ProductCard.vue'
+import BrandBackdrop from '@/components/brand/BrandBackdrop.vue'
+import BrandIcon from '@/components/brand/BrandIcon.vue'
+import { estiloCategoria } from '@/brand/marca'
 
 const route          = useRoute()
 const activeCategory = ref(route.query.categoria || '')
@@ -99,7 +99,7 @@ const loading        = ref(true)
 // Market (MKT) se volvió a mostrar el 18/09/2026.
 const CATEGORIAS_OCULTAS = []
 
-const SIN_IMAGEN = '/images/sin-imagen.svg'
+const SIN_IMAGEN = publico('/images/sin-imagen.svg')
 
 function adaptProduct(p) {
   return {
@@ -146,6 +146,54 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.tienda-buscar {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  max-width: 340px;
+  padding: .8rem 1.1rem;
+  border-radius: 999px;
+  background: #FFFDF8;
+  box-shadow: inset 0 0 0 2px rgba(23,48,43,.08);
+  transition: box-shadow .3s;
+}
+.tienda-buscar:focus-within { box-shadow: inset 0 0 0 2px #058D76, 0 10px 30px -18px rgba(5,141,118,.8); }
+.tienda-buscar input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  outline: none;
+  font: 400 15px/1 'Poppins', sans-serif;
+  color: #17302B;
+}
+.tienda-buscar input::placeholder { color: rgba(23,48,43,.4); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem 1rem .55rem .6rem;
+  border-radius: 999px;
+  background: #FFFDF8;
+  color: #17302B;
+  font: 600 12.5px/1 'Poppins', sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;   /* unifica los nombres de la base ("CONGELADOS ", "Dulces KETO"…) */
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 35%, transparent);
+  transition: all .3s cubic-bezier(.3,1.4,.5,1);
+}
+.chip:first-child { padding-left: 1rem; }
+.chip:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 2px var(--c); }
+.chip.activo { background: var(--c); color: var(--ct); box-shadow: 0 10px 22px -12px var(--c); }
+.chip-icono {
+  width: 26px; height: 26px;
+  padding: 3px;
+  border-radius: 50%;
+  background: #FFFDF8;
+  flex-shrink: 0;
+}
+
 .product-list-enter-active,
 .product-list-leave-active {
   transition: all 0.3s ease;

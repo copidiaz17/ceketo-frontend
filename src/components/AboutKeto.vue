@@ -1,82 +1,62 @@
 <template>
-  <section id="keto" class="py-24 bg-transparent overflow-hidden relative">
-    <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-orange/20 to-transparent"></div>
+  <section id="keto" class="relative py-24 md:py-32 overflow-hidden bg-ck-profundo text-ck-blanco">
+    <BrandBackdrop variante="keto" />
 
-    <!-- Decoración de fondo -->
-    <div class="absolute top-20 right-0 w-96 h-96 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute bottom-20 left-0 w-80 h-80 bg-keto-purple/5 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative z-10 max-w-7xl mx-auto px-5 md:px-6">
 
-    <div class="max-w-7xl mx-auto px-6">
-
-      <div class="text-center mb-20 reveal" ref="headerRef">
-        <span class="badge bg-brand-orange/15 text-brand-orange mb-4 inline-block border border-brand-orange/20">¿Por qué cetogénico?</span>
-        <h2 class="section-title mb-4">
-          Transforma tu cuerpo,<br />
-          <span class="text-brand-orange italic">descubrí la dieta keto</span>
+      <div class="text-center mb-16 md:mb-20">
+        <span v-reveal class="ck-eyebrow text-ck-lima mb-4">¿Por qué cetogénico?</span>
+        <h2 v-reveal="100" class="ck-titulo !text-ck-blanco">
+          Transformá tu cuerpo,<br />
+          <span class="text-ck-lima">descubrí la dieta keto</span>
         </h2>
-        <p class="section-subtitle max-w-xl mx-auto">
+        <p v-reveal="180" class="font-texto text-ck-blanco/75 text-lg leading-relaxed max-w-xl mx-auto mt-5">
           La alimentación cetogénica es mucho más que una dieta. Es un estilo de vida
           que tu cuerpo va a agradecer.
         </p>
       </div>
 
-      <div class="grid lg:grid-cols-2 gap-16 items-center">
+      <div class="grid lg:grid-cols-2 gap-14 lg:gap-16 items-center">
 
-        <!-- Left: Cards de beneficios -->
-        <div class="space-y-4 reveal-left" ref="cardsRef">
+        <!-- Beneficios -->
+        <div class="space-y-4">
           <div
-            v-for="(benefit, i) in benefits"
-            :key="i"
-            class="group p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 cursor-default"
-            :class="benefit.bgClass"
+            v-for="(b, i) in benefits"
+            :key="b.title"
+            v-reveal:izq="i * 110"
+            class="kb group"
+            :style="{ '--c': b.color }"
           >
+            <span class="kb-icono"><BrandIcon :nombre="b.icono" /></span>
             <div>
-              <h3 class="font-display text-xl font-semibold text-gray-900 mb-1">
-                {{ benefit.title }}
-              </h3>
-              <p class="font-body text-gray-500 text-sm leading-relaxed">
-                {{ benefit.desc }}
-              </p>
+              <h3 class="kb-titulo">{{ b.title }}</h3>
+              <p class="font-texto text-ck-blanco/70 text-[15px] leading-relaxed">{{ b.desc }}</p>
             </div>
           </div>
         </div>
 
-        <!-- Right: Ilustración + stats -->
-        <div class="flex flex-col items-center gap-8 reveal-right" ref="illustrationRef">
-          <div class="relative w-full max-w-sm mx-auto">
-            <div class="absolute inset-0 bg-brand-orange/10 rounded-3xl rotate-3 scale-105 blur-sm"></div>
-            <div class="absolute inset-0 bg-brand-orange/5 rounded-3xl -rotate-2 scale-102"></div>
-            <img
-              src="@/assets/images/keto-illustration.png"
-              alt="Ilustración alimentos keto"
-              class="relative rounded-3xl w-full shadow-2xl transition-transform duration-500 hover:scale-105"
-            />
+        <!-- Mosaico vivo + números -->
+        <div class="flex flex-col items-center gap-12">
+          <div v-reveal:der class="w-full">
+            <MosaicoVivo />
           </div>
 
-          <!-- Stats -->
-          <div class="grid grid-cols-3 gap-4 w-full">
-            <div
-              v-for="stat in stats"
-              :key="stat.label"
-              class="text-center p-4 rounded-2xl bg-white/70 border border-gray-200 transition-all duration-300 hover:bg-brand-orange hover:border-brand-orange group cursor-default shadow-sm"
-            >
-              <div class="font-display text-3xl font-bold text-brand-orange group-hover:text-white transition-colors">
-                {{ stat.value }}
-              </div>
-              <div class="font-body text-xs text-gray-500 group-hover:text-white/80 transition-colors mt-1">
-                {{ stat.label }}
-              </div>
+          <div ref="statsRef" class="grid grid-cols-3 gap-3 md:gap-4 w-full max-w-lg">
+            <div v-for="(s, i) in stats" :key="s.label" v-reveal="i * 120" class="ks">
+              <div class="ks-valor">{{ s.prefijo }}{{ Math.round(s.actual) }}{{ s.sufijo }}</div>
+              <div class="ks-label">{{ s.label }}</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Info section -->
-      <div class="mt-20 bg-white/70 border border-gray-200 rounded-3xl p-10 md:p-14 reveal shadow-sm" ref="infoRef">
-        <div class="grid md:grid-cols-3 gap-8">
-          <div v-for="(info, i) in ketoInfo" :key="i" class="group">
-            <h4 class="font-display text-xl font-semibold mb-3 text-gray-900">{{ info.title }}</h4>
-            <p class="font-body text-gray-500 text-sm leading-relaxed">{{ info.desc }}</p>
+      <!-- Info keto -->
+      <div class="grid md:grid-cols-3 gap-5 mt-20">
+        <div v-for="(info, i) in ketoInfo" :key="info.title" v-reveal="i * 120">
+          <div v-tilt="5" class="ki">
+            <span class="ki-num">0{{ i + 1 }}</span>
+            <h4 class="font-marca text-2xl text-ck-tinta mb-3 pr-14">{{ info.title }}</h4>
+            <p class="font-texto text-ck-tinta/70 text-[15px] leading-relaxed">{{ info.desc }}</p>
           </div>
         </div>
       </div>
@@ -85,32 +65,121 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useScrollReveal } from '@/composables/useScrollReveal'
-
-const headerRef = ref(null)
-const cardsRef = ref(null)
-const illustrationRef = ref(null)
-const infoRef = ref(null)
-
-useScrollReveal([headerRef, cardsRef, illustrationRef, infoRef])
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import BrandBackdrop from '@/components/brand/BrandBackdrop.vue'
+import BrandIcon from '@/components/brand/BrandIcon.vue'
+import MosaicoVivo from '@/components/brand/MosaicoVivo.vue'
 
 const benefits = [
-  { icon: '🔥', title: 'Quema grasa de forma natural', desc: 'Al reducir carbohidratos, tu cuerpo entra en cetosis y usa la grasa como fuente de energía principal.', bgClass: 'bg-keto-orange/10 border-keto-orange/20 hover:bg-keto-orange/15', iconBg: 'bg-keto-orange/20' },
-  { icon: '⚡', title: 'Energía constante todo el día', desc: 'Sin picos de glucosa ni bajones. Las grasas ofrecen energía sostenida y enfoque mental prolongado.', bgClass: 'bg-teal/10 border-teal/20 hover:bg-teal/15', iconBg: 'bg-teal/20' },
-  { icon: '😊', title: 'Saciedad y bienestar', desc: 'Las grasas y proteínas generan una sensación de saciedad duradera. Menos hambre, más control.', bgClass: 'bg-keto-purple/10 border-keto-purple/20 hover:bg-keto-purple/15', iconBg: 'bg-keto-purple/20' },
-  { icon: '🧠', title: 'Claridad mental', desc: 'Las cetonas son el combustible preferido del cerebro. Mejor concentración, memoria y estado de ánimo.', bgClass: 'bg-keto-green/10 border-keto-green/20 hover:bg-keto-green/15', iconBg: 'bg-keto-green/20' },
+  { icono: 'diana', color: '#F6521D', title: 'Quema grasa de forma natural', desc: 'Al reducir carbohidratos, tu cuerpo entra en cetosis y usa la grasa como fuente de energía principal.' },
+  { icono: 'kiwi',  color: '#9CCC66', title: 'Energía constante todo el día', desc: 'Sin picos de glucosa ni bajones. Las grasas ofrecen energía sostenida y enfoque mental prolongado.' },
+  { icono: 'palta', color: '#C99BC5', title: 'Saciedad y bienestar', desc: 'Las grasas y proteínas generan una sensación de saciedad duradera. Menos hambre, más control.' },
+  { icono: 'hojas', color: '#5AB282', title: 'Claridad mental', desc: 'Las cetonas son el combustible preferido del cerebro. Mejor concentración, memoria y estado de ánimo.' },
 ]
 
-const stats = [
-  { value: '+500', label: 'Clientes felices' },
-  { value: '100%', label: 'Sin azúcar' },
-  { value: '3 años', label: 'De experiencia' },
-]
+// Números que "cuentan" hacia arriba cuando aparecen en pantalla
+const stats = reactive([
+  { valor: 500, actual: 0, prefijo: '+', sufijo: '', label: 'Clientes felices' },
+  { valor: 100, actual: 0, prefijo: '', sufijo: '%', label: 'Sin azúcar' },
+  { valor: 3,   actual: 0, prefijo: '', sufijo: ' años', label: 'De experiencia' },
+])
+const statsRef = ref(null)
+let io = null
+
+function contar() {
+  const t0 = performance.now()
+  const dur = 1600
+  const paso = (t) => {
+    const p = Math.min(1, (t - t0) / dur)
+    const e = 1 - Math.pow(1 - p, 3)
+    stats.forEach(s => { s.actual = s.valor * e })
+    if (p < 1) requestAnimationFrame(paso)
+  }
+  requestAnimationFrame(paso)
+}
+
+onMounted(() => {
+  io = new IntersectionObserver(([e]) => {
+    if (e.isIntersecting) { contar(); io.disconnect() }
+  }, { threshold: 0.5 })
+  io.observe(statsRef.value)
+})
+onUnmounted(() => io?.disconnect())
 
 const ketoInfo = [
-  { icon: '🥑', title: '¿Qué es la dieta cetogénica?', desc: 'Es un plan alimentario alto en grasas, moderado en proteínas y muy bajo en carbohidratos (menos del 5% de las calorías diarias). Esto induce al cuerpo a un estado metabólico llamado cetosis.' },
-  { icon: '🍞', title: 'Alimentos permitidos', desc: 'Aguacate, aceite de coco, nueces, semillas, quesos, huevos, carnes, pescados, vegetales de hoja verde. En CEKETO encontrás panes, galletitas y snacks especialmente formulados.' },
-  { icon: '📉', title: 'Resultados comprobados', desc: 'Numerosos estudios muestran beneficios en pérdida de peso, control glucémico, reducción de inflamación y mejora en marcadores cardíacos. Una alimentación keto bien llevada transforma tu salud.' },
+  { title: '¿Qué es la dieta cetogénica?', desc: 'Es un plan alimentario alto en grasas, moderado en proteínas y muy bajo en carbohidratos (menos del 5% de las calorías diarias). Esto induce al cuerpo a un estado metabólico llamado cetosis.' },
+  { title: 'Alimentos permitidos', desc: 'Palta, aceite de coco, nueces, semillas, quesos, huevos, carnes, pescados, vegetales de hoja verde. En CEKETO encontrás panes, galletitas y snacks especialmente formulados.' },
+  { title: 'Resultados comprobados', desc: 'Numerosos estudios muestran beneficios en pérdida de peso, control glucémico, reducción de inflamación y mejora en marcadores cardíacos. Una alimentación keto bien llevada transforma tu salud.' },
 ]
 </script>
+
+<style scoped>
+.kb {
+  position: relative;
+  display: flex;
+  gap: 1.1rem;
+  align-items: flex-start;
+  padding: 1.35rem 1.4rem;
+  border-radius: 22px;
+  background: rgba(255,253,248,.06);
+  border: 1px solid rgba(255,253,248,.1);
+  transition: background .35s ease, transform .35s ease, border-color .35s ease;
+}
+.kb::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 18px; bottom: 18px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--c);
+}
+.kb:hover { background: rgba(255,253,248,.1); border-color: color-mix(in srgb, var(--c) 60%, transparent); transform: translateX(6px); }
+.kb-icono {
+  flex-shrink: 0;
+  width: 54px; height: 54px;
+  padding: 9px;
+  border-radius: 16px;
+  background: #FFFDF8;
+  transition: transform .5s cubic-bezier(.3,1.5,.5,1);
+}
+.kb:hover .kb-icono { transform: rotate(-8deg) scale(1.08); }
+.kb-titulo {
+  font-family: 'CK Cherione', 'Poppins', sans-serif;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  color: #FFFDF8;
+  margin-bottom: .35rem;
+}
+
+.ks {
+  text-align: center;
+  padding: 1.1rem .5rem;
+  border-radius: 20px;
+  background: rgba(255,253,248,.07);
+  border: 1px solid rgba(255,253,248,.12);
+}
+.ks-valor {
+  font-family: 'CK Cherione', 'Poppins', sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1;
+  color: #9CCC66;
+  font-variant-numeric: tabular-nums;
+}
+.ks-label { font: 500 12px/1.3 'Poppins', sans-serif; color: rgba(255,253,248,.7); margin-top: .45rem; }
+
+.ki {
+  position: relative;
+  padding: 2rem 1.8rem;
+  border-radius: 26px;
+  background: #FFFDF8;
+  box-shadow: 0 30px 50px -35px rgba(0,0,0,.6);
+}
+.ki-num {
+  position: absolute;
+  top: 1.2rem; right: 1.4rem;
+  font-family: 'CK Cherione', 'Poppins', sans-serif;
+  font-size: 2.6rem;
+  line-height: 1;
+  color: rgba(5,141,118,.18);
+}
+</style>

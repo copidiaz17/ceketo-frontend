@@ -1,59 +1,64 @@
 <template>
   <nav
     class="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
-    :class="scrolled ? 'nav-solid py-3 shadow-lg' : 'nav-glass py-5'"
+    :class="scrolled ? 'nav-ck-solid py-2' : 'nav-ck py-4'"
   >
-    <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+    <!-- barra de progreso de lectura con los 4 colores -->
+    <div class="nav-progreso" :style="{ transform: `scaleX(${progreso})` }"></div>
 
-      <!-- Brand text (sin logo para no repetir el del hero) -->
-      <RouterLink to="/" class="flex items-center gap-2 group">
-        <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 transition-all duration-300 group-hover:scale-110">
-          <img src="https://res.cloudinary.com/de3y7ybrg/image/upload/e_trim/c_fill,w_120,h_120,q_auto,f_auto/ceketo/logo-badge.jpg" alt="CEKETO" class="w-full h-full object-cover" />
-        </div>
-        <div class="flex flex-col leading-none gap-0.5">
-          <span class="font-display font-bold text-gray-900 text-2xl tracking-[0.15em] transition-colors duration-300 group-hover:text-brand-orange">
-            CEKETO
+    <div class="max-w-7xl mx-auto px-5 md:px-6 flex items-center justify-between gap-4">
+
+      <!-- Logo: isotipo (moneda 3D) + "ceketo" en naranja + slogan en tres colores -->
+      <RouterLink to="/" class="nav-logo flex items-center gap-3" aria-label="CEKETO, ir al inicio">
+        <MonedaIsotipo :tam="scrolled ? '40px' : '48px'" frente="verde" dorso="naranja" />
+        <span class="flex flex-col leading-none">
+          <span class="nav-ceketo font-marca text-ck-naranja transition-all duration-500" :class="scrolled ? 'text-[1.7rem]' : 'text-[2rem]'">ceketo</span>
+          <span class="nav-slogan font-etiqueta text-[10.5px] tracking-[0.24em] mt-1">
+            <!-- colores puros de la paleta: es parte del logo -->
+            <span class="text-ck-naranja">VIVI</span>
+            <span class="text-ck-verde">SENTI</span>
+            <span class="text-ck-violeta">COME</span>
           </span>
-          <span class="font-body text-brand-orange font-semibold text-[11px] tracking-[0.2em] uppercase">
-            Viví · Sentí · Comé
-          </span>
-        </div>
+        </span>
       </RouterLink>
 
       <!-- Links desktop -->
-      <div class="hidden md:flex items-center gap-10">
+      <div class="hidden md:flex items-center gap-9">
         <RouterLink
           v-for="link in navLinks"
           :key="link.path"
           :to="link.path"
-          class="relative text-sm font-medium tracking-wide text-gray-700 transition-colors duration-300 hover:text-brand-orange after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-brand-orange after:transition-all after:duration-300 hover:after:w-full"
+          :exact-active-class="link.path.includes('#') ? '' : 'nav-activo'"
+          active-class=""
+          class="nav-link font-texto text-[15px] font-medium text-ck-tinta/80 hover:text-ck-tinta"
+          :style="{ '--subrayado': link.color }"
         >
           {{ link.label }}
         </RouterLink>
       </div>
 
-      <!-- Actions -->
-      <div class="flex items-center gap-4">
-        <!-- Cart -->
-        <RouterLink to="/carrito" class="relative group">
-          <div class="p-2 rounded-full text-gray-700 transition-all duration-300 group-hover:bg-brand-orange/15">
+      <!-- Acciones -->
+      <div class="flex items-center gap-3 md:gap-4">
+        <RouterLink id="carrito-icono" to="/carrito" class="relative group" aria-label="Ver carrito">
+          <div class="p-2.5 rounded-full text-ck-tinta transition-all duration-300 group-hover:bg-ck-verde/10" :class="{ 'nav-bump': bump }">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"
                 d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
           </div>
           <span
             v-if="cartStore.totalItems > 0"
-            class="absolute -top-1 -right-1 bg-keto-orange text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium animate-bounce"
+            class="absolute -top-0.5 -right-0.5 bg-ck-violeta text-white text-[11px] min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center font-semibold font-texto shadow"
+            :class="{ 'nav-bump': bump }"
           >
             {{ cartStore.totalItems }}
           </span>
         </RouterLink>
 
-        <!-- Admin -->
         <RouterLink
+          v-if="!esDemo"
           to="/admin/login"
-          class="hidden md:flex items-center gap-1.5 text-gray-400 hover:text-brand-orange transition-colors duration-300 text-xs font-body"
+          class="hidden lg:flex items-center gap-1.5 text-ck-tinta/40 hover:text-ck-verde-t transition-colors duration-300 text-xs font-texto"
           title="Panel administrativo"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,91 +68,155 @@
           Admin
         </RouterLink>
 
-        <!-- CTA Button -->
-        <RouterLink to="/tienda" class="hidden md:block btn-primary text-sm py-2 px-5">
-          Ver Tienda
+        <RouterLink to="/tienda" class="hidden md:inline-flex ck-btn-naranja !py-2.5 !px-5 text-sm">
+          Ver tienda
         </RouterLink>
 
-        <!-- Hamburger mobile -->
+        <!-- Menú celular -->
         <button
-          class="md:hidden text-gray-700 p-2 rounded-lg hover:bg-brand-orange/10 transition-colors"
+          class="md:hidden text-ck-tinta p-2 rounded-xl hover:bg-ck-verde/10 transition-colors"
+          :aria-expanded="mobileOpen"
+          aria-label="Abrir menú"
           @click="mobileOpen = !mobileOpen"
         >
-          <svg v-if="!mobileOpen" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          <svg v-if="!mobileOpen" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-width="2" d="M4 7h16M4 12h11M4 17h16" />
           </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
     </div>
 
-    <!-- Mobile menu -->
-    <Transition name="slide-down">
-      <div
-        v-if="mobileOpen"
-        class="md:hidden bg-brand-cream/97 backdrop-blur-md border-t border-brand-orange/15 px-6 py-4"
-      >
-        <div class="flex flex-col gap-4">
-          <RouterLink
-            v-for="link in navLinks"
-            :key="link.path"
-            :to="link.path"
-            class="text-gray-800 text-base font-medium py-2 border-b border-gray-200 hover:text-brand-orange transition-colors"
-            @click="mobileOpen = false"
-          >
-            {{ link.label }}
-          </RouterLink>
-          <RouterLink
-            to="/tienda"
-            class="btn-primary text-center mt-2"
-            @click="mobileOpen = false"
-          >
-            Ver Tienda
-          </RouterLink>
-          <RouterLink
-            to="/admin/login"
-            class="text-center text-gray-400 text-sm py-2 hover:text-brand-orange transition-colors"
-            @click="mobileOpen = false"
-          >⚙️ Panel Admin</RouterLink>
-        </div>
+    <!-- Menú celular: panel crema con links grandes y el color de cada sección -->
+    <Transition name="menu-cel">
+      <div v-if="mobileOpen" class="md:hidden nav-menu-cel">
+        <RouterLink
+          v-for="(link, k) in navLinks"
+          :key="link.path"
+          :to="link.path"
+          class="flex items-center justify-between py-4 border-b border-ck-tinta/10"
+          :style="{ '--k': k }"
+          @click="mobileOpen = false"
+        >
+          <span class="font-marca text-3xl" :style="{ color: link.colorTexto }">{{ link.label }}</span>
+          <span class="w-9 h-9"><BrandIcon :nombre="link.icono" /></span>
+        </RouterLink>
+        <RouterLink to="/tienda" class="ck-btn-naranja w-full mt-6" @click="mobileOpen = false">
+          Ver tienda
+        </RouterLink>
       </div>
     </Transition>
   </nav>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import MonedaIsotipo from '@/components/brand/MonedaIsotipo.vue'
+import BrandIcon from '@/components/brand/BrandIcon.vue'
 
 const cartStore = useCartStore()
+const route = useRoute()
 const scrolled = ref(false)
 const mobileOpen = ref(false)
+const progreso = ref(0)
+const bump = ref(false)
+const esDemo = !!import.meta.env.VITE_DEMO
 
 const navLinks = [
-  { label: 'Inicio', path: '/' },
-  { label: 'Tienda', path: '/tienda' },
-  { label: 'Nosotros', path: '/nosotros' },
-  { label: 'Contacto', path: '/#contacto' },
+  { label: 'Inicio',   path: '/',          color: '#F6521D', colorTexto: '#C44117', icono: 'palta' },
+  { label: 'Tienda',   path: '/tienda',    color: '#058D76', colorTexto: '#047764', icono: 'kiwi' },
+  { label: 'Nosotros', path: '/nosotros',  color: '#885784', colorTexto: '#885784', icono: 'hojas' },
+  { label: 'Contacto', path: '/#contacto', color: '#9CCC66', colorTexto: '#557038', icono: 'gotas' },
 ]
 
+// El número del carrito "salta" cada vez que se agrega algo
+watch(() => cartStore.totalItems, (nuevo, viejo) => {
+  if (nuevo > viejo) {
+    bump.value = false
+    requestAnimationFrame(() => { bump.value = true; setTimeout(() => (bump.value = false), 600) })
+  }
+})
+
+watch(() => route.fullPath, () => { mobileOpen.value = false })
+
 function handleScroll() {
-  scrolled.value = window.scrollY > 80
+  scrolled.value = window.scrollY > 40
+  const h = document.documentElement.scrollHeight - window.innerHeight
+  progreso.value = h > 0 ? Math.min(1, window.scrollY / h) : 0
 }
 
-onMounted(() => window.addEventListener('scroll', handleScroll))
+onMounted(() => { window.addEventListener('scroll', handleScroll, { passive: true }); handleScroll() })
 onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 </script>
 
 <style scoped>
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.3s ease;
+.nav-ck {
+  background: linear-gradient(to bottom, rgba(247,241,230,.92), rgba(247,241,230,.6));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
-.slide-down-enter-from,
-.slide-down-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
+.nav-ck-solid {
+  background: rgba(255,253,248,.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 30px -18px rgba(23,48,43,.45);
 }
+.nav-progreso {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, #F6521D 0 25%, #058D76 25% 50%, #885784 50% 75%, #9CCC66 75% 100%);
+  transition: transform .15s linear;
+}
+
+.nav-ceketo { letter-spacing: .01em; line-height: .8; }
+.nav-slogan span + span { margin-left: .5em; }
+.nav-logo:hover .nav-ceketo { animation: nav-ola .6s ease; }
+@keyframes nav-ola {
+  30% { transform: translateY(-3px) rotate(-2deg); }
+  60% { transform: translateY(1px) rotate(1deg); }
+}
+
+.nav-link { position: relative; padding: 6px 0; transition: color .3s; }
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: -2px;
+  width: 100%; height: 3px;
+  border-radius: 3px;
+  background: var(--subrayado);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.nav-link:hover::after,
+.nav-link.nav-activo::after { transform: scaleX(1); }
+.nav-link.nav-activo { color: #17302B; }
+
+.nav-bump { animation: nav-bump .6s cubic-bezier(.3,1.6,.5,1); }
+@keyframes nav-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35) rotate(-8deg); }
+  70% { transform: scale(.92); }
+  100% { transform: scale(1); }
+}
+
+.nav-menu-cel {
+  background: #FFFDF8;
+  border-top: 1px solid rgba(23,48,43,.08);
+  padding: .5rem 1.5rem 1.75rem;
+  box-shadow: 0 30px 40px -30px rgba(23,48,43,.5);
+}
+.nav-menu-cel a:not(.ck-btn-naranja) {
+  animation: menu-item .45s cubic-bezier(.2,.8,.2,1) both;
+  animation-delay: calc(var(--k) * 60ms);
+}
+@keyframes menu-item { from { opacity: 0; transform: translateX(-18px); } }
+.menu-cel-enter-active, .menu-cel-leave-active { transition: opacity .3s ease, transform .3s ease; }
+.menu-cel-enter-from, .menu-cel-leave-to { opacity: 0; transform: translateY(-10px); }
 </style>

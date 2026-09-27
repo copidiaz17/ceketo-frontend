@@ -1,16 +1,16 @@
 <template>
-  <main class="min-h-screen bg-transparent pt-28">
+  <main class="min-h-screen bg-ck-crema pt-28">
     <div class="max-w-5xl mx-auto px-6 py-10">
 
-      <h1 class="section-title mb-2">Tu carrito</h1>
-      <p class="section-subtitle mb-10">{{ cartStore.totalItems }} producto{{ cartStore.totalItems !== 1 ? 's' : '' }}</p>
+      <h1 class="ck-titulo mb-2">Tu carrito</h1>
+      <p class="font-texto text-ck-tinta/60 text-lg mb-10">{{ cartStore.totalItems }} producto{{ cartStore.totalItems !== 1 ? 's' : '' }}</p>
 
       <!-- Empty cart -->
       <div v-if="cartStore.items.length === 0" class="text-center py-20">
         <span class="text-7xl block mb-6">🛒</span>
-        <h2 class="font-display text-2xl text-gray-400 mb-3">Tu carrito está vacío</h2>
-        <p class="font-body text-gray-400 mb-8">¡Agregá productos y empezá tu estilo de vida keto!</p>
-        <RouterLink to="/tienda" class="btn-primary">Ver tienda</RouterLink>
+        <h2 class="font-marca text-2xl text-gray-400 mb-3">Tu carrito está vacío</h2>
+        <p class="font-texto text-gray-400 mb-8">¡Agregá productos y empezá tu estilo de vida keto!</p>
+        <RouterLink to="/tienda" class="ck-btn-naranja">Ver tienda</RouterLink>
       </div>
 
       <!-- Cart items -->
@@ -22,7 +22,7 @@
             <div
               v-for="item in cartStore.items"
               :key="item.id"
-              class="bg-white border border-gray-100 rounded-2xl p-4 flex gap-4 hover:border-brand-orange/30 shadow-sm transition-all duration-300"
+              class="bg-ck-blanco border border-gray-100 rounded-2xl p-4 flex gap-4 hover:border-brand-orange/30 shadow-sm transition-all duration-300"
             >
               <img
                 :src="item.image"
@@ -30,26 +30,26 @@
                 class="w-24 h-24 object-cover rounded-xl flex-shrink-0"
               />
               <div class="flex-1 min-w-0">
-                <h3 class="font-display font-semibold text-gray-900 mb-1 truncate">{{ item.name }}</h3>
-                <p class="font-body text-gray-400 text-sm mb-3">{{ item.category }}</p>
+                <h3 class="font-marca font-semibold text-ck-tinta mb-1 truncate">{{ item.name }}</h3>
+                <p class="font-texto text-gray-400 text-sm mb-3">{{ item.category }}</p>
                 <div class="flex items-center justify-between">
                   <!-- Quantity -->
                   <div class="flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-full px-3 py-1">
                     <button
                       @click="cartStore.updateQuantity(item.id, item.quantity - 1)"
-                      class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-brand-orange transition-colors font-bold"
+                      class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-ck-naranja-t transition-colors font-bold"
                     >−</button>
-                    <span class="font-body font-medium w-6 text-center text-sm text-gray-800">{{ item.quantity }}</span>
+                    <span class="font-texto font-medium w-6 text-center text-sm text-gray-800">{{ item.quantity }}</span>
                     <button
                       @click="cartStore.updateQuantity(item.id, item.quantity + 1)"
                       :disabled="enStockMaximo(item)"
                       class="w-6 h-6 flex items-center justify-center transition-colors font-bold"
-                      :class="enStockMaximo(item) ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-brand-orange'"
+                      :class="enStockMaximo(item) ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-ck-naranja-t'"
                     >+</button>
                   </div>
                   <!-- Price + Delete -->
                   <div class="flex items-center gap-4">
-                    <span class="font-display font-bold text-teal text-lg">
+                    <span class="font-marca font-bold text-ck-naranja-t text-lg">
                       ${{ (item.price * item.quantity).toLocaleString('es-AR') }}
                     </span>
                     <button
@@ -69,32 +69,32 @@
 
         <!-- Order summary -->
         <div class="lg:col-span-1">
-          <div class="bg-white border border-gray-100 rounded-2xl p-6 sticky top-28 shadow-sm">
-            <h3 class="font-display text-xl font-semibold text-gray-900 mb-6">Resumen del pedido</h3>
+          <div class="bg-ck-blanco border border-gray-100 rounded-2xl p-6 sticky top-28 shadow-sm">
+            <h3 class="font-marca text-xl font-semibold text-ck-tinta mb-6">Resumen del pedido</h3>
 
             <div class="space-y-3 mb-6">
-              <div class="flex justify-between font-body text-sm text-gray-500">
+              <div class="flex justify-between font-texto text-sm text-gray-500">
                 <span>Subtotal ({{ cartStore.totalItems }} items)</span>
                 <span>${{ cartStore.totalPrice.toLocaleString('es-AR') }}</span>
               </div>
-              <div class="flex justify-between font-body text-sm text-gray-500">
+              <div class="flex justify-between font-texto text-sm text-gray-500">
                 <span>Envío</span>
                 <span class="text-gray-400">A coordinar</span>
               </div>
-              <div class="border-t border-gray-200 pt-3 flex justify-between font-display text-xl font-bold text-gray-900">
+              <div class="border-t border-gray-200 pt-3 flex justify-between font-marca text-xl font-bold text-ck-tinta">
                 <span>Total productos</span>
-                <span class="text-brand-orange">${{ cartStore.totalPrice.toLocaleString('es-AR') }}</span>
+                <span class="text-ck-naranja-t">${{ cartStore.totalPrice.toLocaleString('es-AR') }}</span>
               </div>
-              <p class="font-body text-xs text-gray-400 leading-snug">
+              <p class="font-texto text-xs text-gray-400 leading-snug">
                 Si elegís envío a domicilio, el costo se coordina por WhatsApp y no está incluido en este total.
                 Retirando en el local no tiene costo.
               </p>
             </div>
 
-            <RouterLink to="/checkout" class="w-full btn-primary justify-center text-base py-4 mb-3 text-center block">
+            <RouterLink to="/checkout" class="w-full ck-btn-naranja justify-center text-base py-4 mb-3 text-center block">
               Finalizar compra
             </RouterLink>
-            <RouterLink to="/tienda" class="w-full text-center block font-body text-sm text-gray-400 hover:text-gray-600 transition-colors py-2">
+            <RouterLink to="/tienda" class="w-full text-center block font-texto text-sm text-gray-400 hover:text-gray-600 transition-colors py-2">
               Seguir comprando
             </RouterLink>
 

@@ -1,199 +1,303 @@
 <template>
-  <section class="relative h-screen w-full overflow-hidden">
+  <section class="hero relative overflow-hidden">
+    <BrandBackdrop variante="hero" />
 
-    <!-- Slides -->
-    <div class="absolute inset-0">
-      <TransitionGroup name="crossfade">
-        <div
-          v-for="(slide, index) in slides"
-          v-show="currentSlide === index"
-          :key="index"
-          class="absolute inset-0"
-        >
-          <img
-            :src="slide.image"
-            :alt="slide.alt"
-            class="w-full h-full object-cover scale-105 transition-transform duration-[8000ms] ease-linear"
-            :class="currentSlide === index ? 'scale-100' : 'scale-105'"
-          />
+    <div class="relative z-10 max-w-7xl mx-auto px-5 md:px-6 grid lg:grid-cols-[1.08fr_.92fr] gap-12 lg:gap-8 items-center">
+
+      <!-- Texto -->
+      <div class="order-2 lg:order-1 text-center lg:text-left">
+        <p class="hero-entra font-etiqueta text-[13px] md:text-sm tracking-[0.3em] mb-5 inline-flex items-center gap-3" style="--d: 0ms">
+          <span class="hidden sm:inline-block h-[2px] w-8 rounded-full bg-ck-tinta/30"></span>
+          <span class="text-ck-naranja">VIVI</span>
+          <span class="text-ck-verde">SENTI</span>
+          <span class="text-ck-violeta">COME</span>
+        </p>
+
+        <h1 class="hero-titulo font-marca text-ck-tinta">
+          <span class="hero-linea"><span class="hero-palabra" style="--d: 120ms">Tu estilo</span></span>
+          <span class="hero-linea"><span class="hero-palabra" style="--d: 220ms">de vida</span>
+            <span class="hero-palabra hero-keto text-ck-naranja" style="--d: 340ms">
+              keto
+              <svg class="hero-subrayado" viewBox="0 0 220 24" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M4 16 C 60 4, 120 4, 216 14" />
+              </svg>
+            </span>
+          </span>
+          <span class="hero-linea"><span class="hero-palabra" style="--d: 460ms">empieza acá</span></span>
+        </h1>
+
+        <p class="hero-entra font-texto text-ck-tinta/70 text-lg md:text-xl leading-relaxed max-w-md mx-auto lg:mx-0 mt-6" style="--d: 620ms">
+          Alimentos cetogénicos artesanales. Sin azúcar, sin culpas, con todo el sabor.
+        </p>
+
+        <div class="hero-entra flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mt-9" style="--d: 760ms">
+          <RouterLink to="/tienda" class="ck-btn-naranja text-base !px-8 !py-4 group">
+            Explorar tienda
+            <span class="transition-transform duration-300 group-hover:translate-x-1">→</span>
+          </RouterLink>
+          <RouterLink to="/#keto" class="ck-btn-borde text-base !px-8 !py-4">
+            ¿Qué es keto?
+          </RouterLink>
         </div>
-      </TransitionGroup>
-    </div>
 
-    <!-- Overlay -->
-    <div class="absolute inset-0 hero-overlay z-10"></div>
+        <ul class="hero-entra flex flex-wrap gap-x-6 gap-y-3 justify-center lg:justify-start mt-9 font-texto text-sm text-ck-tinta/70" style="--d: 900ms">
+          <li v-for="s in sellos" :key="s.texto" class="flex items-center gap-2">
+            <span class="w-6 h-6"><BrandIcon :nombre="s.icono" /></span>{{ s.texto }}
+          </li>
+        </ul>
+      </div>
 
-    <!-- CEKETO centrado sobre la imagen -->
-    <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none select-none">
-      <span
-        class="font-display font-bold tracking-widest"
-        style="font-size: clamp(5rem, 18vw, 14rem); color: rgba(246,82,29,0.62); letter-spacing: 0.15em; line-height: 1;"
-      >CEKETO</span>
-    </div>
+      <!-- Visual: arco con fotos reales + sello + moneda, con profundidad 3D -->
+      <div class="order-1 lg:order-2 flex justify-center hero-visual-entrada">
+        <div class="hero-visual" v-tilt="7">
+          <div class="hero-arco-fondo"></div>
+          <div class="hero-arco">
+            <TransitionGroup name="hero-foto">
+              <img
+                v-for="(slide, index) in slides"
+                v-show="actual === index"
+                :key="slide.image"
+                :src="slide.image"
+                :alt="slide.alt"
+                class="hero-img"
+                :loading="index === 0 ? 'eager' : 'lazy'"
+                :fetchpriority="index === 0 ? 'high' : 'auto'"
+                draggable="false"
+              />
+            </TransitionGroup>
+            <div class="hero-velo"></div>
+            <Transition name="hero-cap" mode="out-in">
+              <p :key="actual" class="hero-caption">{{ slides[actual].alt }}</p>
+            </Transition>
+          </div>
 
-    <!-- Elementos decorativos flotantes de fondo -->
-    <div class="absolute inset-0 z-10 pointer-events-none overflow-hidden">
-      <!-- Círculo top-right -->
-      <div class="absolute -top-20 -right-20 w-96 h-96 rounded-full border border-white/10 animate-spin-slow"></div>
-      <div class="absolute -top-10 -right-10 w-64 h-64 rounded-full border border-brand-orange/20"></div>
-      <!-- Círculo bottom-left -->
-      <div class="absolute -bottom-16 -left-16 w-80 h-80 rounded-full border border-white/10"></div>
-      <!-- Línea vertical izquierda -->
-      <div class="absolute left-10 top-1/4 bottom-1/4 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent hidden md:block"></div>
-      <!-- Línea vertical derecha -->
-      <div class="absolute right-10 top-1/4 bottom-1/4 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent hidden md:block"></div>
-      <!-- Caption slide actual — esquina inferior izquierda -->
-      <Transition name="caption">
-        <div class="absolute bottom-16 left-10 hidden md:block">
-          <p class="text-white/40 text-xs tracking-[0.2em] uppercase mb-1">Ahora mostrando</p>
-          <p class="text-white/80 text-sm font-medium font-body">{{ slides[currentSlide].alt }}</p>
-          <div class="mt-2 h-px w-24 bg-brand-orange/60"></div>
+          <img :src="publico('/marca/sello-cuchara.svg')" alt="" class="hero-sello" draggable="false" />
+          <div class="hero-moneda"><MonedaIsotipo tam="100%" frente="naranja" dorso="violeta" auto /></div>
+
+          <div class="hero-puntos">
+            <button
+              v-for="(s, index) in slides"
+              :key="index"
+              class="hero-punto"
+              :class="{ activo: actual === index }"
+              :aria-label="`Ver ${s.alt}`"
+              @click="irA(index)"
+            ></button>
+          </div>
         </div>
-      </Transition>
-      <!-- Número de slide — esquina superior derecha -->
-      <div class="absolute top-28 right-10 hidden md:flex flex-col items-end gap-1">
-        <span class="font-display text-5xl font-bold text-white/10 leading-none">0{{ currentSlide + 1 }}</span>
-        <span class="text-white/30 text-xs tracking-widest">/ 0{{ slides.length }}</span>
       </div>
     </div>
 
-    <!-- Content -->
-    <div class="relative z-20 h-full flex flex-col items-center justify-center text-center px-6 pt-24">
-
-      <!-- Logo grande en hero -->
-      <div class="mb-6"></div>
-
-      <!-- Tagline -->
-      <p
-        class="text-teal-light font-body text-sm md:text-base tracking-[0.3em] uppercase mb-4 opacity-0"
-        style="animation: fadeInUp 0.8s 0.3s ease forwards"
-      >
-        Viví &bull; Sentí &bull; Comé
-      </p>
-
-      <!-- Headline -->
-      <h1
-        class="font-display text-5xl md:text-7xl lg:text-8xl text-white font-bold leading-tight mb-6 max-w-4xl opacity-0"
-        style="animation: fadeInUp 0.8s 0.6s ease forwards"
-      >
-        Tu estilo de vida
-        <span class="text-brand-orange italic">keto</span>
-        empieza acá
-      </h1>
-
-      <!-- Subtitle -->
-      <p
-        class="font-body text-white/80 text-lg md:text-xl max-w-xl mb-10 leading-relaxed opacity-0"
-        style="animation: fadeInUp 0.8s 0.9s ease forwards"
-      >
-        Alimentos cetogénicos artesanales. Sin azúcar, sin culpas, con todo el sabor.
-      </p>
-
-      <!-- CTAs -->
-      <div
-        class="flex flex-col sm:flex-row gap-4 opacity-0"
-        style="animation: fadeInUp 0.8s 1.1s ease forwards"
-      >
-        <RouterLink to="/tienda" class="btn-primary text-base px-10 py-4 shadow-2xl">
-          Explorar tienda
-        </RouterLink>
-        <RouterLink to="/#keto" class="btn-outline text-base px-10 py-4 border-white text-white hover:bg-white hover:text-keto-dark">
-          ¿Qué es keto?
-        </RouterLink>
-      </div>
-    </div>
-
-    <!-- Slide indicators -->
-    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-3">
-      <button
-        v-for="(_, index) in slides"
-        :key="index"
-        class="transition-all duration-300 rounded-full"
-        :class="currentSlide === index
-          ? 'w-8 h-2 bg-brand-orange'
-          : 'w-2 h-2 bg-white/50 hover:bg-white/80'"
-        @click="goToSlide(index)"
-      />
-    </div>
-
-    <!-- Scroll indicator -->
-    <div class="absolute bottom-10 right-10 z-20 hidden md:flex flex-col items-center gap-2">
-      <span class="text-white/60 text-xs tracking-widest uppercase">Scroll</span>
-      <div class="w-px h-12 bg-gradient-to-b from-white/60 to-transparent animate-pulse mt-2"></div>
-    </div>
+    <a href="#categorias" class="hero-scroll hidden md:flex" aria-label="Bajar a las categorías">
+      <span class="hero-mouse"><span></span></span>
+      <span class="font-etiqueta text-[11px] tracking-[0.3em] text-ck-tinta/50">BAJA</span>
+    </a>
   </section>
 </template>
 
 <script setup>
+import { publico } from '@/brand/publico'
 import { ref, onMounted, onUnmounted } from 'vue'
+import BrandBackdrop from '@/components/brand/BrandBackdrop.vue'
+import BrandIcon from '@/components/brand/BrandIcon.vue'
+import MonedaIsotipo from '@/components/brand/MonedaIsotipo.vue'
 
-// Carrusel con fotos reales de productos (Cloudinary).
-// c_pad + b_auto: muestra el producto COMPLETO y extiende el fondo de color a los lados
-// (sin zoom/recorte agresivo, para que se aprecie la foto).
-const CLD = 'https://res.cloudinary.com/de3y7ybrg/image/upload/c_pad,b_auto,w_1600,h_900,q_auto,f_auto'
+// Fotos reales de productos (Cloudinary), recortadas inteligentemente para llenar el arco
+const CLD = 'https://res.cloudinary.com/de3y7ybrg/image/upload/c_fill,g_auto,w_880,h_1100,q_auto,f_auto'
 const slides = [
-  { image: `${CLD}/ceketo/productos/prod_72.png`, alt: 'Cheesecake keto de chocolate' },
   { image: `${CLD}/ceketo/productos/prod_74.png`, alt: 'Cheesecake keto de frutos rojos' },
+  { image: `${CLD}/ceketo/productos/prod_72.png`, alt: 'Cheesecake keto de chocolate' },
   { image: `${CLD}/ceketo/productos/prod_39.png`, alt: 'Carrot cake keto' },
   { image: `${CLD}/ceketo/productos/prod_35.jpg`, alt: 'Alfajor chocotorta low carb' },
   { image: `${CLD}/ceketo/productos/prod_21.jpg`, alt: 'Cookies keto' },
 ]
 
-const currentSlide = ref(0)
+const sellos = [
+  { icono: 'gotas', texto: 'Sin azúcar' },
+  { icono: 'cuchara', texto: 'Artesanal' },
+  { icono: 'rama', texto: 'Envío o retiro en el local' },
+]
+
+const actual = ref(0)
 let timer = null
 
-function nextSlide() {
-  currentSlide.value = (currentSlide.value + 1) % slides.length
-}
+function siguiente() { actual.value = (actual.value + 1) % slides.length }
+function irA(i) { actual.value = i; reiniciar() }
+function reiniciar() { clearInterval(timer); timer = setInterval(siguiente, 5000) }
 
-function goToSlide(index) {
-  currentSlide.value = index
-  resetTimer()
-}
-
-function resetTimer() {
-  clearInterval(timer)
-  timer = setInterval(nextSlide, 5000)
-}
-
-onMounted(() => {
-  timer = setInterval(nextSlide, 5000)
-})
-
+onMounted(() => { timer = setInterval(siguiente, 5000) })
 onUnmounted(() => clearInterval(timer))
 </script>
 
 <style scoped>
-.crossfade-enter-active,
-.crossfade-leave-active {
-  transition: opacity 1.2s ease;
+.hero {
+  padding: 8.5rem 0 5rem;
+  background:
+    radial-gradient(60rem 36rem at 88% 20%, rgba(156, 204, 102, .20), transparent 60%),
+    radial-gradient(40rem 30rem at 5% 90%, rgba(246, 82, 29, .10), transparent 60%),
+    #F7F1E6;
+}
+@media (min-width: 1024px) {
+  .hero { min-height: 100svh; display: flex; align-items: center; padding: 7rem 0 4rem; }
+  .hero > div:nth-child(2) { width: 100%; }
+}
+
+/* ── Título: cada línea sube desde abajo (máscara) ── */
+.hero-titulo {
+  font-size: clamp(2.6rem, 4.9vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: .005em;
+}
+@media (max-width: 1023px) { .hero-titulo { font-size: clamp(2.5rem, 9.5vw, 4.2rem); } }
+.hero-linea { display: block; overflow: hidden; padding-bottom: .08em; }
+.hero-palabra {
+  display: inline-block;
+  transform: translateY(105%);
+  animation: hero-subir .9s cubic-bezier(.2,.8,.2,1) forwards;
+  animation-delay: var(--d);
+}
+.hero-keto { position: relative; margin-left: .22em; }
+.hero-subrayado {
+  position: absolute;
+  left: -2%; bottom: -.12em;
+  width: 104%; height: .32em;
+  overflow: visible;
+}
+.hero-subrayado path {
+  fill: none;
+  stroke: #9CCC66;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+  animation: hero-trazo .9s .95s cubic-bezier(.6,0,.2,1) forwards;
+}
+.hero-entra {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: hero-aparecer .8s cubic-bezier(.2,.8,.2,1) forwards;
+  animation-delay: var(--d);
+}
+@keyframes hero-subir { to { transform: translateY(0); } }
+@keyframes hero-trazo { to { stroke-dashoffset: 0; } }
+@keyframes hero-aparecer { to { opacity: 1; transform: none; } }
+
+/* ── Visual 3D ── */
+.hero-visual-entrada {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: hero-aparecer 1s .2s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.hero-visual {
+  position: relative;
+  width: min(430px, 66vw);
+  aspect-ratio: 4 / 5;
+  transform-style: preserve-3d;
+}
+@media (min-width: 1024px) { .hero-visual { width: min(430px, 34vw); } }
+.hero-arco,
+.hero-arco-fondo {
   position: absolute;
   inset: 0;
+  border-radius: 999px 999px 34px 34px;
 }
-.crossfade-enter-from { opacity: 0; }
-.crossfade-leave-to { opacity: 0; }
+.hero-arco-fondo {
+  background: #058D76;
+  transform: translate3d(22px, 22px, -60px);
+}
+.hero-arco {
+  overflow: hidden;
+  background: #F6521D;
+  box-shadow: 0 40px 70px -35px rgba(23,48,43,.6);
+  transform: translateZ(0);
+}
+.hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: hero-zoom 9s ease-out both;
+}
+@keyframes hero-zoom { from { transform: scale(1.12); } to { transform: scale(1); } }
+.hero-velo {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(23,48,43,.55), transparent 38%);
+}
+.hero-caption {
+  position: absolute;
+  left: 50%; bottom: 22px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: .55rem 1rem;
+  border-radius: 999px;
+  background: rgba(255,253,248,.95);
+  color: #17302B;
+  font: 600 13px/1 'Poppins', sans-serif;
+  box-shadow: 0 8px 20px -10px rgba(0,0,0,.4);
+}
+.hero-sello {
+  position: absolute;
+  width: 34%;
+  left: -12%;
+  top: 6%;
+  transform: translateZ(70px);
+  animation: hero-girar 28s linear infinite;
+  filter: drop-shadow(0 14px 18px rgba(23,48,43,.3));
+}
+@keyframes hero-girar { from { transform: translateZ(70px) rotate(0); } to { transform: translateZ(70px) rotate(360deg); } }
+.hero-moneda {
+  position: absolute;
+  width: 21%;
+  aspect-ratio: 1;
+  right: -7%;
+  bottom: 14%;
+  transform: translateZ(90px);
+}
+.hero-puntos {
+  position: absolute;
+  left: 0; right: 0; bottom: -34px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.hero-punto {
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  background: rgba(23,48,43,.25);
+  transition: all .35s ease;
+}
+.hero-punto.activo { width: 28px; background: #F6521D; }
 
-.caption-enter-active,
-.caption-leave-active {
-  transition: all 0.6s ease;
-}
-.caption-enter-from,
-.caption-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
-}
+.hero-foto-enter-active, .hero-foto-leave-active { transition: opacity 1.1s ease; }
+.hero-foto-enter-from, .hero-foto-leave-to { opacity: 0; }
+.hero-cap-enter-active, .hero-cap-leave-active { transition: all .4s ease; }
+.hero-cap-enter-from { opacity: 0; transform: translate(-50%, 10px); }
+.hero-cap-leave-to { opacity: 0; transform: translate(-50%, -6px); }
 
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── Indicador para bajar ── */
+.hero-scroll {
+  position: absolute;
+  left: 50%; bottom: 22px;
+  transform: translateX(-50%);
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
 }
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+.hero-mouse {
+  width: 22px; height: 34px;
+  border: 2px solid rgba(23,48,43,.35);
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
 }
-
-.animate-spin-slow {
-  animation: spin-slow 30s linear infinite;
+.hero-mouse span {
+  width: 4px; height: 7px;
+  border-radius: 2px;
+  background: #F6521D;
+  animation: hero-rueda 1.6s ease-in-out infinite;
 }
+@keyframes hero-rueda { 0% { transform: translateY(0); opacity: 1; } 80% { transform: translateY(10px); opacity: 0; } 100% { opacity: 0; } }
 </style>

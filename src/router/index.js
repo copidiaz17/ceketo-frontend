@@ -26,7 +26,7 @@ function requireAdmin(to, from, next) {
 }
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     // Redirigir raíz al panel admin
     { path: '/',             name: 'home',     component: () => import('../views/HomeView.vue') },
@@ -67,5 +67,10 @@ const router = createRouter({
     return { top: 0, behavior: 'smooth' }
   },
 })
+
+// DEMO de diseño: el panel admin no se puede abrir (apunta a la base real)
+if (import.meta.env.VITE_DEMO) {
+  router.beforeEach(to => (to.path.startsWith('/admin') ? '/' : true))
+}
 
 export default router

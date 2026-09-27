@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tipografías de la marca (archivos del kit de Serif Estudio, en /public/fonts) */
+@font-face {
+  font-family: 'CK Cherione';
+  src: url('/fonts/cherione.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  /* Comodo Free: solo letras (sin tildes ni números). Lo que falta cae en Poppins. */
+  font-family: 'CK Comodo';
+  src: url('/fonts/comodo.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0020, U+0041-005A, U+0061-007A;
+}
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -15,24 +33,12 @@
 
   body {
     font-family: 'Comodo', 'Inter', sans-serif;
-    background-color: #FFD9BC;
+    background-color: #F7F1E6;
     color: #1A2E2A;
     overflow-x: hidden;
     position: relative;
   }
 
-  /* Logo como marca de agua difuminada */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: url('./images/logo.png') center center / 520px no-repeat;
-    opacity: 0.08;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  /* Asegurar que el contenido quede sobre la marca de agua */
   #app {
     position: relative;
     z-index: 1;
@@ -41,6 +47,18 @@
   h1, h2, h3 {
     font-family: 'Mirza', serif;
   }
+
+  /* ── Tienda pública: tipografías y colores de la marca ── */
+  .tienda {
+    font-family: 'Poppins', system-ui, sans-serif;
+    color: #17302B;
+  }
+  .tienda h1, .tienda h2, .tienda h3 {
+    font-family: 'CK Cherione', 'Poppins', sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+  .tienda ::selection { background: #9CCC66; color: #17302B; }
 }
 
 @layer components {
@@ -81,6 +99,37 @@
   .section-subtitle {
     @apply font-body text-gray-500 text-lg leading-relaxed;
   }
+
+  /* ── Componentes de la tienda (marca) ── */
+  .ck-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-texto font-semibold text-[15px]
+           tracking-wide transition-all duration-300 active:scale-95 select-none;
+  }
+  .ck-btn-naranja {
+    @apply ck-btn bg-ck-naranja-btn text-white shadow-[0_10px_30px_-10px_rgba(246,82,29,.7)]
+           hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-10px_rgba(246,82,29,.8)];
+  }
+  .ck-btn-verde {
+    @apply ck-btn bg-ck-verde-t text-white shadow-[0_10px_30px_-12px_rgba(5,141,118,.8)]
+           hover:-translate-y-0.5 hover:bg-ck-verde;
+  }
+  .ck-btn-borde {
+    @apply ck-btn border-2 border-ck-verde-t text-ck-verde-t hover:bg-ck-verde-t hover:text-white;
+  }
+
+  /* Etiqueta chica arriba de los títulos. Va en Poppins: la Comodo Free del kit
+     no trae tildes ni signos (¿ ¡), así que se reserva para el slogan y las categorías. */
+  .ck-eyebrow {
+    @apply inline-flex items-center gap-2 font-texto font-semibold text-[12.5px] tracking-[0.2em] uppercase;
+  }
+  .ck-eyebrow::before {
+    content: '';
+    @apply inline-block h-[2px] w-7 rounded-full bg-current opacity-70;
+  }
+
+  .ck-titulo {
+    @apply font-marca text-[2.4rem] leading-[1.05] md:text-6xl text-ck-tinta;
+  }
 }
 
 @layer utilities {
@@ -99,10 +148,10 @@
     animation: gradientShift 8s ease infinite;
   }
 
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: #FFD9BC; }
-  ::-webkit-scrollbar-thumb { background: #F6521D; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #d94419; }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #F7F1E6; }
+  ::-webkit-scrollbar-thumb { background: #058D76; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #047764; }
 
   .reveal {
     opacity: 0;
@@ -124,4 +173,43 @@
     transition: opacity 0.7s ease, transform 0.7s ease;
   }
   .reveal-right.visible { opacity: 1; transform: translateX(0); }
+
+  /* v-reveal (directiva): aparece al entrar en pantalla, con retardo opcional */
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(28px) scale(.98);
+    transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  [data-reveal='izq'] { transform: translateX(-40px); }
+  [data-reveal='der'] { transform: translateX(40px); }
+  [data-reveal='giro'] { transform: perspective(900px) rotateX(24deg) translateY(30px); transform-origin: 50% 100%; }
+  [data-reveal].visible { opacity: 1; transform: none; }
+
+  /* v-tilt (directiva): inclinación 3D siguiendo el puntero */
+  .ck-tilt {
+    transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(0);
+    transform-style: preserve-3d;
+    transition: transform .5s cubic-bezier(.2,.7,.2,1);
+    will-change: transform;
+  }
+  .ck-tilt.inclinando { transition: transform .08s linear; }
+  .ck-brillo {
+    background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,.45), transparent 55%);
+    opacity: 0;
+    transition: opacity .3s ease;
+    pointer-events: none;
+  }
+  .ck-tilt.inclinando .ck-brillo { opacity: 1; }
+}
+
+/* Accesibilidad: si la persona pidió menos movimiento, se apagan animaciones y 3D */
+@media (prefers-reduced-motion: reduce) {
+  .tienda *, .tienda *::before, .tienda *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  [data-reveal] { opacity: 1; transform: none; }
 }

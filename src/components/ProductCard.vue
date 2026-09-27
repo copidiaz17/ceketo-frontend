@@ -1,122 +1,80 @@
 <template>
-  <article class="group relative bg-white border border-gray-100 rounded-3xl overflow-hidden hover:shadow-2xl hover:shadow-brand-orange/15 transition-all duration-500 hover:-translate-y-2">
+  <article class="pc group" :style="{ '--c': estilo.hex, '--ct': estilo.texto }">
+    <div class="pc-tarjeta" v-tilt="6">
 
-    <!-- Image container -->
-    <div class="relative overflow-hidden h-64">
-      <img
-        :src="optimizedImage(product.image)"
-        :alt="product.name"
-        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        loading="lazy"
-        width="400"
-        height="256"
-        @error="$event.target.onerror=null; $event.target.src='/images/sin-imagen.svg'"
-      />
+      <!-- Foto -->
+      <RouterLink :to="`/producto/${product.id}`" class="pc-foto" :aria-label="`Ver ${product.name}`">
+        <img
+          v-if="!sinFoto"
+          ref="imgRef"
+          :src="optimizedImage(product.image)"
+          :alt="product.name"
+          class="pc-img"
+          loading="lazy"
+          width="400"
+          height="300"
+          @error="sinFoto = true"
+        />
+        <!-- Producto sin foto: placeholder con la marca (antes, un cuadro gris "Sin imagen") -->
+        <div v-else class="pc-sinfoto">
+          <div class="pc-sinfoto-icono"><BrandIcon :nombre="estilo.icono" /></div>
+          <span>Foto próximamente</span>
+        </div>
+        <span class="pc-ver">Ver detalle →</span>
+        <span v-if="sinStock" class="pc-estado pc-agotado">Sin stock</span>
+        <span v-else-if="product.stock <= 5 && product.stock > 0" class="pc-estado pc-ultimas">Últimas unidades</span>
+        <div class="ck-brillo absolute inset-0"></div>
+      </RouterLink>
 
-      <span class="absolute top-4 left-4 badge bg-white/90 backdrop-blur-sm text-gray-700 font-medium border border-gray-200/60">
-        {{ product.category }}
+      <!-- Etiqueta de categoría: SU color y SU ícono (antes mostraba el código interno) -->
+      <span class="pc-categoria">
+        <span class="pc-categoria-icono"><BrandIcon :nombre="estilo.icono" /></span>
+        {{ product.description || product.category }}
       </span>
 
-      <span
-        v-if="sinStock"
-        class="absolute top-4 right-4 badge bg-gray-700 text-white"
-      >
-        Sin stock
-      </span>
-      <span
-        v-else-if="product.stock <= 5 && product.stock > 0"
-        class="absolute top-4 right-4 badge bg-brand-orange text-white"
-      >
-        Últimas unidades
-      </span>
-
-      <!-- Overlay hover -->
-      <div class="absolute inset-0 bg-white/85 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-400 flex flex-col items-center justify-center gap-3 px-6">
-        <button
-          @click.prevent="addToCart"
-          :disabled="sinStock"
-          class="w-full py-3 rounded-full font-medium text-sm tracking-wide
-                 transform translate-y-4 group-hover:translate-y-0 transition-all duration-400
-                 active:scale-95 shadow-lg"
-          :class="sinStock
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-brand-orange text-white hover:bg-orange-600'"
-        >
-          {{ sinStock ? 'Sin stock' : '+ Agregar al carrito' }}
-        </button>
-        <RouterLink
-          :to="`/producto/${product.id}`"
-          class="w-full text-center text-gray-600 py-2 rounded-full text-sm border border-gray-300
-                 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500
-                 hover:bg-gray-100"
-          style="transition-delay: 50ms"
-        >
-          Ver detalle
-        </RouterLink>
+      <!-- Info -->
+      <div class="pc-info">
+        <h3 class="pc-nombre">
+          <RouterLink :to="`/producto/${product.id}`">{{ product.name }}</RouterLink>
+        </h3>
+        <div class="flex items-end justify-between gap-3 mt-3">
+          <div class="flex items-baseline gap-2">
+            <span class="pc-precio">${{ product.price.toLocaleString('es-AR') }}</span>
+            <span v-if="product.originalPrice" class="text-sm text-ck-tinta/40 line-through font-texto">
+              ${{ product.originalPrice.toLocaleString('es-AR') }}
+            </span>
+          </div>
+          <button
+            @click="addToCart"
+            :disabled="sinStock"
+            class="pc-agregar"
+            :aria-label="sinStock ? 'Sin stock' : `Agregar ${product.name} al carrito`"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M12 5v14m7-7H5" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Info -->
-    <div class="p-5">
-      <h3 class="font-display text-lg font-semibold text-gray-900 mb-1 line-clamp-1 group-hover:text-brand-orange transition-colors duration-300">
-        {{ product.name }}
-      </h3>
-      <p class="font-body text-gray-500 text-sm mb-4 line-clamp-2 leading-relaxed">
-        {{ product.description }}
-      </p>
-      <div class="flex items-center justify-between">
-        <div class="flex items-baseline gap-1">
-          <span class="font-display text-2xl font-bold text-brand-orange">
-            ${{ product.price.toLocaleString('es-AR') }}
-          </span>
-          <span v-if="product.originalPrice" class="text-sm text-gray-400 line-through">
-            ${{ product.originalPrice.toLocaleString('es-AR') }}
-          </span>
-        </div>
-        <button
-          @click="addToCart"
-          :disabled="sinStock"
-          class="w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-300 active:scale-95"
-          :class="sinStock
-            ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed'
-            : 'bg-brand-orange/15 text-brand-orange border-brand-orange/20 hover:bg-brand-orange hover:text-white hover:scale-110'"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Added to cart feedback -->
-    <Transition name="added-flash">
-      <div
-        v-if="showAdded"
-        class="absolute inset-0 bg-brand-orange/10 pointer-events-none rounded-3xl border-2 border-brand-orange flex items-center justify-center"
-      >
-        <div class="bg-brand-orange text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-          ✓ Agregado al carrito
-        </div>
-      </div>
+    <!-- Aviso: agregado / sin más stock -->
+    <Transition name="pc-aviso">
+      <div v-if="showAdded" class="pc-toast">✓ Agregado al carrito</div>
     </Transition>
-
-    <!-- Sin stock disponible feedback -->
-    <Transition name="added-flash">
-      <div
-        v-if="showMax"
-        class="absolute inset-0 bg-gray-900/10 pointer-events-none rounded-3xl border-2 border-gray-400 flex items-center justify-center"
-      >
-        <div class="bg-gray-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg text-center">
-          No hay más stock disponible
-        </div>
-      </div>
+    <Transition name="pc-aviso">
+      <div v-if="showMax" class="pc-toast pc-toast-gris">No hay más stock disponible</div>
     </Transition>
   </article>
 </template>
 
 <script setup>
+import { publico } from '@/brand/publico'
 import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
+import BrandIcon from '@/components/brand/BrandIcon.vue'
+import { estiloCategoria } from '@/brand/marca'
+import { volarAlCarrito } from '@/utils/volarAlCarrito'
 
 const props = defineProps({
   product: { type: Object, required: true },
@@ -125,21 +83,25 @@ const props = defineProps({
 const cartStore = useCartStore()
 const showAdded = ref(false)
 const showMax   = ref(false)
+const imgRef    = ref(null)
 
 const sinStock = computed(() => Number.isFinite(props.product.stock) && props.product.stock <= 0)
+const estilo   = computed(() => estiloCategoria(props.product.category))
+const sinFoto  = ref(!props.product.image || props.product.image.includes('sin-imagen'))
 
 // Aplica transformaciones de Cloudinary para reducir tamaño en mobile
 function optimizedImage(url) {
-  if (!url || !url.includes('cloudinary.com')) return url || '/images/sin-imagen.svg'
+  if (!url || !url.includes('cloudinary.com')) return url || publico('/images/sin-imagen.svg')
   // e_trim: recorta el borde de fondo (blanco/color) para que el producto llene el campo.
-  // + ancho 400px, calidad y formato automáticos.
-  return url.replace('/upload/', '/upload/e_trim/c_scale,w_400,q_auto,f_auto/')
+  // + ancho 500px, calidad y formato automáticos.
+  return url.replace('/upload/', '/upload/e_trim/c_scale,w_500,q_auto,f_auto/')
 }
 
 function addToCart() {
   if (sinStock.value) return
   const ok = cartStore.addItem(props.product)
   if (ok) {
+    volarAlCarrito(imgRef.value)
     showAdded.value = true
     setTimeout(() => { showAdded.value = false }, 1500)
   } else {
@@ -150,8 +112,162 @@ function addToCart() {
 </script>
 
 <style scoped>
-.added-flash-enter-active,
-.added-flash-leave-active { transition: opacity 0.3s ease; }
-.added-flash-enter-from,
-.added-flash-leave-to { opacity: 0; }
+.pc { position: relative; height: 100%; }
+.pc-tarjeta {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #FFFDF8;
+  border-radius: 26px;
+  box-shadow: 0 1px 0 rgba(23,48,43,.06), 0 18px 40px -30px rgba(23,48,43,.6);
+  transition: box-shadow .4s ease;
+}
+.pc:hover .pc-tarjeta { box-shadow: 0 1px 0 rgba(23,48,43,.06), 0 30px 50px -28px rgba(23,48,43,.55); }
+
+.pc-foto {
+  position: relative;
+  display: block;
+  height: 15.5rem;
+  margin: 10px 10px 0;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--c);
+}
+.pc-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .8s cubic-bezier(.2,.8,.2,1);
+}
+.pc:hover .pc-img { transform: scale(1.08); }
+.pc-ver {
+  position: absolute;
+  left: 50%; bottom: 14px;
+  transform: translate(-50%, 16px);
+  opacity: 0;
+  padding: .5rem .95rem;
+  border-radius: 999px;
+  background: rgba(255,253,248,.95);
+  color: #17302B;
+  font: 600 13px/1 'Poppins', sans-serif;
+  transition: all .35s cubic-bezier(.2,.8,.2,1);
+  white-space: nowrap;
+}
+.pc:hover .pc-ver { opacity: 1; transform: translate(-50%, 0); }
+
+.pc-categoria {
+  position: absolute;
+  top: 22px; left: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  max-width: calc(100% - 44px);
+  padding: .4rem .7rem .4rem .45rem;
+  border-radius: 999px;
+  background: var(--c);
+  color: var(--ct);
+  font: 600 11px/1 'Poppins', sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 6px 14px -8px rgba(0,0,0,.5);
+  transform: translateZ(30px);
+}
+.pc-categoria-icono {
+  width: 20px; height: 20px;
+  padding: 2.5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #FFFDF8;
+}
+
+.pc-estado {
+  position: absolute;
+  right: 12px; bottom: 12px;
+  padding: .4rem .7rem;
+  border-radius: 999px;
+  font: 600 11px/1 'Poppins', sans-serif;
+  transition: opacity .3s;
+}
+.pc:hover .pc-estado { opacity: 0; }
+
+.pc-sinfoto {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .8rem;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,253,248,.95) 0 32%, transparent 33%),
+    color-mix(in srgb, var(--c) 22%, #FFFDF8);
+}
+.pc-sinfoto-icono {
+  width: 34%;
+  aspect-ratio: 1;
+  transition: transform .6s cubic-bezier(.3,1.5,.5,1);
+}
+.pc:hover .pc-sinfoto-icono { transform: rotate(-10deg) scale(1.08); }
+.pc-sinfoto span {
+  font: 500 12px/1 'Poppins', sans-serif;
+  color: rgba(23,48,43,.55);
+  letter-spacing: .04em;
+}
+.pc-agotado { background: #17302B; color: #FFFDF8; }
+.pc-ultimas { background: #FFFDF8; color: #C44117; box-shadow: inset 0 0 0 2px #F6521D; }
+
+.pc-info { padding: 1rem 1.25rem 1.2rem; display: flex; flex-direction: column; flex: 1; justify-content: space-between; }
+.pc-nombre {
+  font: 600 15.5px/1.35 'Poppins', sans-serif !important;
+  letter-spacing: 0 !important;
+  color: #17302B;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.7em;
+}
+.pc-nombre a:hover { color: #047764; }
+.pc-precio {
+  font-family: 'CK Cherione', 'Poppins', sans-serif;
+  font-size: 1.85rem;
+  line-height: 1;
+  color: #C44117;
+}
+.pc-agregar {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #047764;
+  color: #fff;
+  box-shadow: 0 10px 20px -10px rgba(4,119,100,.9);
+  transition: transform .35s cubic-bezier(.3,1.6,.5,1), background .3s;
+  transform: translateZ(20px);
+}
+.pc-agregar:hover:not(:disabled) { transform: translateZ(20px) rotate(90deg) scale(1.1); background: #058D76; }
+.pc-agregar:active:not(:disabled) { transform: translateZ(20px) scale(.9); }
+.pc-agregar:disabled { background: rgba(23,48,43,.1); color: rgba(23,48,43,.3); box-shadow: none; cursor: not-allowed; }
+
+.pc-toast {
+  position: absolute;
+  left: 50%; top: 40%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  padding: .6rem 1rem;
+  border-radius: 999px;
+  background: #047764;
+  color: #fff;
+  font: 600 13px/1 'Poppins', sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 12px 30px -12px rgba(0,0,0,.5);
+  pointer-events: none;
+}
+.pc-toast-gris { background: #17302B; }
+.pc-aviso-enter-active, .pc-aviso-leave-active { transition: all .3s ease; }
+.pc-aviso-enter-from, .pc-aviso-leave-to { opacity: 0; transform: translate(-50%, -30%); }
 </style>
