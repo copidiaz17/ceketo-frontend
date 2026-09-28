@@ -96,6 +96,11 @@ const error = ref('')
 async function login() {
   loading.value = true
   error.value = ''
+  // Borrar la sesión anterior ANTES de loguear: si no, el interceptor la manda en el pedido y el
+  // backend la evalúa (con el rol viejo) y puede rechazar el login con "no tiene acceso".
+  localStorage.removeItem('ceketo_token')
+  localStorage.removeItem('ceketo_admin')
+  localStorage.removeItem('ceketo_rol')
   try {
     const { data } = await axios.post('/api/auth/login', {
       usuario: form.value.usuario.trim().toLowerCase(),
