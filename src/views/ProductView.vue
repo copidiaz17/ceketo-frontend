@@ -37,8 +37,12 @@
           <h1 class="font-marca text-4xl md:text-5xl leading-[1.05] text-ck-tinta mt-4 mb-2">{{ product.nombre }}</h1>
           <p class="font-texto text-xs text-ck-tinta/40 tracking-wider mb-5">{{ product.codigo_barras }}</p>
 
-          <!-- Stock -->
-          <div class="flex items-center gap-2 mb-6">
+          <!-- Stock (los productos a pedido no manejan stock) -->
+          <div v-if="aPedido" class="flex items-center gap-2 mb-6">
+            <span class="w-2.5 h-2.5 rounded-full bg-ck-violeta"></span>
+            <span class="font-texto text-sm font-medium text-ck-violeta">Se hace a pedido</span>
+          </div>
+          <div v-else class="flex items-center gap-2 mb-6">
             <span class="relative flex w-2.5 h-2.5">
               <span v-if="product.stock > 0" class="absolute inset-0 rounded-full bg-ck-verde animate-ping opacity-60"></span>
               <span class="relative w-2.5 h-2.5 rounded-full" :class="product.stock > 0 ? 'bg-ck-verde' : 'bg-ck-naranja'"></span>
@@ -53,8 +57,24 @@
             ${{ parseFloat(product.precio).toLocaleString('es-AR') }}
           </div>
 
+          <!-- A pedido: se encarga por WhatsApp o teléfono, no por el carrito -->
+          <div v-if="aPedido" class="pv-apedido mb-4">
+            <p class="font-texto text-[15px] text-ck-tinta/80 leading-relaxed mb-4">
+              <b class="text-ck-tinta">Este producto se hace a pedido.</b>
+              Encargalo por WhatsApp o llamando al <b class="text-ck-tinta whitespace-nowrap">{{ TELEFONO_VISIBLE }}</b>
+              y coordinamos el día de entrega.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <a :href="linkEncargo(product.nombre)" target="_blank" rel="noopener" class="pv-encargar flex-1">
+                <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8.2 8.2 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.4-.5.3-.5a.6.6 0 0 0 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1.1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.5 13.5 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3.1 3.1 0 0 0 2.1-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.2-.3-.2-.6-.4zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zm8.4-18.2A11.8 11.8 0 0 0 1.8 17.8L.1 24l6.4-1.7a11.8 11.8 0 0 0 5.6 1.4A11.8 11.8 0 0 0 20.4 3.6z"/></svg>
+                Encargar por WhatsApp
+              </a>
+              <a :href="`tel:+${TELEFONO_CEKETO}`" class="ck-btn-borde sm:w-auto">📞 Llamar</a>
+            </div>
+          </div>
+
           <!-- Agregar -->
-          <div class="flex gap-3 mb-4">
+          <div v-else class="flex gap-3 mb-4">
             <div class="pv-cantidad">
               <button @click="qty > 1 && qty--" aria-label="Menos">−</button>
               <span>{{ qty }}</span>
@@ -74,7 +94,7 @@
           </div>
 
           <!-- WhatsApp -->
-          <a :href="whatsappLink" target="_blank" rel="noopener" class="pv-wa">
+          <a v-if="!aPedido" :href="whatsappLink" target="_blank" rel="noopener" class="pv-wa">
             <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8.2 8.2 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.4-.5.3-.5a.6.6 0 0 0 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1.1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.5 13.5 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3.1 3.1 0 0 0 2.1-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.2-.3-.2-.6-.4zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zm8.4-18.2A11.8 11.8 0 0 0 1.8 17.8L.1 24l6.4-1.7a11.8 11.8 0 0 0 5.6 1.4A11.8 11.8 0 0 0 20.4 3.6z"/></svg>
             Consultar por WhatsApp
           </a>
@@ -110,7 +130,7 @@ import axios from 'axios'
 import { useCartStore } from '@/stores/cart'
 import BrandBackdrop from '@/components/brand/BrandBackdrop.vue'
 import BrandIcon from '@/components/brand/BrandIcon.vue'
-import { estiloCategoria } from '@/brand/marca'
+import { estiloCategoria, esAPedido, linkEncargo, TELEFONO_CEKETO, TELEFONO_VISIBLE } from '@/brand/marca'
 
 const route     = useRoute()
 const cartStore = useCartStore()
@@ -126,6 +146,7 @@ function fotoArco(url) {
   return url.replace('/upload/', '/upload/c_fill,g_auto,w_880,h_1100,q_auto,f_auto/')
 }
 const estilo = computed(() => estiloCategoria(product.value?.categoria?.codigo))
+const aPedido = computed(() => esAPedido(product.value?.categoria?.codigo))
 
 const whatsappLink = computed(() => {
   if (!product.value) return '#'
@@ -134,7 +155,7 @@ const whatsappLink = computed(() => {
 })
 
 function addToCart() {
-  if (!product.value || product.value.stock === 0) return
+  if (!product.value || product.value.stock === 0 || aPedido.value) return
   const item = {
     id:       product.value.id,
     name:     product.value.nombre,
@@ -214,6 +235,26 @@ onMounted(async () => {
 .pv-cantidad button:hover:not(:disabled) { color: #C44117; }
 .pv-cantidad button:disabled { color: rgba(23,48,43,.2); cursor: not-allowed; }
 .pv-cantidad span { min-width: 22px; text-align: center; }
+.pv-apedido {
+  padding: 1.25rem;
+  border-radius: 22px;
+  background: #F3ECF2;
+  box-shadow: inset 0 0 0 2px rgba(136,87,132,.25);
+}
+.pv-encargar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .95rem 1.4rem;
+  border-radius: 999px;
+  background: #25D366;
+  color: #0B3B34;
+  font: 700 15px/1 'Poppins', sans-serif;
+  box-shadow: 0 12px 26px -12px rgba(37,211,102,.9);
+  transition: transform .3s cubic-bezier(.3,1.6,.5,1);
+}
+.pv-encargar:hover { transform: translateY(-2px); }
 .pv-wa {
   display: flex;
   align-items: center;

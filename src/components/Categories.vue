@@ -42,7 +42,8 @@
             <div class="cat-pie">
               <span class="cat-nombre">{{ cat.nombre }}</span>
               <span class="cat-cantidad">
-                {{ cat.cantidad }} {{ cat.cantidad === 1 ? 'producto' : 'productos' }}
+                <template v-if="esAPedido(cat.codigo)">A pedido</template>
+                <template v-else>{{ cat.cantidad }} {{ cat.cantidad === 1 ? 'producto' : 'productos' }}</template>
                 <span class="cat-flecha">→</span>
               </span>
             </div>
@@ -58,7 +59,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import BrandBackdrop from '@/components/brand/BrandBackdrop.vue'
 import BrandIcon from '@/components/brand/BrandIcon.vue'
-import { estiloCategoria } from '@/brand/marca'
+import { estiloCategoria, esAPedido } from '@/brand/marca'
 
 // Categorías que NO se muestran en la web (sí siguen en el admin).
 // Market (MKT) se volvió a mostrar el 18/09/2026.

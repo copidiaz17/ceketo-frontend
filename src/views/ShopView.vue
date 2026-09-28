@@ -42,6 +42,16 @@
         </button>
       </div>
 
+      <!-- Aviso: categoría a pedido -->
+      <div v-if="esAPedido(activeCategory)" class="tienda-apedido mb-8">
+        <span class="text-2xl">🎂</span>
+        <p class="font-texto text-[15px] text-ck-tinta/80 leading-relaxed">
+          <b class="text-ck-tinta">Los postres y tartas se hacen a pedido.</b>
+          Encargalos por WhatsApp o llamando al <b class="text-ck-tinta whitespace-nowrap">{{ TELEFONO_VISIBLE }}</b>:
+          tocá <b>Encargar</b> en el que quieras y coordinamos el día de entrega.
+        </p>
+      </div>
+
       <!-- Cargando -->
       <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <div v-for="i in 8" :key="i" class="rounded-[26px] bg-ck-blanco p-2.5 animate-pulse">
@@ -86,7 +96,7 @@ import axios from 'axios'
 import ProductCard from '@/components/ProductCard.vue'
 import BrandBackdrop from '@/components/brand/BrandBackdrop.vue'
 import BrandIcon from '@/components/brand/BrandIcon.vue'
-import { estiloCategoria } from '@/brand/marca'
+import { estiloCategoria, esAPedido, TELEFONO_VISIBLE } from '@/brand/marca'
 
 const route          = useRoute()
 const activeCategory = ref(route.query.categoria || '')
@@ -192,6 +202,16 @@ onMounted(async () => {
   border-radius: 50%;
   background: #FFFDF8;
   flex-shrink: 0;
+}
+
+.tienda-apedido {
+  display: flex;
+  align-items: flex-start;
+  gap: .9rem;
+  padding: 1rem 1.25rem;
+  border-radius: 20px;
+  background: #F3ECF2;
+  box-shadow: inset 0 0 0 2px rgba(136,87,132,.25);
 }
 
 .product-list-enter-active,

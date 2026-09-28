@@ -36,6 +36,18 @@ const CICLO = [
   { color: 'violeta', icono: 'kiwi' },  { color: 'lima', icono: 'diana' },
 ]
 
+// Categorías que se hacen A PEDIDO: no se compran por el carrito, se encargan por WhatsApp o teléfono.
+// Para sumar otra categoría, agregar su código acá.
+export const CATEGORIAS_A_PEDIDO = ['PYT']   // Postres y tartas dulces
+export const esAPedido = codigo => CATEGORIAS_A_PEDIDO.includes(codigo)
+
+export const TELEFONO_CEKETO = '543854133969'           // WhatsApp y llamadas
+export const TELEFONO_VISIBLE = '385 413-3969'
+export function linkEncargo(nombreProducto) {
+  const msg = `Hola CEKETO! Quiero encargar *${nombreProducto}*. ¿Para cuándo lo podrían tener?`
+  return `https://wa.me/${TELEFONO_CEKETO}?text=${encodeURIComponent(msg)}`
+}
+
 // Estilo de una categoría (si aparece una nueva, toma uno del ciclo)
 export function estiloCategoria(codigo, indice = 0) {
   const e = ESTILO_CATEGORIA[codigo] || CICLO[indice % CICLO.length]

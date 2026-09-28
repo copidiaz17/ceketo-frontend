@@ -21,7 +21,9 @@
           <span>Foto próximamente</span>
         </div>
         <span class="pc-ver">Ver detalle →</span>
-        <span v-if="sinStock" class="pc-estado pc-agotado">Sin stock</span>
+        <!-- Postres y tartas: se hacen a pedido (el stock no aplica) -->
+        <span v-if="aPedido" class="pc-estado pc-apedido">A pedido</span>
+        <span v-else-if="sinStock" class="pc-estado pc-agotado">Sin stock</span>
         <span v-else-if="product.stock <= 5 && product.stock > 0" class="pc-estado pc-ultimas">Últimas unidades</span>
         <div class="ck-brillo absolute inset-0"></div>
       </RouterLink>
@@ -44,7 +46,20 @@
               ${{ product.originalPrice.toLocaleString('es-AR') }}
             </span>
           </div>
+          <!-- A pedido: se encarga por WhatsApp en vez de ir al carrito -->
+          <a
+            v-if="aPedido"
+            :href="linkEncargo(product.name)"
+            target="_blank"
+            rel="noopener"
+            class="pc-encargar"
+            :aria-label="`Encargar ${product.name} por WhatsApp`"
+          >
+            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8.2 8.2 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.4-.5.3-.5a.6.6 0 0 0 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1.1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.5 13.5 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3.1 3.1 0 0 0 2.1-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.2-.3-.2-.6-.4zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zm8.4-18.2A11.8 11.8 0 0 0 1.8 17.8L.1 24l6.4-1.7a11.8 11.8 0 0 0 5.6 1.4A11.8 11.8 0 0 0 20.4 3.6z"/></svg>
+            Encargar
+          </a>
           <button
+            v-else
             @click="addToCart"
             :disabled="sinStock"
             class="pc-agregar"
@@ -73,7 +88,7 @@ import { publico } from '@/brand/publico'
 import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import BrandIcon from '@/components/brand/BrandIcon.vue'
-import { estiloCategoria } from '@/brand/marca'
+import { estiloCategoria, esAPedido, linkEncargo } from '@/brand/marca'
 import { volarAlCarrito } from '@/utils/volarAlCarrito'
 
 const props = defineProps({
@@ -87,6 +102,7 @@ const imgRef    = ref(null)
 
 const sinStock = computed(() => Number.isFinite(props.product.stock) && props.product.stock <= 0)
 const estilo   = computed(() => estiloCategoria(props.product.category))
+const aPedido  = computed(() => esAPedido(props.product.category))
 const sinFoto  = ref(!props.product.image || props.product.image.includes('sin-imagen'))
 
 // Aplica transformaciones de Cloudinary para reducir tamaño en mobile
@@ -98,7 +114,7 @@ function optimizedImage(url) {
 }
 
 function addToCart() {
-  if (sinStock.value) return
+  if (sinStock.value || aPedido.value) return
   const ok = cartStore.addItem(props.product)
   if (ok) {
     volarAlCarrito(imgRef.value)
@@ -202,6 +218,7 @@ function addToCart() {
   align-items: center;
   justify-content: center;
   gap: .8rem;
+  padding-bottom: 2.2rem;   /* deja lugar para la etiqueta de abajo (A pedido / Sin stock) */
   background:
     radial-gradient(circle at 50% 42%, rgba(255,253,248,.95) 0 32%, transparent 33%),
     color-mix(in srgb, var(--c) 22%, #FFFDF8);
@@ -217,6 +234,7 @@ function addToCart() {
   color: rgba(23,48,43,.55);
   letter-spacing: .04em;
 }
+.pc-apedido { background: #885784; color: #FFFDF8; }
 .pc-agotado { background: #17302B; color: #FFFDF8; }
 .pc-ultimas { background: #FFFDF8; color: #C44117; box-shadow: inset 0 0 0 2px #F6521D; }
 
@@ -251,6 +269,20 @@ function addToCart() {
 }
 .pc-agregar:hover:not(:disabled) { transform: translateZ(20px) rotate(90deg) scale(1.1); background: #058D76; }
 .pc-agregar:active:not(:disabled) { transform: translateZ(20px) scale(.9); }
+.pc-encargar {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .7rem 1rem;
+  border-radius: 999px;
+  background: #25D366;
+  color: #0B3B34;
+  font: 600 13px/1 'Poppins', sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 10px 20px -10px rgba(37,211,102,.9);
+  transition: transform .3s cubic-bezier(.3,1.6,.5,1);
+}
+.pc-encargar:hover { transform: translateY(-2px) scale(1.04); }
 .pc-agregar:disabled { background: rgba(23,48,43,.1); color: rgba(23,48,43,.3); box-shadow: none; cursor: not-allowed; }
 
 .pc-toast {
