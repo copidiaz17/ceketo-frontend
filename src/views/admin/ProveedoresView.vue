@@ -119,7 +119,7 @@
             <button
               @click="guardar"
               :disabled="modal.guardando || !modal.nombre.trim()"
-              class="flex-1 bg-teal text-gray-900 py-3 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              class="flex-1 bg-teal text-white py-3 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >{{ modal.guardando ? 'Guardando...' : (modal.id ? 'Guardar cambios' : 'Crear proveedor') }}</button>
             <button
               @click="cerrarModal"

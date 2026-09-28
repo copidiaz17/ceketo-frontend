@@ -32,7 +32,7 @@
   }
 
   body {
-    font-family: 'Comodo', 'Inter', sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     background-color: #F7F1E6;
     color: #1A2E2A;
     overflow-x: hidden;
@@ -45,7 +45,7 @@
   }
 
   h1, h2, h3 {
-    font-family: 'Mirza', serif;
+    font-family: 'CK Cherione', 'Poppins', sans-serif;
   }
 
   /* ── Tienda pública: tipografías y colores de la marca ── */

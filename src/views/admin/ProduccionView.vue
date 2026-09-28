@@ -133,7 +133,7 @@
               <button
                 @click="agregarInsumo"
                 :disabled="!insumoSel || !insumoQty"
-                class="px-4 py-2 bg-teal text-gray-900 rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                class="px-4 py-2 bg-teal text-white rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >+ Agregar</button>
             </div>
             <div v-if="costos.insumos.length === 0" class="text-center py-2 text-gray-400 font-body text-xs">Sin insumos cargados</div>
@@ -332,7 +332,7 @@
             <button
               @click="agregarInsumo"
               :disabled="!insumoSel || !insumoQty"
-              class="px-4 py-2 bg-teal text-gray-900 rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              class="px-4 py-2 bg-teal text-white rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >+ Agregar</button>
           </div>
 

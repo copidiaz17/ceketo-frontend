@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#FCDFD2] flex">
+  <div class="min-h-screen bg-ck-crema flex">
 
     <!-- Overlay mobile -->
     <div
@@ -17,8 +17,12 @@
     >
       <!-- Brand -->
       <div class="p-6 border-b border-white/20">
-        <span class="font-display text-2xl font-bold text-white tracking-widest">CEKETO</span>
-        <p class="font-body text-xs text-white/80 mt-1 uppercase tracking-wider">
+        <!-- Logo como en la tienda -->
+        <span class="block font-marca text-[2.1rem] leading-none text-white">ceketo</span>
+        <span class="block font-etiqueta text-[10px] tracking-[0.24em] mt-1">
+          <span class="text-white">VIVI</span> <span class="text-ck-lima">SENTI</span> <span class="text-white">COME</span>
+        </span>
+        <p class="font-body text-xs text-white/80 mt-3 uppercase tracking-wider">
           {{ rolLabel }}
         </p>
         <p class="font-body text-xs text-white/50 mt-0.5">{{ usuarioActual }}</p>
@@ -84,8 +88,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <span class="font-display text-white font-bold tracking-widest text-lg">CEKETO</span>
-        <span class="font-body text-xs text-teal uppercase tracking-wider">{{ rolLabel }}</span>
+        <span class="font-marca text-white text-2xl leading-none">ceketo</span>
+        <span class="font-body text-xs text-ck-lima uppercase tracking-wider">{{ rolLabel }}</span>
       </div>
       <RouterView />
     </main>

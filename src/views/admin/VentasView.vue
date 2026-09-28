@@ -107,7 +107,7 @@
           <div class="mt-auto flex gap-2">
             <button
               @click="cargarPedidoEnPOS(p)"
-              class="flex-1 py-2 bg-teal text-gray-900 rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors"
+              class="flex-1 py-2 bg-teal text-white rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors"
             >{{ pedidoActivo?.id === p.id ? '✓ Cargado' : 'Cargar' }}</button>
             <button
               @click="pedidoARechazar = p"
@@ -144,7 +144,7 @@
             />
             <button
               @click="buscarPorBarcode"
-              class="px-5 py-3 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-colors"
+              class="px-5 py-3 bg-teal text-white rounded-xl font-body text-sm hover:bg-teal/80 transition-colors"
             >Buscar</button>
           </div>
           <p v-if="barcodeError" class="text-red-400 text-xs mt-2 font-body">{{ barcodeError }}</p>
@@ -168,7 +168,7 @@
               </div>
               <button
                 @click="agregarDesdeBarcode"
-                class="px-5 py-2 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors mt-5"
+                class="px-5 py-2 bg-teal text-white rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors mt-5"
               >+ Agregar</button>
               <button
                 @click="productoEscaneado = null; barcodeInput?.focus()"
@@ -188,7 +188,7 @@
               @click="categoriaActiva = cat.codigo"
               class="px-3 py-1.5 rounded-xl font-body text-sm border-2 transition-all duration-200"
               :class="categoriaActiva === cat.codigo
-                ? 'bg-teal border-teal text-gray-900 font-semibold'
+                ? 'bg-teal border-teal text-white font-semibold'
                 : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >{{ cat.nombre }}</button>
           </div>
@@ -224,12 +224,12 @@
             <button
               @click="tipoVenta = 'local'"
               class="flex-1 py-2 rounded-xl font-body text-sm border-2 transition-all duration-200"
-              :class="tipoVenta === 'local' ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+              :class="tipoVenta === 'local' ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >Local</button>
             <button
               @click="tipoVenta = 'online'"
               class="flex-1 py-2 rounded-xl font-body text-sm border-2 transition-all duration-200"
-              :class="tipoVenta === 'online' ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+              :class="tipoVenta === 'online' ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >Online</button>
           </div>
         </div>
@@ -337,7 +337,7 @@
               @click="metodoPagoSeleccionado = metodo.value"
               class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
               :class="metodoPagoSeleccionado === metodo.value
-                ? 'bg-teal border-teal text-gray-900'
+                ? 'bg-teal border-teal text-white'
                 : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >
               <span class="text-lg">{{ metodo.icon }}</span>
@@ -378,7 +378,7 @@
               @click="metodoPago2 = metodo.value"
               class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
               :class="metodoPago2 === metodo.value
-                ? 'bg-teal border-teal text-gray-900'
+                ? 'bg-teal border-teal text-white'
                 : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >
               <span class="text-lg">{{ metodo.icon }}</span>
@@ -510,7 +510,7 @@
           <button
             v-if="historialVentas.length"
             @click="descargarPDFVentas"
-            class="px-4 py-2 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
+            class="px-4 py-2 bg-teal text-white rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
           >📄 PDF</button>
           <button
             v-if="historialVentas.length"
@@ -672,7 +672,7 @@
               :key="metodo.value"
               @click="editPago.metodo_pago = metodo.value; editPago.metodo_pago2 = ''; editPago.monto_pago2 = ''"
               class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all"
-              :class="editPago.metodo_pago === metodo.value ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+              :class="editPago.metodo_pago === metodo.value ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >
               <span class="text-lg">{{ metodo.icon }}</span>{{ metodo.label }}
             </button>
@@ -687,7 +687,7 @@
               :key="metodo.value"
               @click="editPago.metodo_pago2 = editPago.metodo_pago2 === metodo.value ? '' : metodo.value"
               class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all"
-              :class="editPago.metodo_pago2 === metodo.value ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+              :class="editPago.metodo_pago2 === metodo.value ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >
               <span class="text-lg">{{ metodo.icon }}</span>{{ metodo.label }}
             </button>
@@ -708,7 +708,7 @@
           <button
             @click="guardarEditarPago"
             :disabled="!editPago.metodo_pago || editPago.guardando"
-            class="flex-1 py-2.5 bg-teal text-gray-900 font-body text-sm font-semibold rounded-xl hover:bg-teal/80 transition-all disabled:opacity-40"
+            class="flex-1 py-2.5 bg-teal text-white font-body text-sm font-semibold rounded-xl hover:bg-teal/80 transition-all disabled:opacity-40"
           >{{ editPago.guardando ? 'Guardando...' : 'Guardar' }}</button>
         </div>
       </div>

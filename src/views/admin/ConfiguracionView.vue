@@ -115,7 +115,7 @@
             <button v-for="r in ['admin','fabrica','ventas','contenido']" :key="r"
               @click="uForm.rol = r"
               class="py-2 rounded-xl border-2 font-body text-sm capitalize transition-all"
-              :class="uForm.rol === r ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+              :class="uForm.rol === r ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >{{ r }}</button>
           </div>
         </div>
@@ -213,6 +213,10 @@ function abrirModalUsuario(u = null) {
 async function guardarUsuario() {
   if (!uForm.value.usuario) { uError.value = 'El nombre de usuario es obligatorio'; return }
   if (!editandoUsuario.value && !uForm.value.password) { uError.value = 'La contraseña es obligatoria para usuarios nuevos'; return }
+  // Cambiar el rol de alguien cambia qué puede ver (así el usuario "admin" quedó como "contenido" sin querer)
+  const rolAntes = editandoUsuario.value?.rol
+  if (rolAntes && rolAntes !== uForm.value.rol &&
+      !confirm(`¿Cambiar el rol de ${uForm.value.usuario} de "${rolAntes}" a "${uForm.value.rol}"?\n\nVa a ver solo los módulos de ese rol.`)) return
   guardandoUsuario.value = true
   uError.value = ''
   try {

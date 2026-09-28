@@ -16,7 +16,7 @@
         >📊 Excel</button>
         <button
           @click="abrirModalNuevo"
-          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-all"
+          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-white rounded-xl font-body text-sm hover:bg-teal/80 transition-all"
         >+ Nuevo producto</button>
       </div>
     </div>
@@ -29,7 +29,7 @@
         @click="filtroCategoria = f === 'Todos' ? '' : f"
         class="badge py-1.5 px-4 text-xs font-medium border transition-all"
         :class="(filtroCategoria === '' && f === 'Todos') || filtroCategoria === f
-          ? 'bg-teal border-teal text-gray-900'
+          ? 'bg-teal border-teal text-white'
           : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal'"
       >{{ f }}</button>
       <input
@@ -242,7 +242,7 @@
 
     <!-- Toast -->
     <Transition name="fade">
-      <div v-if="toast" class="fixed bottom-6 right-6 bg-teal text-gray-900 px-5 py-3 rounded-xl font-body text-sm shadow-xl">
+      <div v-if="toast" class="fixed bottom-6 right-6 bg-teal text-white px-5 py-3 rounded-xl font-body text-sm shadow-xl">
         {{ toast }}
       </div>
     </Transition>

@@ -39,13 +39,13 @@
         <div class="flex gap-2">
           <button v-for="t in tiposFiltro" :key="t.val" @click="filtroTipo = t.val"
             class="px-4 py-2 rounded-xl font-body text-sm border transition-all"
-            :class="filtroTipo === t.val ? 'bg-teal border-teal text-gray-900' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal/50'">
+            :class="filtroTipo === t.val ? 'bg-teal border-teal text-white' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal/50'">
             {{ t.label }}
           </button>
         </div>
         <div class="flex-1"></div>
         <button @click="cargarMovimientos"
-          class="px-5 py-2 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-colors">
+          class="px-5 py-2 bg-teal text-white rounded-xl font-body text-sm hover:bg-teal/80 transition-colors">
           Filtrar
         </button>
         <button @click="limpiarFiltros"

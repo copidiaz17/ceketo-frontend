@@ -50,7 +50,7 @@
       </div>
       <div class="flex gap-3">
         <button @click="cargar" :disabled="loading"
-          class="px-5 py-2 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-colors disabled:opacity-50">
+          class="px-5 py-2 bg-teal text-white rounded-xl font-body text-sm hover:bg-teal/80 transition-colors disabled:opacity-50">
           {{ loading ? 'Cargando...' : 'Filtrar' }}
         </button>
         <button @click="limpiar"

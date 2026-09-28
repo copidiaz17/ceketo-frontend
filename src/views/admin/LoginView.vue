@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen bg-[#FCDFD2] flex items-center justify-center px-4">
+  <div class="min-h-screen bg-ck-crema flex items-center justify-center px-4">
     <div class="w-full max-w-sm">
       <!-- Logo -->
       <div class="text-center mb-10">
-        <span class="font-display text-4xl font-bold text-brand-green tracking-widest">CEKETO</span>
-        <p class="font-body text-brand-green/70 text-sm mt-1 tracking-wider uppercase">Panel Administrativo</p>
+        <img :src="publico('/marca/logo-verde.svg')" alt="CEKETO" class="w-52 mx-auto" />
+        <p class="font-body text-brand-green/80 text-sm mt-3 tracking-wider uppercase">Panel Administrativo</p>
       </div>
 
       <!-- Card -->
@@ -82,6 +82,7 @@
 </template>
 
 <script setup>
+import { publico } from '@/brand/publico'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'

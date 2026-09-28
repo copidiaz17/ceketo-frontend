@@ -7,7 +7,7 @@
       </div>
       <button
         @click="abrirModalNueva"
-        class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-all"
+        class="flex items-center gap-2 px-5 py-2.5 bg-teal text-white rounded-xl font-body text-sm hover:bg-teal/80 transition-all"
       >
         + Nueva categoría
       </button>
@@ -107,7 +107,7 @@
 
     <!-- Toast -->
     <Transition name="fade">
-      <div v-if="toast" class="fixed bottom-6 right-6 bg-teal text-gray-900 px-5 py-3 rounded-xl font-body text-sm shadow-xl">
+      <div v-if="toast" class="fixed bottom-6 right-6 bg-teal text-white px-5 py-3 rounded-xl font-body text-sm shadow-xl">
         {{ toast }}
       </div>
     </Transition>

@@ -12,7 +12,7 @@
         >🖨️ Imprimir</button>
         <button
           @click="descargarPDF"
-          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
+          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-white rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
         >📄 Descargar PDF</button>
         <button
           @click="descargarExcel"
@@ -26,14 +26,14 @@
       <button
         @click="filtroCategoria = ''"
         class="badge py-1.5 px-4 text-xs font-medium border transition-all"
-        :class="filtroCategoria === '' ? 'bg-teal border-teal text-gray-900' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal'"
+        :class="filtroCategoria === '' ? 'bg-teal border-teal text-white' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal'"
       >Todas</button>
       <button
         v-for="cat in categorias"
         :key="cat"
         @click="filtroCategoria = cat"
         class="badge py-1.5 px-4 text-xs font-medium border transition-all"
-        :class="filtroCategoria === cat ? 'bg-teal border-teal text-gray-900' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal'"
+        :class="filtroCategoria === cat ? 'bg-teal border-teal text-white' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-teal'"
       >{{ cat }}</button>
 
       <input

@@ -10,7 +10,7 @@
         <button
           v-if="gastos.length"
           @click="descargarPDF"
-          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
+          class="flex items-center gap-2 px-5 py-2.5 bg-teal text-white rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors"
         >📄 PDF</button>
         <button
           v-if="gastos.length"
@@ -299,7 +299,7 @@
             <button
               @click="guardar"
               :disabled="modal.guardando || !modal.fecha || !modal.categoria || !modal.descripcion || !modal.monto"
-              class="flex-1 bg-teal text-gray-900 py-3 rounded-xl font-body font-medium text-sm hover:bg-teal-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              class="flex-1 bg-teal text-white py-3 rounded-xl font-body font-medium text-sm hover:bg-teal-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {{ modal.guardando ? 'Guardando...' : (modal.id ? 'Guardar cambios' : 'Registrar gasto') }}
             </button>

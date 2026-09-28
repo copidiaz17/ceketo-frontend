@@ -6,7 +6,7 @@
         <h1 class="font-display text-3xl font-bold text-gray-900">Cuentas Corrientes</h1>
         <p class="font-body text-gray-500 mt-1">Clientes y proveedores que operan en cuenta</p>
       </div>
-      <button @click="abrirModalCuenta()" class="flex items-center gap-2 bg-teal text-gray-900 px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors">
+      <button @click="abrirModalCuenta()" class="flex items-center gap-2 bg-teal text-white px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors">
         + Nueva cuenta
       </button>
     </div>
@@ -17,7 +17,7 @@
         v-for="tab in tabs" :key="tab.value"
         @click="tabActual = tab.value"
         class="px-5 py-2 rounded-xl font-body text-sm font-medium transition-all"
-        :class="tabActual === tab.value ? 'bg-teal text-gray-900' : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-400'"
+        :class="tabActual === tab.value ? 'bg-teal text-white' : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-400'"
       >{{ tab.label }} ({{ cuentasFiltradas(tab.value).length }})</button>
     </div>
 
@@ -91,7 +91,7 @@
                 v-for="t in tabs" :key="t.value"
                 @click="modalCuenta.tipo = t.value"
                 class="flex-1 py-2 rounded-xl border font-body text-sm font-medium transition-all"
-                :class="modalCuenta.tipo === t.value ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500'"
+                :class="modalCuenta.tipo === t.value ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500'"
               >{{ t.label }}</button>
             </div>
           </div>
@@ -109,7 +109,7 @@
           </div>
         </div>
         <div class="flex gap-3 mt-6">
-          <button @click="guardarCuenta" :disabled="!modalCuenta.nombre || !modalCuenta.tipo" class="flex-1 bg-teal text-gray-900 py-3 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors disabled:opacity-40">
+          <button @click="guardarCuenta" :disabled="!modalCuenta.nombre || !modalCuenta.tipo" class="flex-1 bg-teal text-white py-3 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors disabled:opacity-40">
             {{ modalCuenta.id ? 'Guardar cambios' : 'Crear cuenta' }}
           </button>
           <button @click="modalCuenta.visible = false" class="px-6 py-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 font-body text-sm transition-colors">Cancelar</button>
@@ -231,7 +231,7 @@
                   </optgroup>
                 </select>
                 <input v-model.number="prodCant" type="number" min="1" placeholder="Cant." class="input-cc w-20 text-center" />
-                <button @click="agregarProducto" :disabled="!prodSelId || !prodCant" class="px-3 py-2 bg-teal text-gray-900 rounded-xl text-sm font-body disabled:opacity-40">+</button>
+                <button @click="agregarProducto" :disabled="!prodSelId || !prodCant" class="px-3 py-2 bg-teal text-white rounded-xl text-sm font-body disabled:opacity-40">+</button>
               </div>
             </div>
 
@@ -273,14 +273,14 @@
                 v-for="m in metodosPago" :key="m.value"
                 @click="modalMov.metodo_pago = m.value"
                 class="py-2 rounded-xl border-2 font-body text-xs transition-all"
-                :class="modalMov.metodo_pago === m.value ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500 hover:border-teal/40'"
+                :class="modalMov.metodo_pago === m.value ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500 hover:border-teal/40'"
               >{{ m.label }}</button>
             </div>
           </div>
         </div>
 
         <div class="flex gap-3 mt-6">
-          <button @click="guardarMovimiento" :disabled="!modalMov.fecha || !modalMov.concepto || !modalMov.monto || guardandoMov" class="flex-1 bg-teal text-gray-900 py-3 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors disabled:opacity-40">
+          <button @click="guardarMovimiento" :disabled="!modalMov.fecha || !modalMov.concepto || !modalMov.monto || guardandoMov" class="flex-1 bg-teal text-white py-3 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors disabled:opacity-40">
             {{ guardandoMov ? 'Guardando...' : 'Guardar' }}
           </button>
           <button @click="modalMov.visible = false" class="px-6 py-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 font-body text-sm transition-colors">Cancelar</button>

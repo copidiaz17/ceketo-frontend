@@ -50,7 +50,7 @@
       </div>
 
       <button @click="cargarPedidos"
-        class="px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm hover:bg-teal/80 transition-colors">
+        class="px-5 py-2.5 bg-teal text-white rounded-xl font-body text-sm hover:bg-teal/80 transition-colors">
         Filtrar
       </button>
       <button @click="limpiarFiltros"

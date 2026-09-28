@@ -4,10 +4,11 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Panel admin: el "teal" pasa a ser el verde de la marca (igual que la tienda)
         teal: {
-          DEFAULT: '#2A9D8F',
-          light: '#52B9AD',
-          dark: '#1A7A6E',
+          DEFAULT: '#058D76',
+          light: '#5AB282',
+          dark: '#047764',
         },
         'brand-orange': '#F6521D',
         'brand-cream':  '#FFF4EC',
@@ -43,8 +44,9 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Mirza', 'serif'],
-        body: ['Comodo', 'Inter', 'sans-serif'],
+        // Panel admin con las tipografías de la tienda (antes Mirza + Comodo de cdnfonts)
+        display: ['CK Cherione', 'Poppins', 'sans-serif'],
+        body: ['Poppins', 'system-ui', 'sans-serif'],
         // Tienda (marca): Cherione = logotipo y títulos, Comodo = slogan/etiquetas, Poppins = texto
         // Nombres propios ("CK …") para no pisar la 'Comodo' de cdnfonts que usa el admin
         marca:    ['CK Cherione', 'Poppins', 'sans-serif'],

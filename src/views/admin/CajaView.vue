@@ -72,7 +72,7 @@
 
       <!-- Botones exportar -->
       <div class="flex gap-2 justify-end">
-        <button @click="descargarPDF" class="flex items-center gap-2 px-5 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors">📄 PDF</button>
+        <button @click="descargarPDF" class="flex items-center gap-2 px-5 py-2.5 bg-teal text-white rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors">📄 PDF</button>
         <button @click="descargarExcel" class="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl font-body text-sm font-medium hover:bg-green-700 transition-colors">📊 Excel</button>
       </div>
 
@@ -365,7 +365,7 @@
           <button
             @click="nuevoMov.tipo = 'ingreso'"
             class="py-3 rounded-xl border-2 font-body text-sm transition-all"
-            :class="nuevoMov.tipo === 'ingreso' ? 'bg-teal border-teal text-gray-900' : 'border-gray-200 text-gray-500'"
+            :class="nuevoMov.tipo === 'ingreso' ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500'"
           >↑ Ingreso</button>
           <button
             @click="nuevoMov.tipo = 'egreso'"
@@ -430,7 +430,7 @@
           <button
             @click="agregarMovimiento"
             :disabled="!nuevoMov.concepto || !nuevoMov.monto || guardandoMov"
-            class="flex-1 py-3 bg-teal text-gray-900 font-body text-sm font-semibold rounded-xl
+            class="flex-1 py-3 bg-teal text-white font-body text-sm font-semibold rounded-xl
                    hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >{{ guardandoMov ? 'Guardando...' : 'Guardar' }}</button>
         </div>
@@ -548,7 +548,7 @@
 
             <!-- Exportar -->
             <div class="flex gap-3 pt-2 border-t border-gray-100">
-              <button @click="descargarPDFHistorialDetalle" class="flex-1 py-2.5 bg-teal text-gray-900 rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors">📄 PDF</button>
+              <button @click="descargarPDFHistorialDetalle" class="flex-1 py-2.5 bg-teal text-white rounded-xl font-body text-sm font-medium hover:bg-teal/80 transition-colors">📄 PDF</button>
               <button @click="descargarExcelHistorialDetalle" class="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-body text-sm font-medium hover:bg-green-700 transition-colors">📊 Excel</button>
               <button @click="historialDetalle = null" class="flex-1 py-2.5 border border-gray-200 text-gray-500 rounded-xl font-body text-sm hover:border-gray-400 transition-colors">Cerrar</button>
             </div>
