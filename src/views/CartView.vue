@@ -13,14 +13,14 @@
         <RouterLink to="/tienda" class="ck-btn-naranja">Ver tienda</RouterLink>
       </div>
 
-      <!-- Postres a pedido: van en un pedido aparte, con fecha y seña -->
-      <div v-if="cartStore.items.some(i => i.a_pedido)" class="mb-6 p-4 rounded-2xl bg-ck-violeta-suave font-texto text-sm text-ck-tinta/80">
-        🎂 <b class="text-ck-tinta">Tenés postres a pedido.</b> Se encargan en un pedido aparte: al finalizar elegís el día
-        (con 2 días de anticipación) y la seña del 50% para reservarlos.
-      </div>
-
       <!-- Cart items -->
       <div v-else class="grid lg:grid-cols-3 gap-8">
+
+        <!-- Postres a pedido: van en un pedido aparte, con fecha y seña -->
+        <div v-if="cartStore.items.some(i => i.a_pedido)" class="lg:col-span-3 p-4 rounded-2xl bg-ck-violeta-suave font-texto text-sm text-ck-tinta/80">
+          🎂 <b class="text-ck-tinta">Tenés postres a pedido.</b> Se encargan en un pedido aparte: al finalizar elegís el día
+          (con 2 días de anticipación) y la seña del 50% para reservarlos.
+        </div>
 
         <!-- Items list -->
         <div class="lg:col-span-2 space-y-4">
