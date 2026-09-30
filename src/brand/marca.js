@@ -41,6 +41,29 @@ const CICLO = [
 export const CATEGORIAS_A_PEDIDO = ['PYT']   // Postres y tartas dulces
 export const esAPedido = codigo => CATEGORIAS_A_PEDIDO.includes(codigo)
 
+// Encargos: se piden con DIAS_ANTICIPACION de anticipación (sin domingos) y se reservan con una seña ≥ 50 %.
+// El backend valida lo mismo en routes/pedidos.js.
+export const DIAS_ANTICIPACION = 2
+export const SENA_MINIMA = 0.5
+const TZ = 'America/Argentina/Buenos_Aires'
+export const hoyAR = () => new Date().toLocaleDateString('en-CA', { timeZone: TZ })   // YYYY-MM-DD
+export function sumarDias(ymd, dias) {
+  const d = new Date(`${ymd}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + dias)
+  return d.toISOString().slice(0, 10)
+}
+export const esDomingo = ymd => new Date(`${ymd}T12:00:00Z`).getUTCDay() === 0
+// Primer día que se puede elegir: hoy + 2 días; si cae domingo, el lunes
+export function fechaMinimaEncargo() {
+  let f = sumarDias(hoyAR(), DIAS_ANTICIPACION)
+  if (esDomingo(f)) f = sumarDias(f, 1)
+  return f
+}
+// "viernes 2 de octubre"
+export const fechaLarga = ymd => ymd
+  ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+  : ''
+
 export const TELEFONO_CEKETO = '543854133969'           // WhatsApp y llamadas
 export const TELEFONO_VISIBLE = '385 413-3969'
 export function linkEncargo(nombreProducto) {

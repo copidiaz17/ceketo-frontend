@@ -105,7 +105,7 @@ async function enviar(data) {
   await device.transferOut(endpoint, data)
 }
 
-export async function imprimirTicketESCPOS({ id, items, total, descuento, metodo_pago, fecha, cliente }) {
+export async function imprimirTicketESCPOS({ id, items, total, descuento, sena_aplicada, metodo_pago, fecha, cliente }) {
   const metodoLabel = {
     efectivo: 'Efectivo', transferencia: 'Transferencia',
     debito: 'Debito', credito: 'Credito', qr: 'QR',
@@ -173,6 +173,9 @@ export async function imprimirTicketESCPOS({ id, items, total, descuento, metodo
 
   if (descuento > 0) {
     partes.push(lineaCols(`Descuento (${descuento}%)`, 'aplicado'))
+  }
+  if (parseFloat(sena_aplicada) > 0) {
+    partes.push(lineaCols('Sena cobrada', `-$${parseFloat(sena_aplicada).toLocaleString('es-AR')}`))
   }
 
   // Total en doble tamaño

@@ -44,6 +44,9 @@
           <span class="font-display font-bold text-gray-900">#{{ p.id }}</span>
           <span class="font-body text-sm text-gray-700 flex-1 min-w-[10rem]">
             {{ p.nombre }} <span class="text-gray-400">· {{ cuandoPedido(p.fecha) }} · {{ p.items?.length || 0 }} item(s)</span>
+            <span v-if="p.fecha_entrega" class="ml-1 px-2 py-0.5 rounded-full text-xs bg-[#885784]/10 text-[#885784] font-semibold whitespace-nowrap">
+              🎂 Encargo para el {{ fechaCorta(p.fecha_entrega) }} · seña ${{ parseFloat(p.sena_monto || 0).toLocaleString('es-AR') }}
+            </span>
           </span>
           <span class="font-body text-sm font-semibold text-gray-700">${{ parseFloat(p.total).toLocaleString('es-AR') }}</span>
           <button
@@ -51,6 +54,11 @@
             :disabled="confirmandoWa === p.id"
             class="px-3 py-1.5 bg-[#25D366] text-white rounded-lg font-body text-sm font-medium hover:brightness-95 transition disabled:opacity-50"
           >{{ confirmandoWa === p.id ? 'Guardando...' : '✓ Llegó el WhatsApp' }}</button>
+          <button
+            v-if="p.fecha_entrega && !p.sena_venta_id"
+            @click="abrirSena(p)"
+            class="px-3 py-1.5 bg-[#885784] text-white rounded-lg font-body text-sm font-medium hover:brightness-95 transition"
+          >💵 Registrar seña</button>
           <button
             @click="pedidoARechazar = p"
             class="px-3 py-1.5 border border-gray-200 text-gray-400 rounded-lg font-body text-sm hover:border-red-200 hover:text-red-400 transition-colors"
@@ -90,6 +98,23 @@
               {{ metodosPago.find(m => m.value === p.metodo_pago)?.label || p.metodo_pago }}
             </span>
             <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">{{ p.items?.length || 0 }} item(s)</span>
+          </div>
+          <!-- Encargo: día de entrega y seña -->
+          <div v-if="p.fecha_entrega" class="mb-3 rounded-lg px-3 py-2 text-xs font-body"
+               :class="p.fecha_entrega <= hoyISO ? 'bg-keto-orange/15 text-gray-900' : 'bg-[#885784]/10 text-gray-700'">
+            <p class="font-semibold">
+              🎂 Encargo para el {{ fechaLarga(p.fecha_entrega) }}
+              <span v-if="p.fecha_entrega === hoyISO" class="text-keto-orange">· ES HOY</span>
+              <span v-else-if="p.fecha_entrega < hoyISO" class="text-red-500">· ya pasó el día</span>
+            </p>
+            <p v-if="p.sena_venta_id" class="mt-0.5">
+              ✓ Seña cobrada ${{ parseFloat(p.sena_monto).toLocaleString('es-AR') }} ·
+              saldo <b>${{ (parseFloat(p.total) - parseFloat(p.sena_monto)).toLocaleString('es-AR') }}</b>
+            </p>
+            <p v-else class="mt-0.5 flex items-center justify-between gap-2">
+              <span>⚠️ Seña pendiente: ${{ parseFloat(p.sena_monto || 0).toLocaleString('es-AR') }}</span>
+              <button @click="abrirSena(p)" class="px-2 py-1 bg-[#885784] text-white rounded-md font-medium hover:brightness-95">💵 Registrar seña</button>
+            </p>
           </div>
           <div class="mb-3 space-y-1 text-xs">
             <a
@@ -255,6 +280,10 @@
                 📍 {{ pedidoActivo.direccion }}{{ pedidoActivo.localidad ? ', ' + pedidoActivo.localidad : '' }}
               </p>
               <p v-if="pedidoActivo.nota" class="font-body text-xs text-gray-500">📝 {{ pedidoActivo.nota }}</p>
+              <p v-if="pedidoActivo.fecha_entrega" class="font-body text-xs text-[#885784] font-semibold">
+                🎂 Encargo para el {{ fechaLarga(pedidoActivo.fecha_entrega) }}
+                <template v-if="!pedidoActivo.sena_venta_id"> · sin seña registrada (se cobra el total)</template>
+              </p>
             </div>
             <button @click="cancelarCargaPedido" class="text-gray-400 hover:text-red-400 text-sm" title="Quitar pedido">✕</button>
           </div>
@@ -289,10 +318,18 @@
         </div>
 
         <div v-if="carrito.length > 0" class="border-t border-gray-200 pt-4">
+          <template v-if="senaAplicada > 0">
+            <div class="flex justify-between items-center font-body text-sm text-gray-500">
+              <span>Total del encargo</span><span>${{ totalCarrito.toLocaleString('es-AR') }}</span>
+            </div>
+            <div class="flex justify-between items-center font-body text-sm text-[#885784] mb-2">
+              <span>Seña ya cobrada</span><span>− ${{ senaAplicada.toLocaleString('es-AR') }}</span>
+            </div>
+          </template>
           <div class="flex justify-between items-center mb-4">
-            <span class="font-body text-gray-500">Total</span>
+            <span class="font-body text-gray-500">{{ senaAplicada > 0 ? 'Saldo a cobrar' : 'Total' }}</span>
             <span class="font-display text-2xl font-bold text-teal">
-              ${{ totalCarrito.toLocaleString('es-AR') }}
+              ${{ (totalCarrito - senaAplicada).toLocaleString('es-AR') }}
             </span>
           </div>
 
@@ -440,6 +477,10 @@
             <span>🚚 Envío</span>
             <span>+ ${{ (parseFloat(costoEnvio) || 0).toLocaleString('es-AR') }}</span>
           </div>
+          <div v-if="senaAplicada > 0" class="flex justify-between font-body text-xs text-[#885784]">
+            <span>🎂 Seña ya cobrada</span>
+            <span>- ${{ senaAplicada.toLocaleString('es-AR') }}</span>
+          </div>
           <div class="flex justify-between items-center pt-1 border-t border-gray-200">
             <span class="font-body text-sm text-gray-500">Total a cobrar</span>
             <span class="font-display text-xl font-bold text-teal">${{ totalFinal.toLocaleString('es-AR') }}</span>
@@ -485,6 +526,57 @@
           >{{ enviandoVenta ? 'Procesando...' : 'Confirmar' }}</button>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Modal registrar seña de un encargo -->
+    <div v-if="senaForm" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-sm p-5 space-y-4">
+        <div>
+          <h2 class="font-display text-lg font-bold text-gray-900">💵 Registrar seña</h2>
+          <p class="font-body text-xs text-gray-500 mt-1">
+            Encargo #{{ senaForm.pedido.id }} — {{ senaForm.pedido.nombre }} · entrega el {{ fechaLarga(senaForm.pedido.fecha_entrega) }}
+          </p>
+          <p class="font-body text-xs text-gray-500">Total del encargo ${{ parseFloat(senaForm.pedido.total).toLocaleString('es-AR') }}</p>
+        </div>
+        <div>
+          <label class="block font-body text-xs text-gray-500 mb-1.5">¿Cómo pagó la seña?</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              v-for="metodo in metodosPago.filter(m => ['transferencia', 'efectivo'].includes(m.value))"
+              :key="metodo.value"
+              @click="senaForm.metodo = metodo.value"
+              class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
+              :class="senaForm.metodo === metodo.value ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
+            ><span class="text-lg">{{ metodo.icon }}</span>{{ metodo.label }}</button>
+          </div>
+        </div>
+        <div>
+          <label class="block font-body text-xs text-gray-500 mb-1">Monto recibido ($)</label>
+          <input
+            v-model.number="senaForm.monto"
+            type="number" min="1" :max="parseFloat(senaForm.pedido.total)"
+            class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
+          />
+          <p class="font-body text-xs text-gray-400 mt-1">
+            Saldo que se cobra al entregar: ${{ Math.max(parseFloat(senaForm.pedido.total) - (Number(senaForm.monto) || 0), 0).toLocaleString('es-AR') }}
+          </p>
+          <p v-if="Number(senaForm.monto) < Math.ceil(parseFloat(senaForm.pedido.total) / 2)" class="font-body text-xs text-amber-600 mt-1">
+            Es menos del 50% del total. Se puede registrar igual.
+          </p>
+        </div>
+        <p class="font-body text-xs text-gray-400">
+          La seña queda como una venta de hoy. El día de la entrega, al cargar el pedido, se descuenta y se cobra solo el saldo.
+        </p>
+        <p v-if="senaForm.error" class="text-red-500 text-sm font-body">{{ senaForm.error }}</p>
+        <div class="flex gap-3">
+          <button @click="senaForm = null" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-body text-sm hover:border-gray-400 transition-colors">Cancelar</button>
+          <button
+            @click="registrarSena"
+            :disabled="senaForm.guardando || !senaForm.metodo || !(senaForm.monto > 0) || senaForm.monto > parseFloat(senaForm.pedido.total)"
+            class="flex-1 py-2.5 bg-keto-orange text-gray-800 font-body font-semibold rounded-xl hover:bg-keto-orange/80 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          >{{ senaForm.guardando ? 'Guardando...' : 'Registrar' }}</button>
+        </div>
       </div>
     </div>
 
@@ -558,7 +650,10 @@
                   {{ v.tipo }}
                 </span>
               </td>
-              <td class="py-3 pr-4">{{ v.items?.length || 0 }} item(s)</td>
+              <td class="py-3 pr-4">
+                <span v-if="!v.items?.length && v.nota?.startsWith('Seña')" class="text-[#885784]">🎂 Seña</span>
+                <template v-else>{{ v.items?.length || 0 }} item(s)</template>
+              </td>
               <td class="py-3 pr-4">
                 <span v-if="v.metodo_pago" class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
                   {{ metodosPago.find(m => m.value === v.metodo_pago)?.label || v.metodo_pago }}
@@ -632,6 +727,11 @@
             <span>🚚 Envío</span>
             <span>+ ${{ parseFloat(ventaDetalle.costo_envio).toLocaleString('es-AR') }}</span>
           </div>
+          <div v-if="parseFloat(ventaDetalle.sena_aplicada) > 0" class="flex justify-between font-body text-sm text-[#885784]">
+            <span>🎂 Seña cobrada antes</span>
+            <span>- ${{ parseFloat(ventaDetalle.sena_aplicada).toLocaleString('es-AR') }}</span>
+          </div>
+          <p v-if="ventaDetalle.nota" class="font-body text-xs text-gray-500">📝 {{ ventaDetalle.nota }}</p>
           <div class="flex justify-between font-body font-bold text-gray-900">
             <span>Total</span>
             <span class="text-teal text-lg">${{ parseFloat(ventaDetalle.total).toLocaleString('es-AR') }}</span>
@@ -770,6 +870,7 @@ import html2pdf from 'html2pdf.js'
 import * as XLSX from 'xlsx'
 import ProductSelect from '@/components/admin/ProductSelect.vue'
 import { conectarImpresora, imprimirTicketESCPOS } from '@/utils/printer.js'
+import { fechaLarga } from '@/brand/marca'
 
 const productos        = ref([])
 const barcodeRaw       = ref('')
@@ -812,13 +913,24 @@ const categoriaActiva        = ref('')
 // Pedidos web en estado "pendiente". Se separan en dos listas según si ya llegó el WhatsApp
 // del cliente (si el backend todavía no manda el dato, cuentan como llegados: igual que antes).
 const pedidosWeb             = ref([])
-const pedidosPendientes      = computed(() => pedidosWeb.value.filter(p => p.whatsapp_recibido !== false))
+// Orden: primero los encargos que se entregan hoy (o atrasados), después los pedidos comunes
+// y al final los encargos para días siguientes, del más cercano al más lejano.
+const pedidosPendientes      = computed(() => {
+  const grupo = p => !p.fecha_entrega ? 1 : (p.fecha_entrega <= hoyISO ? 0 : 2)
+  return pedidosWeb.value
+    .filter(p => p.whatsapp_recibido !== false)
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => grupo(a.p) - grupo(b.p)
+      || (grupo(a.p) !== 1 ? a.p.fecha_entrega.localeCompare(b.p.fecha_entrega) : a.i - b.i))
+    .map(x => x.p)
+})
 const TRES_DIAS_MS           = 3 * 24 * 60 * 60 * 1000
 const pedidosSinWhatsApp     = computed(() => pedidosWeb.value.filter(p =>
   p.whatsapp_recibido === false && Date.now() - new Date(p.fecha).getTime() < TRES_DIAS_MS))
 const confirmandoWa          = ref(null)
 const pedidoActivo           = ref(null)
 const pedidoARechazar        = ref(null)
+const senaForm               = ref(null)   // { pedido, monto, metodo, guardando, error }
 const rechazando             = ref(false)
 let   pollPedidos            = null
 
@@ -854,8 +966,13 @@ const montoDescuento = computed(() =>
   Math.round(totalCarrito.value * (descuentoPct.value || 0) / 100)
 )
 
+// Encargo con seña ya cobrada: al entregarlo se cobra solo el saldo
+const senaAplicada = computed(() =>
+  pedidoActivo.value?.sena_venta_id ? (parseFloat(pedidoActivo.value.sena_monto) || 0) : 0
+)
+
 const totalFinal = computed(() =>
-  totalCarrito.value - montoDescuento.value + (parseFloat(costoEnvio.value) || 0)
+  totalCarrito.value - montoDescuento.value + (parseFloat(costoEnvio.value) || 0) - senaAplicada.value
 )
 
 const resumenMetodos = computed(() => {
@@ -993,6 +1110,52 @@ async function marcarWhatsApp(p) {
   } finally { confirmandoWa.value = null }
 }
 
+// "02/10"
+const fechaCorta = ymd => ymd ? ymd.split('-').reverse().slice(0, 2).join('/') : ''
+
+function abrirSena(p) {
+  senaForm.value = {
+    pedido: p,
+    monto: parseFloat(p.sena_monto) || Math.ceil(parseFloat(p.total) / 2),
+    metodo: ['transferencia', 'efectivo'].includes(p.metodo_pago) ? p.metodo_pago : '',
+    guardando: false,
+    error: '',
+  }
+}
+
+// Llegó la seña de un encargo: queda registrada como venta de hoy y el pedido pasa a pendientes
+async function registrarSena() {
+  const f = senaForm.value
+  if (!f) return
+  f.guardando = true
+  f.error = ''
+  try {
+    const token = localStorage.getItem('ceketo_token')
+    const { data } = await axios.post(`/api/pedidos/${f.pedido.id}/sena`,
+      { monto: f.monto, metodo: f.metodo },
+      { headers: { Authorization: `Bearer ${token}` } })
+    Object.assign(f.pedido, { sena_monto: f.monto, sena_venta_id: data.venta_id, whatsapp_recibido: true })
+    // Comprobante de la seña para imprimir
+    ultimaVenta.value = {
+      id:          data.venta_id,
+      items:       [{ nombre: `Sena encargo #${f.pedido.id}`, categoria: `Entrega ${fechaCorta(f.pedido.fecha_entrega)}`, precio: Number(f.monto), cantidad: 1 }],
+      total:       Number(f.monto),
+      descuento:   0,
+      costo_envio: 0,
+      metodo_pago: f.metodo,
+      fecha:       new Date(),
+      cliente:     { nombre: f.pedido.nombre, telefono: f.pedido.telefono, tipo_entrega: f.pedido.tipo_entrega,
+                     direccion: f.pedido.direccion, localidad: f.pedido.localidad },
+    }
+    ventaOk.value = `✓ Seña del encargo #${f.pedido.id} registrada (venta #${data.venta_id})`
+    setTimeout(() => { ventaOk.value = '' }, 6000)
+    senaForm.value = null
+    cargarHistorial()
+  } catch (err) {
+    f.error = err.response?.data?.error || 'No se pudo registrar la seña'
+  } finally { f.guardando = false }
+}
+
 // "hoy 14:32", "ayer 21:10" o "sáb 26/09 21:10"
 function cuandoPedido(fecha) {
   const tz = 'America/Argentina/Buenos_Aires'
@@ -1077,6 +1240,8 @@ async function confirmarVenta() {
       costo_envio:   costoEnvio.value || 0,
       fecha:         fechaVenta.value !== hoyISO ? fechaVenta.value : undefined,
       cuenta_id:     metodoPagoSeleccionado.value === 'cuenta_corriente' ? (cuentaSeleccionada.value || undefined) : undefined,
+      sena_aplicada: senaAplicada.value || undefined,
+      nota:          senaAplicada.value ? `Entrega encargo #${pedidoActivo.value.id} (seña en venta #${pedidoActivo.value.sena_venta_id})` : undefined,
       items: carrito.value.map(i => ({
         producto_id: i.producto_id,
         cantidad:    i.cantidad,
@@ -1089,6 +1254,7 @@ async function confirmarVenta() {
       total:       data.total,
       descuento:   descuentoPct.value,
       costo_envio: costoEnvio.value || 0,
+      sena_aplicada: senaAplicada.value,
       metodo_pago: metodoPagoSeleccionado.value,
       fecha:       new Date(),
       // Datos del cliente (solo si la venta viene de un pedido online) → van en el ticket
@@ -1145,6 +1311,7 @@ async function imprimirTicket() {
       items:       v.items,
       total:       v.total,
       descuento:   v.descuento,
+      sena_aplicada: v.sena_aplicada,
       metodo_pago: v.metodo_pago,
       fecha:       v.fecha,
       cliente:     v.cliente,
@@ -1169,6 +1336,7 @@ async function imprimirTicketHistorial(v) {
       })),
       total:       v.total,
       descuento:   v.descuento || 0,
+      sena_aplicada: parseFloat(v.sena_aplicada) || 0,
       metodo_pago: v.metodo_pago,
       fecha:       v.fecha,
     })
@@ -1290,6 +1458,12 @@ function imprimirTicketFallbackHistorial(v) {
       <td style="text-align:right">+ $${parseFloat(v.costo_envio).toLocaleString('es-AR')}</td>
     </tr>` : ''
 
+  const senaHtml = parseFloat(v.sena_aplicada) > 0 ? `
+    <tr class="descuento-row">
+      <td>Sena cobrada</td>
+      <td style="text-align:right">- $${parseFloat(v.sena_aplicada).toLocaleString('es-AR')}</td>
+    </tr>` : ''
+
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -1329,6 +1503,7 @@ function imprimirTicketFallbackHistorial(v) {
     <tr><td colspan="2"><div class="divider"></div></td></tr>
     ${descuentoHtml}
     ${envioHtml}
+    ${senaHtml}
     <tr class="total-row"><td>TOTAL</td><td>$${parseFloat(v.total).toLocaleString('es-AR')}</td></tr>
   </table>
   <div class="divider"></div>
@@ -1384,6 +1559,12 @@ function imprimirTicketFallback(v) {
     <tr class="descuento-row">
       <td>Envio</td>
       <td style="text-align:right">+ $${parseFloat(v.costo_envio).toLocaleString('es-AR')}</td>
+    </tr>` : ''
+
+  const senaHtml2 = parseFloat(v.sena_aplicada) > 0 ? `
+    <tr class="descuento-row">
+      <td>Sena cobrada</td>
+      <td style="text-align:right">- $${parseFloat(v.sena_aplicada).toLocaleString('es-AR')}</td>
     </tr>` : ''
 
   const clienteHtml = v.cliente ? `
@@ -1447,6 +1628,7 @@ function imprimirTicketFallback(v) {
     <tr><td colspan="2"><div class="divider"></div></td></tr>
     ${descuentoHtml}
     ${envioHtml2}
+    ${senaHtml2}
     <tr class="total-row">
       <td>TOTAL</td>
       <td>$${Number(v.total).toLocaleString('es-AR')}</td>

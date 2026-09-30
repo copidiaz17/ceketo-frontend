@@ -126,6 +126,11 @@
           </span>
         </div>
 
+        <p v-if="p.fecha_entrega" class="font-body text-xs mt-3 px-3 py-2 rounded-lg bg-[#885784]/10 text-gray-700">
+          🎂 <b>Encargo</b> para el {{ p.fecha_entrega.split('-').reverse().join('/') }} ·
+          <template v-if="p.sena_venta_id">✓ seña cobrada ${{ parseFloat(p.sena_monto).toLocaleString('es-AR') }} (venta #{{ p.sena_venta_id }})</template>
+          <template v-else>seña pendiente ${{ parseFloat(p.sena_monto || 0).toLocaleString('es-AR') }}</template>
+        </p>
         <p v-if="p.nota" class="font-body text-xs text-gray-400 mt-3 italic">Nota: {{ p.nota }}</p>
       </div>
     </div>

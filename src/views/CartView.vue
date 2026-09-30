@@ -13,6 +13,12 @@
         <RouterLink to="/tienda" class="ck-btn-naranja">Ver tienda</RouterLink>
       </div>
 
+      <!-- Postres a pedido: van en un pedido aparte, con fecha y seña -->
+      <div v-if="cartStore.items.some(i => i.a_pedido)" class="mb-6 p-4 rounded-2xl bg-ck-violeta-suave font-texto text-sm text-ck-tinta/80">
+        🎂 <b class="text-ck-tinta">Tenés postres a pedido.</b> Se encargan en un pedido aparte: al finalizar elegís el día
+        (con 2 días de anticipación) y la seña del 50% para reservarlos.
+      </div>
+
       <!-- Cart items -->
       <div v-else class="grid lg:grid-cols-3 gap-8">
 
@@ -31,7 +37,7 @@
               />
               <div class="flex-1 min-w-0">
                 <h3 class="font-marca font-semibold text-ck-tinta mb-1 truncate">{{ item.name }}</h3>
-                <p class="font-texto text-gray-400 text-sm mb-3">{{ item.category }}</p>
+                <p class="font-texto text-gray-400 text-sm mb-3">{{ item.category }}<span v-if="item.a_pedido" class="ml-2 px-2 py-0.5 rounded-full bg-ck-violeta text-white text-[11px] font-semibold">A pedido</span></p>
                 <div class="flex items-center justify-between">
                   <!-- Quantity -->
                   <div class="flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-full px-3 py-1">

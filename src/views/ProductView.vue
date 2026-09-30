@@ -57,44 +57,38 @@
             ${{ parseFloat(product.precio).toLocaleString('es-AR') }}
           </div>
 
-          <!-- A pedido: se encarga por WhatsApp o teléfono, no por el carrito -->
+          <!-- A pedido: se encarga con fecha (2 días mínimo) y seña del 50 %; se elige al finalizar la compra -->
           <div v-if="aPedido" class="pv-apedido mb-4">
-            <p class="font-texto text-[15px] text-ck-tinta/80 leading-relaxed mb-4">
-              <b class="text-ck-tinta">Este producto se hace a pedido.</b>
-              Encargalo por WhatsApp o llamando al <b class="text-ck-tinta whitespace-nowrap">{{ TELEFONO_VISIBLE }}</b>
-              y coordinamos el día de entrega.
+            <p class="font-texto text-[15px] text-ck-tinta/80 leading-relaxed">
+              <b class="text-ck-tinta">🎂 Se hace a pedido.</b>
+              Se encarga con {{ DIAS_ANTICIPACION }} días de anticipación (primer día posible: <b class="text-ck-tinta">{{ fechaLarga(fechaMinimaEncargo()) }}</b>)
+              y se reserva con una seña del {{ SENA_MINIMA * 100 }}% por transferencia o en efectivo en el local.
+              El día lo elegís al finalizar el pedido.
             </p>
-            <div class="flex flex-col sm:flex-row gap-3">
-              <a :href="linkEncargo(product.nombre)" target="_blank" rel="noopener" class="pv-encargar flex-1">
-                <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8.2 8.2 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.4-.5.3-.5a.6.6 0 0 0 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1.1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.5 13.5 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3.1 3.1 0 0 0 2.1-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.2-.3-.2-.6-.4zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zm8.4-18.2A11.8 11.8 0 0 0 1.8 17.8L.1 24l6.4-1.7a11.8 11.8 0 0 0 5.6 1.4A11.8 11.8 0 0 0 20.4 3.6z"/></svg>
-                Encargar por WhatsApp
-              </a>
-              <a :href="`tel:+${TELEFONO_CEKETO}`" class="ck-btn-borde sm:w-auto">📞 Llamar</a>
-            </div>
           </div>
 
           <!-- Agregar -->
-          <div v-else class="flex gap-3 mb-4">
+          <div class="flex gap-3 mb-4">
             <div class="pv-cantidad">
               <button @click="qty > 1 && qty--" aria-label="Menos">−</button>
               <span>{{ qty }}</span>
               <button
-                @click="qty < product.stock && qty++"
-                :disabled="qty >= product.stock"
+                @click="qty < maxCantidad && qty++"
+                :disabled="qty >= maxCantidad"
                 aria-label="Más"
               >+</button>
             </div>
             <button
               @click="addToCart"
-              :disabled="product.stock === 0"
+              :disabled="!aPedido && product.stock === 0"
               class="flex-1 ck-btn-naranja text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {{ product.stock === 0 ? 'Sin stock' : 'Agregar al carrito' }}
+              {{ !aPedido && product.stock === 0 ? 'Sin stock' : (aPedido ? 'Agregar al encargo' : 'Agregar al carrito') }}
             </button>
           </div>
 
           <!-- WhatsApp -->
-          <a v-if="!aPedido" :href="whatsappLink" target="_blank" rel="noopener" class="pv-wa">
+          <a :href="whatsappLink" target="_blank" rel="noopener" class="pv-wa">
             <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8.2 8.2 0 0 1-2.4-1.5 9 9 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.4-.5.3-.5a.6.6 0 0 0 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1.1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.5 13.5 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3.1 3.1 0 0 0 2.1-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.2-.3-.2-.6-.4zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zm8.4-18.2A11.8 11.8 0 0 0 1.8 17.8L.1 24l6.4-1.7a11.8 11.8 0 0 0 5.6 1.4A11.8 11.8 0 0 0 20.4 3.6z"/></svg>
             Consultar por WhatsApp
           </a>
@@ -130,7 +124,7 @@ import axios from 'axios'
 import { useCartStore } from '@/stores/cart'
 import BrandBackdrop from '@/components/brand/BrandBackdrop.vue'
 import BrandIcon from '@/components/brand/BrandIcon.vue'
-import { estiloCategoria, esAPedido, linkEncargo, TELEFONO_CEKETO, TELEFONO_VISIBLE } from '@/brand/marca'
+import { estiloCategoria, esAPedido, DIAS_ANTICIPACION, SENA_MINIMA, fechaMinimaEncargo, fechaLarga } from '@/brand/marca'
 
 const route     = useRoute()
 const cartStore = useCartStore()
@@ -147,6 +141,8 @@ function fotoArco(url) {
 }
 const estilo = computed(() => estiloCategoria(product.value?.categoria?.codigo))
 const aPedido = computed(() => esAPedido(product.value?.categoria?.codigo))
+// A pedido no depende del stock (se hace para el encargo)
+const maxCantidad = computed(() => aPedido.value ? 20 : (product.value?.stock || 0))
 
 const whatsappLink = computed(() => {
   if (!product.value) return '#'
@@ -155,14 +151,16 @@ const whatsappLink = computed(() => {
 })
 
 function addToCart() {
-  if (!product.value || product.value.stock === 0 || aPedido.value) return
+  if (!product.value || (!aPedido.value && product.value.stock === 0)) return
   const item = {
     id:       product.value.id,
     name:     product.value.nombre,
     price:    parseFloat(product.value.precio),
     category: product.value.categoria?.nombre || '',
     image:    product.value.imagen || '',
-    stock:    product.value.stock,
+    // a pedido: sin tope de stock y marcado para ir en un pedido aparte con fecha y seña
+    stock:    aPedido.value ? undefined : product.value.stock,
+    a_pedido: aPedido.value,
   }
   for (let i = 0; i < qty.value; i++) cartStore.addItem(item)
 }
@@ -241,20 +239,6 @@ onMounted(async () => {
   background: #F3ECF2;
   box-shadow: inset 0 0 0 2px rgba(136,87,132,.25);
 }
-.pv-encargar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .5rem;
-  padding: .95rem 1.4rem;
-  border-radius: 999px;
-  background: #25D366;
-  color: #0B3B34;
-  font: 700 15px/1 'Poppins', sans-serif;
-  box-shadow: 0 12px 26px -12px rgba(37,211,102,.9);
-  transition: transform .3s cubic-bezier(.3,1.6,.5,1);
-}
-.pv-encargar:hover { transform: translateY(-2px); }
 .pv-wa {
   display: flex;
   align-items: center;

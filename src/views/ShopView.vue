@@ -47,8 +47,8 @@
         <span class="text-2xl">🎂</span>
         <p class="font-texto text-[15px] text-ck-tinta/80 leading-relaxed">
           <b class="text-ck-tinta">Los postres y tartas se hacen a pedido.</b>
-          Encargalos por WhatsApp o llamando al <b class="text-ck-tinta whitespace-nowrap">{{ TELEFONO_VISIBLE }}</b>:
-          tocá <b>Encargar</b> en el que quieras y coordinamos el día de entrega.
+          Se encargan con 2 días de anticipación y se reservan con una seña del 50% (transferencia o efectivo en el local).
+          Agregalos al carrito y al finalizar elegís el día en el calendario. Van en un pedido aparte del resto de los productos.
         </p>
       </div>
 
@@ -96,7 +96,7 @@ import axios from 'axios'
 import ProductCard from '@/components/ProductCard.vue'
 import BrandBackdrop from '@/components/brand/BrandBackdrop.vue'
 import BrandIcon from '@/components/brand/BrandIcon.vue'
-import { estiloCategoria, esAPedido, TELEFONO_VISIBLE } from '@/brand/marca'
+import { estiloCategoria, esAPedido } from '@/brand/marca'
 
 const route          = useRoute()
 const activeCategory = ref(route.query.categoria || '')
