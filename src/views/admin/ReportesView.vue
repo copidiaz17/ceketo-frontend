@@ -400,17 +400,18 @@
         <!-- ═══ TAB: STOCK ════════════════════════════════════════════════════════ -->
         <div v-if="tabActivo === 'stock'" ref="tablaRef">
           <div class="p-4 border-b border-gray-100 flex flex-wrap gap-4">
-            <div class="bg-blue-50 border border-blue-100 rounded-xl px-5 py-3 text-center">
-              <p class="font-body text-xs text-gray-500">Valor al costo</p>
-              <p class="font-display font-bold text-blue-700 text-xl">${{ fmt(stockValorCosto) }}</p>
+            <!-- El sistema no guarda precio de costo: se valoriza solo a precio de venta -->
+            <div class="bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 text-center">
+              <p class="font-body text-xs text-gray-500">Productos activos</p>
+              <p class="font-display font-bold text-gray-800 text-xl">{{ stock.length }}</p>
+            </div>
+            <div class="bg-red-50 border border-red-100 rounded-xl px-5 py-3 text-center">
+              <p class="font-body text-xs text-gray-500">Sin stock</p>
+              <p class="font-display font-bold text-red-600 text-xl">{{ stock.filter(p => Number(p.stock) <= 0).length }}</p>
             </div>
             <div class="bg-teal/10 border border-teal/30 rounded-xl px-5 py-3 text-center">
-              <p class="font-body text-xs text-gray-500">Valor de venta</p>
+              <p class="font-body text-xs text-gray-500">Valor a precio de venta</p>
               <p class="font-display font-bold text-teal text-xl">${{ fmt(stockValorVenta) }}</p>
-            </div>
-            <div class="bg-green-50 border border-green-200 rounded-xl px-5 py-3 text-center">
-              <p class="font-body text-xs text-gray-500">Margen potencial</p>
-              <p class="font-display font-bold text-green-700 text-xl">${{ fmt(stockValorVenta - stockValorCosto) }}</p>
             </div>
           </div>
           <div class="overflow-x-auto">
@@ -421,30 +422,25 @@
                   <th class="text-left px-4 py-3">Producto</th>
                   <th class="text-left px-4 py-3">Código</th>
                   <th class="text-right px-4 py-3">Stock</th>
-                  <th class="text-right px-4 py-3">P. Costo</th>
                   <th class="text-right px-4 py-3">P. Venta</th>
-                  <th class="text-right px-4 py-3">Val. Costo</th>
-                  <th class="text-right px-4 py-3">Val. Venta</th>
+                  <th class="text-right px-4 py-3">Valor</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="stock.length === 0"><td colspan="8" class="text-center py-12 text-gray-400">Sin productos</td></tr>
+                <tr v-if="stock.length === 0"><td colspan="6" class="text-center py-12 text-gray-400">Sin productos</td></tr>
                 <tr v-for="(p, i) in stock" :key="p.id" class="border-b border-gray-100 hover:bg-gray-50"
                   :class="i % 2 === 1 ? 'bg-gray-50/50' : ''">
                   <td class="px-4 py-2.5 text-xs text-gray-500">{{ p.categoria?.nombre || '—' }}</td>
                   <td class="px-4 py-2.5 text-gray-800 font-medium">{{ p.nombre }}</td>
                   <td class="px-4 py-2.5 font-mono text-xs text-gray-400">{{ p.codigo }}</td>
                   <td class="px-4 py-2.5 text-right font-bold" :class="p.stock <= 0 ? 'text-red-500' : 'text-gray-800'">{{ p.stock }}</td>
-                  <td class="px-4 py-2.5 text-right text-gray-500">${{ fmt(p.precio_costo || 0) }}</td>
                   <td class="px-4 py-2.5 text-right text-gray-600">${{ fmt(p.precio) }}</td>
-                  <td class="px-4 py-2.5 text-right text-blue-600 font-medium">${{ fmt(Number(p.stock) * Number(p.precio_costo || 0)) }}</td>
-                  <td class="px-4 py-2.5 text-right text-teal font-bold">${{ fmt(Number(p.stock) * Number(p.precio)) }}</td>
+                  <td class="px-4 py-2.5 text-right text-teal font-bold">${{ fmt(Math.max(Number(p.stock), 0) * Number(p.precio)) }}</td>
                 </tr>
               </tbody>
               <tfoot v-if="stock.length > 0">
                 <tr class="bg-teal/10 border-t-2 border-teal/30">
-                  <td colspan="6" class="px-4 py-3 font-semibold text-gray-700 text-sm">TOTAL STOCK VALORIZADO</td>
-                  <td class="px-4 py-3 text-right font-bold text-blue-700">${{ fmt(stockValorCosto) }}</td>
+                  <td colspan="5" class="px-4 py-3 font-semibold text-gray-700 text-sm">TOTAL STOCK A PRECIO DE VENTA</td>
                   <td class="px-4 py-3 text-right font-bold text-teal">${{ fmt(stockValorVenta) }}</td>
                 </tr>
               </tfoot>
@@ -746,7 +742,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
-import ExcelJS from 'exceljs'
+import { generarExcelReporte } from '@/utils/excelReporte'
 import html2pdf from 'html2pdf.js'
 import { Chart, registerables } from 'chart.js'
 Chart.register(...registerables)
@@ -918,8 +914,9 @@ async function cargar() {
     if (filtroProductoId.value)  params.set('producto_id',  filtroProductoId.value)
 
     const [ventasResult, extrasResult] = await Promise.allSettled([
-      axios.get(`/api/admin/reportes?${params}`),
-      axios.get(`/api/admin/reportes/extras?${params}`),
+      // Períodos largos traen muchos datos: se les da más tiempo que al resto del sistema
+      axios.get(`/api/admin/reportes?${params}`, { timeout: 90000 }),
+      axios.get(`/api/admin/reportes/extras?${params}`, { timeout: 90000 }),
     ])
 
     // Ventas — independiente de extras
@@ -1070,577 +1067,22 @@ function crearGraficos() {
   }
 }
 
-function renderChartImage(type, labels, datasets, options = {}, w = 900, h = 400) {
-  return new Promise(resolve => {
-    const canvas = document.createElement('canvas')
-    canvas.width = w; canvas.height = h
-    canvas.style.cssText = 'position:absolute;left:-9999px'
-    document.body.appendChild(canvas)
-    const ch = new Chart(canvas, { type, data: { labels, datasets }, options: { ...options, animation: false, responsive: false } })
-    setTimeout(() => {
-      const img = canvas.toDataURL('image/png').split(',')[1]
-      ch.destroy(); document.body.removeChild(canvas)
-      resolve(img)
-    }, 200)
-  })
-}
-
-// ── Exportar Excel ─────────────────────────────────────────────────────────
+// ── Exportar Excel (libro completo: ver src/utils/excelReporte.js) ─────────
 async function exportarExcel() {
   exportando.value = true
   try {
-    const wb = new ExcelJS.Workbook()
-    wb.creator = 'Ceketo'; wb.created = new Date()
-
-    const VERDE_OSC   = '1A5F5A'
-    const VERDE_TEAL  = '2DD4BF'
-    const VERDE_LIGHT = 'E6FFFE'
-    const ROJO_OSC    = '991B1B'
-    const ROJO_LIGHT  = 'FEF2F2'
-    const BORDE = { style: 'thin', color: { argb: 'FFE5E7EB' } }
-    const BORDE_H_V = { style: 'medium', color: { argb: 'FF' + VERDE_TEAL } }
-    const BORDE_H_R = { style: 'medium', color: { argb: 'FFEF4444' } }
-
-    const rango    = [filtroDesde.value, filtroHasta.value].filter(Boolean).join(' al ') || 'Período completo'
-    const fechaGen = new Date().toLocaleDateString('es-AR')
-
-    function addTitle(ws, titulo, ncols, color = VERDE_OSC, light = VERDE_LIGHT) {
-      ws.mergeCells(1, 1, 1, ncols)
-      const t = ws.getRow(1).getCell(1)
-      t.value = titulo
-      t.font  = { bold: true, size: 15, color: { argb: 'FF' + color } }
-      t.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + light } }
-      t.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 }
-      ws.getRow(1).height = 36
-      ws.mergeCells(2, 1, 2, ncols)
-      const s = ws.getRow(2).getCell(1)
-      s.value = `Período: ${rango}   |   Generado: ${fechaGen}`
-      s.font  = { size: 9, color: { argb: 'FF6B7280' }, italic: true }
-      s.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } }
-      s.alignment = { vertical: 'middle', indent: 1 }
-      ws.getRow(2).height = 18
-    }
-
-    function styleHeader(row, ncols, color = VERDE_OSC, borde = BORDE_H_V) {
-      for (let c = 1; c <= ncols; c++) {
-        const cell = row.getCell(c)
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + color } }
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
-        cell.alignment = { vertical: 'middle', horizontal: 'center' }
-        cell.border = { top: borde, bottom: borde, left: BORDE, right: BORDE }
-      }
-      row.height = 28
-    }
-
-    function styleData(row, ncols, alt = false, total = false, lightColor = null) {
-      const bg = total ? 'FF' + (lightColor || VERDE_LIGHT) : alt ? 'FFF9FAFB' : 'FFFFFFFF'
-      for (let c = 1; c <= ncols; c++) {
-        const cell = row.getCell(c)
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
-        cell.font = { size: 10, bold: total }
-        cell.alignment = { vertical: 'middle' }
-        cell.border = { top: BORDE, bottom: BORDE, left: BORDE, right: BORDE }
-      }
-      row.height = total ? 24 : 20
-    }
-
-    function numFmt(row, cols, format = '"$"#,##0') {
-      cols.forEach(c => { row.getCell(c).numFmt = format; row.getCell(c).alignment = { horizontal: 'right', vertical: 'middle' } })
-    }
-
-    // ── Hoja 1: Resumen ejecutivo ──────────────────────────────────────────
-    const ws0 = wb.addWorksheet('Resumen ejecutivo')
-    ws0.columns = [{ key: 'concepto', width: 34 }, { key: 'monto', width: 20 }, { key: 'pct', width: 14 }]
-    addTitle(ws0, 'RESUMEN EJECUTIVO', 3)
-    const hr0 = ws0.getRow(3)
-    hr0.values = ['Concepto', 'Monto', '%']
-    styleHeader(hr0, 3)
-
-    const totConEnv = kpis.value.total_con_envios || 0
-    const filas0 = [
-      ['Total Ingresos (productos + envíos)', totConEnv, 100],
-      ['  — Productos (mercadería)', kpis.value.total, totConEnv > 0 ? kpis.value.total/totConEnv*100 : 0],
-      ['  — Envíos cobrados', kpis.value.total_envios, totConEnv > 0 ? kpis.value.total_envios/totConEnv*100 : 0],
-      ['Total Gastos', totalGastos.value, totConEnv > 0 ? totalGastos.value/totConEnv*100 : 0],
-      ['  — IVA discriminado', ivaTotal.value, null],
-      ['Resultado Neto', resultadoNeto.value, null],
-      ['', null, null],
-      ['Operaciones', kpis.value.n_operaciones, null],
-      ['Ticket promedio', kpis.value.ticket_promedio, null],
-      ['Unidades vendidas', kpis.value.unidades, null],
-    ]
-    filas0.forEach((f, i) => {
-      const r = ws0.addRow(f)
-      const isTotal = f[0] === 'Resultado Neto' || f[0] === 'Total Ingresos (ventas + pedidos)'
-      styleData(r, 3, i % 2 === 1, isTotal)
-      if (f[1] !== null) numFmt(r, [2])
-      if (f[2] !== null) { r.getCell(3).numFmt = '0.0"%"'; r.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' } }
-      if (f[0] === 'Resultado Neto') {
-        r.getCell(2).font = { bold: true, size: 12, color: { argb: resultadoNeto.value >= 0 ? 'FF166534' : 'FF991B1B' } }
-      }
+    await generarExcelReporte({
+      filtros: {
+        desde: filtroDesde.value, hasta: filtroHasta.value,
+        categoria: categorias.value.find(c => c.id === filtroCategoriaId.value)?.nombre || '',
+        producto:  productos.value.find(p => p.id === filtroProductoId.value)?.nombre || '',
+      },
+      kpis: kpis.value, operaciones: operaciones.value, detalle: detalle.value, resumen: resumen.value,
+      por_categoria: por_categoria.value, por_dia: por_dia.value, ventasPorMetodo: ventasPorMetodo.value,
+      gastos: gastos.value, gastosPorCategoria: gastosPorCategoria.value, gastosPorMedio: gastosPorMedio.value,
+      gastosPorDia: gastosPorDia.value, totalGastos: totalGastos.value, ivaTotal: ivaTotal.value,
+      lotes: lotes.value, stock: stock.value, cajas: cajas.value, resumenMovimientos: resumenMovimientos.value,
     })
-
-    // ── Hoja: Movimientos (todos) ──────────────────────────────────────────
-    const wsM = wb.addWorksheet('Movimientos (todos)', { views: [{ state: 'frozen', ySplit: 3 }] })
-    wsM.columns = [
-      { key: 'fecha', width: 18 }, { key: 'tipo', width: 14 }, { key: 'origen', width: 18 },
-      { key: 'concepto', width: 42 }, { key: 'medio', width: 16 },
-      { key: 'ingreso', width: 16 }, { key: 'egreso', width: 16 },
-    ]
-    addTitle(wsM, 'MOVIMIENTOS DEL PERÍODO (TODOS)', 7)
-    const hM = wsM.getRow(3)
-    hM.values = ['Fecha', 'Tipo', 'Origen / Categoría', 'Concepto', 'Medio', 'Ingreso', 'Egreso']
-    styleHeader(hM, 7)
-    let totIngM = 0, totEgrM = 0
-    movimientosUnificados.value.forEach((m, i) => {
-      totIngM += m.ingreso; totEgrM += m.egreso
-      const r = wsM.addRow([formatFechaCorta(m.fecha), m.tipo, m.origen, m.concepto, m.medio, m.ingreso || null, m.egreso || null])
-      styleData(r, 7, i % 2 === 1)
-      numFmt(r, [6, 7])
-    })
-    const totM = wsM.addRow(['', '', '', '', 'TOTALES', totIngM, totEgrM])
-    styleData(totM, 7, false, true)
-    numFmt(totM, [6, 7])
-    const netoM = wsM.addRow(['', '', '', '', 'RESULTADO NETO', totIngM - totEgrM, null])
-    styleData(netoM, 7, false, true, (totIngM - totEgrM) >= 0 ? 'DCFCE7' : ROJO_LIGHT)
-    numFmt(netoM, [6])
-    netoM.getCell(6).font = { bold: true, size: 12, color: { argb: (totIngM - totEgrM) >= 0 ? 'FF166534' : 'FF991B1B' } }
-
-    // ── Hoja 2: Ventas ─────────────────────────────────────────────────────
-    const ws1 = wb.addWorksheet('Ventas', { views: [{ state: 'frozen', ySplit: 3 }] })
-    ws1.columns = [
-      { key: 'id', width: 10 }, { key: 'fecha', width: 18 }, { key: 'origen', width: 10 },
-      { key: 'cliente', width: 24 }, { key: 'metodo', width: 16 }, { key: 'entrega', width: 12 },
-      { key: 'nota', width: 24 }, { key: 'desc', width: 10 }, { key: 'envio', width: 12 }, { key: 'total', width: 16 },
-    ]
-    addTitle(ws1, 'VENTAS', 10)
-    const h1 = ws1.getRow(3)
-    h1.values = ['#', 'Fecha', 'Origen', 'Cliente', 'Método pago', 'Entrega', 'Observación', 'Desc.%', 'Envío', 'Total']
-    styleHeader(h1, 10)
-    operaciones.value.forEach((op, i) => {
-      const r = ws1.addRow([op.id, formatFechaCorta(op.fecha), op.origen, op.cliente, metodoOp(op), op.entrega, op.nota || '', op.descuento > 0 ? `-${op.descuento}%` : '', op.costo_envio || 0, op.total])
-      styleData(r, 10, i % 2 === 1)
-      numFmt(r, [9, 10])
-    })
-    const totProd = ws1.addRow(['', '', '', '', '', '', '', '', 'Productos', kpis.value.total])
-    styleData(totProd, 10)
-    numFmt(totProd, [10])
-    const tot1 = ws1.addRow(['', '', '', '', '', '', '', 'TOTAL', kpis.value.total_envios, kpis.value.total_con_envios])
-    styleData(tot1, 10, false, true)
-    numFmt(tot1, [9, 10])
-
-    // ── Hoja 3: Gastos ─────────────────────────────────────────────────────
-    const ws2 = wb.addWorksheet('Gastos', { views: [{ state: 'frozen', ySplit: 3 }] })
-    ws2.columns = [
-      { key: 'fecha', width: 12 }, { key: 'cat', width: 18 }, { key: 'desc', width: 36 },
-      { key: 'proveedor', width: 22 }, { key: 'metodo', width: 16 },
-      { key: 'factura', width: 12 }, { key: 'iva', width: 14 }, { key: 'monto', width: 16 },
-    ]
-    addTitle(ws2, 'GASTOS', 8, ROJO_OSC, ROJO_LIGHT)
-    const h2 = ws2.getRow(3)
-    h2.values = ['Fecha', 'Categoría', 'Descripción', 'Proveedor', 'Método', 'Factura', 'IVA', 'Monto']
-    styleHeader(h2, 8, ROJO_OSC, BORDE_H_R)
-    gastos.value.forEach((g, i) => {
-      const r = ws2.addRow([g.fecha, g.categoria, g.descripcion, g.proveedor || '', g.metodo_pago || '', g.es_factura ? `A ${g.alicuota_iva}%` : '', g.iva_monto || 0, Number(g.monto)])
-      styleData(r, 8, i % 2 === 1)
-      numFmt(r, [7, 8])
-    })
-    const tot2 = ws2.addRow(['', '', '', '', '', '', 'TOTAL IVA', totalGastos.value])
-    styleData(tot2, 8, false, true, ROJO_LIGHT)
-    numFmt(tot2, [8])
-    tot2.getCell(8).font = { bold: true, color: { argb: 'FF' + ROJO_OSC } }
-
-    // ── Hoja 4: Resultado ──────────────────────────────────────────────────
-    const ws3 = wb.addWorksheet('Resultado P&L')
-    ws3.columns = [{ key: 'cat', width: 36 }, { key: 'monto', width: 20 }, { key: 'pct', width: 14 }]
-    addTitle(ws3, 'RESULTADO (P&L)', 3)
-    const h3 = ws3.getRow(3)
-    h3.values = ['Categoría', 'Monto', '% Ingresos']
-    styleHeader(h3, 3)
-    const filasR = [
-      ...Object.entries(gastosPorCategoria.value).map(([cat, d]) => [cat, d.total, kpis.value.total_con_envios > 0 ? d.total/kpis.value.total_con_envios : 0]),
-    ]
-    filasR.forEach((f, i) => {
-      const r = ws3.addRow(f)
-      styleData(r, 3, i % 2 === 1)
-      numFmt(r, [2]); r.getCell(3).numFmt = '0.0%'; r.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' }
-    })
-    const totR = ws3.addRow(['TOTAL GASTOS', totalGastos.value, kpis.value.total_con_envios > 0 ? totalGastos.value/kpis.value.total_con_envios : 0])
-    styleData(totR, 3, false, true, ROJO_LIGHT)
-    numFmt(totR, [2]); totR.getCell(3).numFmt = '0.0%'
-    ws3.addRow([])
-    const resR = ws3.addRow(['RESULTADO NETO', resultadoNeto.value, null])
-    styleData(resR, 3, false, true, resultadoNeto.value >= 0 ? 'DCFCE7' : ROJO_LIGHT)
-    numFmt(resR, [2])
-    resR.getCell(2).font = { bold: true, size: 13, color: { argb: resultadoNeto.value >= 0 ? 'FF166534' : 'FF991B1B' } }
-
-    // ── Hoja 5: Resumen por producto ───────────────────────────────────────
-    const ws4 = wb.addWorksheet('Resumen por producto', { views: [{ state: 'frozen', ySplit: 3 }] })
-    ws4.columns = [
-      { key: 'cat', width: 24 }, { key: 'prod', width: 34 }, { key: 'cod', width: 11 },
-      { key: 'cant', width: 10 }, { key: 'precio', width: 14 }, { key: 'total', width: 16 }, { key: 'pct', width: 11 },
-    ]
-    addTitle(ws4, 'RESUMEN POR PRODUCTO', 7)
-    const h4 = ws4.getRow(3)
-    h4.values = ['Categoría', 'Producto', 'Código', 'Unidades', 'P. Unit.', 'Total', '% Total']
-    styleHeader(h4, 7)
-    resumen.value.forEach((r, i) => {
-      const row = ws4.addRow([r.categoria, r.producto, r.codigo, r.cantidad, r.precio_unit, r.total, r.pct / 100])
-      styleData(row, 7, i % 2 === 1)
-      numFmt(row, [5, 6]); row.getCell(7).numFmt = '0.0%'; row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }
-    })
-
-    // ── Hoja 6: Stock ──────────────────────────────────────────────────────
-    const ws5 = wb.addWorksheet('Stock valorizado', { views: [{ state: 'frozen', ySplit: 3 }] })
-    ws5.columns = [
-      { key: 'cat', width: 22 }, { key: 'nombre', width: 34 }, { key: 'codigo', width: 12 },
-      { key: 'stock', width: 10 }, { key: 'costo', width: 14 }, { key: 'venta', width: 14 },
-      { key: 'val_costo', width: 16 }, { key: 'val_venta', width: 16 },
-    ]
-    addTitle(ws5, 'STOCK VALORIZADO', 8)
-    const h5 = ws5.getRow(3)
-    h5.values = ['Categoría', 'Producto', 'Código', 'Stock', 'P. Costo', 'P. Venta', 'Val. Costo', 'Val. Venta']
-    styleHeader(h5, 8)
-    stock.value.forEach((p, i) => {
-      const vc = Number(p.stock) * Number(p.precio_costo || 0)
-      const vv = Number(p.stock) * Number(p.precio)
-      const row = ws5.addRow([p.categoria?.nombre || '—', p.nombre, p.codigo, p.stock, Number(p.precio_costo || 0), Number(p.precio), vc, vv])
-      styleData(row, 8, i % 2 === 1)
-      numFmt(row, [5, 6, 7, 8]); row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' }
-    })
-    const tot5 = ws5.addRow(['', 'TOTAL', '', '', '', '', stockValorCosto.value, stockValorVenta.value])
-    styleData(tot5, 8, false, true); numFmt(tot5, [7, 8])
-
-    // ── Producción: 4 hojas (resumen, detalle por día, por producto, producto × día) ──
-    if (lotes.value.length) {
-      const VIOLETA = '885784', VIOLETA_LIGHT = 'F3ECF2', VIOLETA_BAND = 'E7D9E5'
-      const BORDE_H_P = { style: 'medium', color: { argb: 'FF' + VIOLETA } }
-      const FMT_U = '#,##0', FMT_$ = '"$"#,##0', FMT_PCT = '0.0%'
-      const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-      const diaSemana = ymd => DIAS[new Date(ymd + 'T12:00:00Z').getUTCDay()]
-      const fechaAR = ymd => ymd.split('-').reverse().join('/')
-      const apaisada = ws => { ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 } }
-      // Banda de grupo (día o categoría): una fila combinada con fondo violeta claro
-      const banda = (ws, ncols, texto) => {
-        const r = ws.addRow([texto])
-        ws.mergeCells(r.number, 1, r.number, ncols)
-        const c = r.getCell(1)
-        c.font = { bold: true, size: 11, color: { argb: 'FF' + VIOLETA } }
-        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + VIOLETA_BAND } }
-        c.alignment = { vertical: 'middle', indent: 1 }
-        r.height = 24
-        return r
-      }
-      const fmt = (row, cols, f) => cols.forEach(c => {
-        row.getCell(c).numFmt = f
-        row.getCell(c).alignment = { horizontal: f === FMT_U ? 'center' : 'right', vertical: 'middle' }
-      })
-
-      // Precio de venta por producto (si el backend no lo manda, se toma del listado de stock)
-      const precioDe = Object.fromEntries(stock.value.map(p => [p.codigo, Number(p.precio) || 0]))
-      // Una fila por producto producido en cada lote
-      const filasP = lotes.value.flatMap(l => (l.items || []).map(it => ({
-        fecha:     String(l.fecha).slice(0, 10),
-        lote:      String(l.lote_id || '').startsWith('fecha-') ? '' : String(l.lote_id || '').slice(0, 8),
-        nota:      l.nota || '',
-        categoria: it.categoria || 'Sin categoría',
-        codigo:    it.codigo || '',
-        producto:  it.producto || '—',
-        cantidad:  Number(it.cantidad) || 0,
-        precio:    it.precio != null ? Number(it.precio) : (precioDe[it.codigo] ?? 0),
-      })))
-      const totU = filasP.reduce((a, f) => a + f.cantidad, 0)
-      const totV = filasP.reduce((a, f) => a + f.cantidad * f.precio, 0)
-      const fechas = [...new Set(filasP.map(f => f.fecha))].sort()
-      const ordenProd = (a, b) => a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto)
-
-      // Agregados por día, por producto y por categoría
-      const porDia = {}
-      for (const f of filasP) {
-        const d = porDia[f.fecha] ||= { fecha: f.fecha, lotes: new Set(), notas: new Set(), productos: {}, unidades: 0, valor: 0 }
-        if (f.lote) d.lotes.add(f.lote)
-        if (f.nota) d.notas.add(f.nota)
-        const p = d.productos[f.codigo + '|' + f.producto] ||= { categoria: f.categoria, codigo: f.codigo, producto: f.producto, precio: f.precio, cantidad: 0 }
-        p.cantidad += f.cantidad
-        d.unidades += f.cantidad
-        d.valor    += f.cantidad * f.precio
-      }
-      const porProd = {}
-      for (const f of filasP) {
-        const p = porProd[f.codigo + '|' + f.producto] ||= { categoria: f.categoria, codigo: f.codigo, producto: f.producto, precio: f.precio, cantidad: 0, dias: {} }
-        p.cantidad += f.cantidad
-        p.dias[f.fecha] = (p.dias[f.fecha] || 0) + f.cantidad
-      }
-      const productosP = Object.values(porProd)
-      const porCat = {}
-      for (const p of productosP) {
-        const c = porCat[p.categoria] ||= { categoria: p.categoria, productos: [], cantidad: 0, valor: 0 }
-        c.productos.push(p)
-        c.cantidad += p.cantidad
-        c.valor    += p.cantidad * p.precio
-      }
-      const categoriasP = Object.values(porCat).sort((a, b) => b.cantidad - a.cantidad)
-      const diaMax = Object.values(porDia).sort((a, b) => b.unidades - a.unidades)[0]
-
-      // ── Hoja: Producción — resumen ──
-      const wsP0 = wb.addWorksheet('Producción - resumen')
-      wsP0.columns = [{ width: 44 }, { width: 18 }, { width: 16 }, { width: 22 }]
-      addTitle(wsP0, 'PRODUCCIÓN — RESUMEN DEL PERÍODO', 4, VIOLETA, VIOLETA_LIGHT)
-      const hP0 = wsP0.getRow(3); hP0.values = ['Indicador', 'Valor', '', '']
-      styleHeader(hP0, 2, VIOLETA, BORDE_H_P)
-      const indicadores = [
-        ['Días con producción', fechas.length, FMT_U],
-        ['Lotes cargados', lotes.value.length, FMT_U],
-        ['Unidades producidas', totU, FMT_U],
-        ['Promedio de unidades por día de producción', fechas.length ? Math.round(totU / fechas.length) : 0, FMT_U],
-        ['Productos distintos', productosP.length, FMT_U],
-        ['Valor de lo producido (a precio de venta actual)', totV, FMT_$],
-        ['Día de mayor producción', diaMax ? `${diaSemana(diaMax.fecha)} ${fechaAR(diaMax.fecha)} (${diaMax.unidades} u.)` : '—', null],
-      ]
-      indicadores.forEach(([k, v, f], i) => {
-        const r = wsP0.addRow([k, v])
-        styleData(r, 2, i % 2 === 1)
-        if (f) fmt(r, [2], f)
-        else r.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' }
-      })
-
-      wsP0.addRow([])
-      const hP0b = wsP0.addRow(['Categoría', 'Unidades', '% del total', 'Valor a precio de venta'])
-      styleHeader(hP0b, 4, VIOLETA, BORDE_H_P)
-      categoriasP.forEach((c, i) => {
-        const r = wsP0.addRow([c.categoria, c.cantidad, totU ? c.cantidad / totU : 0, c.valor])
-        styleData(r, 4, i % 2 === 1)
-        fmt(r, [2], FMT_U); fmt(r, [3], FMT_PCT); fmt(r, [4], FMT_$)
-      })
-      const tP0b = wsP0.addRow(['TOTAL', totU, 1, totV])
-      styleData(tP0b, 4, false, true, VIOLETA_LIGHT)
-      fmt(tP0b, [2], FMT_U); fmt(tP0b, [3], FMT_PCT); fmt(tP0b, [4], FMT_$)
-
-      wsP0.addRow([])
-      const hP0c = wsP0.addRow(['Día de la semana', 'Días producidos', 'Unidades', 'Promedio por día'])
-      styleHeader(hP0c, 4, VIOLETA, BORDE_H_P)
-      ;[1, 2, 3, 4, 5, 6, 0].forEach((dow, i) => {
-        const dias = Object.values(porDia).filter(d => new Date(d.fecha + 'T12:00:00Z').getUTCDay() === dow)
-        if (!dias.length) return
-        const u = dias.reduce((a, d) => a + d.unidades, 0)
-        const r = wsP0.addRow([DIAS[dow], dias.length, u, Math.round(u / dias.length)])
-        styleData(r, 4, i % 2 === 1)
-        fmt(r, [2, 3, 4], FMT_U)
-      })
-      apaisada(wsP0)
-
-      // ── Hoja: Producción por día (cada día con sus productos, uno por fila) ──
-      const wsP1 = wb.addWorksheet('Producción por día', { views: [{ state: 'frozen', ySplit: 3 }] })
-      wsP1.columns = [{ width: 24 }, { width: 12 }, { width: 44 }, { width: 12 }, { width: 14 }, { width: 16 }, { width: 12 }]
-      addTitle(wsP1, 'PRODUCCIÓN POR DÍA', 7, VIOLETA, VIOLETA_LIGHT)
-      const hP1 = wsP1.getRow(3)
-      hP1.values = ['Categoría', 'Código', 'Producto', 'Cantidad', 'P. venta', 'Valor', '% del día']
-      styleHeader(hP1, 7, VIOLETA, BORDE_H_P)
-      fechas.forEach(fecha => {
-        const d = porDia[fecha]
-        const items = Object.values(d.productos).sort(ordenProd)
-        const lotesTxt = d.lotes.size > 1 ? ` · ${d.lotes.size} lotes` : ''
-        const notaTxt  = d.notas.size ? ` · Nota: ${[...d.notas].join(' / ')}` : ''
-        banda(wsP1, 7, `${diaSemana(fecha).toUpperCase()} ${fechaAR(fecha)}   ·   ${items.length} productos · ${d.unidades} unidades${lotesTxt}${notaTxt}`)
-        items.forEach((it, i) => {
-          const r = wsP1.addRow([it.categoria, it.codigo, it.producto, it.cantidad, it.precio, it.cantidad * it.precio, d.unidades ? it.cantidad / d.unidades : 0])
-          styleData(r, 7, i % 2 === 1)
-          fmt(r, [4], FMT_U); fmt(r, [5, 6], FMT_$); fmt(r, [7], FMT_PCT)
-        })
-        const t = wsP1.addRow(['', '', `Total del ${diaSemana(fecha).toLowerCase()} ${fechaAR(fecha)}`, d.unidades, '', d.valor, ''])
-        styleData(t, 7, false, true, VIOLETA_LIGHT)
-        t.getCell(3).alignment = { horizontal: 'right', vertical: 'middle' }
-        fmt(t, [4], FMT_U); fmt(t, [6], FMT_$)
-        wsP1.addRow([])
-      })
-      const tP1 = wsP1.addRow(['', '', 'TOTAL DEL PERÍODO', totU, '', totV, ''])
-      styleData(tP1, 7, false, true, VIOLETA_BAND)
-      tP1.getCell(3).alignment = { horizontal: 'right', vertical: 'middle' }
-      fmt(tP1, [4], FMT_U); fmt(tP1, [6], FMT_$)
-      apaisada(wsP1)
-
-      // ── Hoja: Producción por producto (agrupada por categoría) ──
-      const wsP2 = wb.addWorksheet('Producción por producto', { views: [{ state: 'frozen', ySplit: 3 }] })
-      wsP2.columns = [{ width: 12 }, { width: 44 }, { width: 11 }, { width: 13 }, { width: 13 }, { width: 13 }, { width: 15 }, { width: 11 }, { width: 13 }, { width: 16 }]
-      addTitle(wsP2, 'PRODUCCIÓN POR PRODUCTO', 10, VIOLETA, VIOLETA_LIGHT)
-      const hP2 = wsP2.getRow(3)
-      hP2.values = ['Código', 'Producto', 'Unidades', 'Días producido', 'Prom. por día', 'Máx. en un día', 'Última producción', '% del total', 'P. venta', 'Valor']
-      styleHeader(hP2, 10, VIOLETA, BORDE_H_P)
-      hP2.getCell(4).alignment = hP2.getCell(5).alignment = hP2.getCell(6).alignment = hP2.getCell(7).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-      categoriasP.forEach(c => {
-        banda(wsP2, 10, `${c.categoria.toUpperCase()}   ·   ${c.productos.length} productos · ${c.cantidad} unidades`)
-        c.productos.sort((a, b) => b.cantidad - a.cantidad).forEach((p, i) => {
-          const dias = Object.keys(p.dias).sort()
-          const r = wsP2.addRow([
-            p.codigo, p.producto, p.cantidad, dias.length,
-            dias.length ? Math.round(p.cantidad / dias.length * 10) / 10 : 0,
-            Math.max(...Object.values(p.dias)),
-            fechaAR(dias[dias.length - 1]),
-            totU ? p.cantidad / totU : 0, p.precio, p.cantidad * p.precio,
-          ])
-          styleData(r, 10, i % 2 === 1)
-          fmt(r, [3, 4, 6], FMT_U); fmt(r, [5], '#,##0.0'); fmt(r, [8], FMT_PCT); fmt(r, [9, 10], FMT_$)
-          r.getCell(5).alignment = r.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' }
-        })
-        const t = wsP2.addRow(['', `Subtotal ${c.categoria}`, c.cantidad, '', '', '', '', totU ? c.cantidad / totU : 0, '', c.valor])
-        styleData(t, 10, false, true, VIOLETA_LIGHT)
-        t.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' }
-        fmt(t, [3], FMT_U); fmt(t, [8], FMT_PCT); fmt(t, [10], FMT_$)
-        wsP2.addRow([])
-      })
-      const tP2 = wsP2.addRow(['', 'TOTAL DEL PERÍODO', totU, '', '', '', '', 1, '', totV])
-      styleData(tP2, 10, false, true, VIOLETA_BAND)
-      tP2.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' }
-      fmt(tP2, [3], FMT_U); fmt(tP2, [8], FMT_PCT); fmt(tP2, [10], FMT_$)
-      apaisada(wsP2)
-
-      // ── Hoja: Producto × día (matriz: un producto por fila, un día por columna) ──
-      const ncolM = 2 + fechas.length + 1
-      const wsP3 = wb.addWorksheet('Producto x día', { views: [{ state: 'frozen', xSplit: 2, ySplit: 3 }] })
-      wsP3.columns = [{ width: 20 }, { width: 40 }, ...fechas.map(() => ({ width: 7.5 })), { width: 10 }]
-      addTitle(wsP3, 'PRODUCCIÓN — PRODUCTO × DÍA', Math.min(ncolM, 12), VIOLETA, VIOLETA_LIGHT)
-      const hP3 = wsP3.getRow(3)
-      hP3.values = ['Categoría', 'Producto', ...fechas.map(f => `${diaSemana(f).slice(0, 3)}\n${fechaAR(f).slice(0, 5)}`), 'Total']
-      styleHeader(hP3, ncolM, VIOLETA, BORDE_H_P)
-      for (let c = 3; c <= ncolM; c++) hP3.getCell(c).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-      hP3.height = 32
-      let iM = 0
-      categoriasP.forEach(c => {
-        c.productos.slice().sort((a, b) => a.producto.localeCompare(b.producto)).forEach(p => {
-          const r = wsP3.addRow([c.categoria, p.producto, ...fechas.map(f => p.dias[f] || null), p.cantidad])
-          styleData(r, ncolM, iM++ % 2 === 1)
-          for (let col = 3; col <= ncolM; col++) {
-            const cell = r.getCell(col)
-            cell.alignment = { horizontal: 'center', vertical: 'middle' }
-            if (col < ncolM && cell.value) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + VIOLETA_LIGHT } }
-              cell.font = { size: 10, bold: true, color: { argb: 'FF' + VIOLETA } }
-            }
-          }
-          r.getCell(ncolM).font = { size: 10, bold: true }
-        })
-      })
-      const tP3 = wsP3.addRow(['', 'TOTAL POR DÍA', ...fechas.map(f => porDia[f].unidades), totU])
-      styleData(tP3, ncolM, false, true, VIOLETA_BAND)
-      for (let col = 3; col <= ncolM; col++) tP3.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' }
-      tP3.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' }
-      apaisada(wsP3)
-    }
-
-    // ── Hoja 7: Detalle items vendidos ────────────────────────────────────
-    if (detalle.value.length) {
-      const ws7 = wb.addWorksheet('Detalle items', { views: [{ state: 'frozen', ySplit: 3 }] })
-      ws7.columns = [
-        { key: 'op', width: 10 }, { key: 'fecha', width: 14 }, { key: 'cat', width: 20 },
-        { key: 'prod', width: 36 }, { key: 'cod', width: 11 }, { key: 'cant', width: 9 },
-        { key: 'precio', width: 14 }, { key: 'desc', width: 10 }, { key: 'subtotal', width: 16 },
-      ]
-      addTitle(ws7, 'DETALLE DE ITEMS VENDIDOS', 9)
-      const h7 = ws7.getRow(3)
-      h7.values = ['Operación', 'Fecha', 'Categoría', 'Producto', 'Código', 'Cant.', 'P. Unit.', 'Desc.%', 'Subtotal']
-      styleHeader(h7, 9)
-      detalle.value.forEach((d, i) => {
-        const r = ws7.addRow([d.operacion_id, formatFechaCorta(d.fecha), d.categoria, d.producto, d.codigo, d.cantidad, d.precio_unit, d.descuento_pct > 0 ? `-${d.descuento_pct}%` : '', d.subtotal])
-        styleData(r, 9, i % 2 === 1)
-        numFmt(r, [7, 9])
-        r.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' }
-      })
-    }
-
-    // ── Hoja 8: Caja ─────────────────────────────────────────────────────
-    if (cajas.value.length) {
-      const ws8 = wb.addWorksheet('Caja', { views: [{ state: 'frozen', ySplit: 3 }] })
-      ws8.columns = [
-        { key: 'id', width: 7 }, { key: 'apertura', width: 20 }, { key: 'cierre', width: 20 },
-        { key: 'usuario', width: 18 }, { key: 'saldo_ini', width: 16 },
-        { key: 'arq_efec', width: 18 }, { key: 'arq_bill', width: 18 }, { key: 'estado', width: 12 },
-      ]
-      addTitle(ws8, 'CAJAS DEL PERÍODO', 8)
-      const h8 = ws8.getRow(3)
-      h8.values = ['#', 'Apertura', 'Cierre', 'Usuario', 'Saldo inicial', 'Arqueo efectivo', 'Arqueo billetera', 'Estado']
-      styleHeader(h8, 8)
-      cajas.value.forEach((c, i) => {
-        const r = ws8.addRow([
-          c.id, formatFechaCorta(c.fecha_apertura),
-          c.fecha_cierre ? formatFechaCorta(c.fecha_cierre) : '—',
-          c.usuario || '—', Number(c.saldo_inicial),
-          c.arqueo_efectivo != null ? Number(c.arqueo_efectivo) : '—',
-          c.arqueo_billetera != null ? Number(c.arqueo_billetera) : '—',
-          c.estado,
-        ])
-        styleData(r, 8, i % 2 === 1)
-        numFmt(r, [5])
-        if (c.arqueo_efectivo != null) numFmt(r, [6])
-        if (c.arqueo_billetera != null) numFmt(r, [7])
-      })
-    }
-
-    // ── Hoja 9: Movimientos caja ──────────────────────────────────────────
-    if (resumenMovimientos.value.detalle?.length) {
-      const ws9 = wb.addWorksheet('Movimientos caja', { views: [{ state: 'frozen', ySplit: 3 }] })
-      ws9.columns = [
-        { key: 'fecha', width: 14 }, { key: 'caja', width: 9 }, { key: 'concepto', width: 36 },
-        { key: 'medio', width: 14 }, { key: 'tipo', width: 12 }, { key: 'monto', width: 16 },
-      ]
-      addTitle(ws9, 'MOVIMIENTOS MANUALES DE CAJA', 6)
-      const h9 = ws9.getRow(3)
-      h9.values = ['Fecha', 'Caja #', 'Concepto', 'Medio', 'Tipo', 'Monto']
-      styleHeader(h9, 6)
-      resumenMovimientos.value.detalle.forEach((m, i) => {
-        const monto = m.tipo === 'ingreso' ? Number(m.monto) : -Number(m.monto)
-        const r = ws9.addRow([formatFechaCorta(m.fecha), `#${m.caja_id}`, m.concepto, m.medio === 'billetera' ? 'Billetera' : 'Efectivo', m.tipo, monto])
-        styleData(r, 6, i % 2 === 1)
-        numFmt(r, [6])
-        r.getCell(5).font = { size: 10, color: { argb: m.tipo === 'ingreso' ? 'FF166534' : 'FF991B1B' } }
-      })
-    }
-
-    // ── Gráficos como imágenes ─────────────────────────────────────────────
-    const imgBar = await renderChartImage(
-      'bar',
-      por_dia.value.map(d => { const [,m,day] = d.dia.split('-'); return `${day}/${m}` }),
-      [{ label: 'Ingresos', data: por_dia.value.map(d => d.total), backgroundColor: '#2DD4BF', borderRadius: 4 },
-       { label: 'Gastos',   data: gastosPorDia.value.map(d => d.total), backgroundColor: '#F87171', borderRadius: 4 }],
-      { plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: v => '$' + Math.round(v/1000) + 'K' } } } }
-    )
-    ws1.addImage(wb.addImage({ base64: imgBar, extension: 'png' }), { tl: { col: 10, row: 2 }, ext: { width: 700, height: 320 } })
-
-    const imgDonut = await renderChartImage(
-      'doughnut',
-      por_categoria.value.map(c => c.categoria),
-      [{ data: por_categoria.value.map(c => c.total), backgroundColor: COLORES.map(c => '#' + c), borderWidth: 2, borderColor: '#fff' }],
-      { plugins: { legend: { position: 'right' } } }
-    )
-    ws4.addImage(wb.addImage({ base64: imgDonut, extension: 'png' }), { tl: { col: 8, row: 2 }, ext: { width: 480, height: 300 } })
-
-    const top10 = resumen.value.slice(0, 10)
-    const imgTop = await renderChartImage(
-      'bar',
-      top10.map(r => r.producto.length > 30 ? r.producto.slice(0, 30) + '…' : r.producto),
-      [{ data: top10.map(r => r.total), backgroundColor: COLORES.map(c => '#' + c), borderRadius: 4 }],
-      { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => '$' + Math.round(v/1000) + 'K' } } } },
-      900, 440
-    )
-    ws4.addImage(wb.addImage({ base64: imgTop, extension: 'png' }), { tl: { col: 8, row: 20 }, ext: { width: 700, height: 380 } })
-
-    if (Object.keys(gastosPorCategoria.value).length) {
-      const cats  = Object.keys(gastosPorCategoria.value)
-      const tots  = cats.map(c => gastosPorCategoria.value[c].total)
-      const imgGastos = await renderChartImage(
-        'doughnut', cats,
-        [{ data: tots, backgroundColor: ['#F87171','#FB923C','#FBBF24','#A3E635','#34D399','#22D3EE','#818CF8','#F472B6'], borderWidth: 2, borderColor: '#fff' }],
-        { plugins: { legend: { position: 'right' } } }
-      )
-      ws3.addImage(wb.addImage({ base64: imgGastos, extension: 'png' }), { tl: { col: 4, row: 2 }, ext: { width: 500, height: 300 } })
-    }
-
-    // ── Descargar ──────────────────────────────────────────────────────────
-    const buffer = await wb.xlsx.writeBuffer()
-    const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    const url    = URL.createObjectURL(blob)
-    const a      = document.createElement('a')
-    a.href = url; a.download = `ceketo_reporte_${fechaGen.replace(/\//g, '-')}.xlsx`; a.click()
-    URL.revokeObjectURL(url)
   } catch (err) {
     console.error(err)
     alert('Error al generar Excel: ' + err.message)
@@ -1792,29 +1234,45 @@ async function exportarPDF() {
 
     // Producción
     if (lotes.value.length) {
+      // Un producto por fila, agrupado por día (con el total de cada día)
+      const DIAS_SEM = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+      const porDia = {}
+      for (const l of lotes.value) {
+        const f = String(l.fecha).slice(0, 10)
+        const d = porDia[f] ||= {}
+        for (const it of l.items || []) {
+          const k = `${it.categoria || ''}|${it.producto}`
+          d[k] = d[k] || { categoria: it.categoria || '—', producto: it.producto, cantidad: 0 }
+          d[k].cantidad += Number(it.cantidad) || 0
+        }
+      }
+      const filasProd = []
+      for (const f of Object.keys(porDia).sort()) {
+        const items = Object.values(porDia[f]).sort((a, b) => a.categoria.localeCompare(b.categoria) || a.producto.localeCompare(b.producto))
+        const tot = items.reduce((a, it) => a + it.cantidad, 0)
+        const dia = `${DIAS_SEM[new Date(f + 'T12:00:00Z').getUTCDay()]} ${f.split('-').reverse().join('/')}`
+        filasProd.push([`<b style="color:#885784">${dia}</b>`, '', '', ''])
+        items.forEach(it => filasProd.push(['', it.categoria, it.producto, it.cantidad]))
+        filasProd.push(['', '', `<b>Total del día</b>`, `<b>${tot}</b>`])
+      }
       html += seccion('Producción', tabla(
-        ['Fecha', 'Lote', 'Productos', 'Total unidades', 'Nota'],
-        lotes.value.map(l => [
-          l.fecha, l.lote_id?.slice(0, 8) || '—',
-          (l.items || []).map(it => `${it.producto} (${it.cantidad})`).join(', '),
-          l.total_unidades, l.nota || '—',
-        ]),
-        { aligns: ['left', 'left', 'left', 'right', 'left'],
-          foot: ['', '', 'TOTAL', totalUnidadesProducidas.value, ''] }
+        ['Día', 'Categoría', 'Producto', 'Cantidad'],
+        filasProd,
+        { aligns: ['left', 'left', 'left', 'right'],
+          foot: ['', '', 'TOTAL DEL PERÍODO', totalUnidadesProducidas.value] }
       ))
     }
 
     // Stock valorizado
     if (stock.value.length) {
       html += seccion('Stock valorizado', tabla(
-        ['Categoría', 'Producto', 'Código', 'Stock', 'P. Costo', 'P. Venta', 'Val. Costo', 'Val. Venta'],
+        ['Categoría', 'Producto', 'Código', 'Stock', 'P. Venta', 'Valor'],
         stock.value.map(p => [
           p.categoria?.nombre || '—', p.nombre, p.codigo, p.stock,
-          money(p.precio_costo || 0), money(p.precio),
-          money(Number(p.stock) * Number(p.precio_costo || 0)), money(Number(p.stock) * Number(p.precio)),
+          money(p.precio), money(Math.max(Number(p.stock), 0) * Number(p.precio)),
         ]),
-        { aligns: ['left', 'left', 'left', 'right', 'right', 'right', 'right', 'right'],
-          foot: ['', 'TOTAL', '', '', '', '', money(stockValorCosto.value), money(stockValorVenta.value)] }
+        { aligns: ['left', 'left', 'left', 'right', 'right', 'right'],
+          foot: ['', 'TOTAL', '', '', '', money(stockValorVenta.value)] }
       ))
     }
 
@@ -1875,6 +1333,10 @@ onMounted(async () => {
   ])
   categorias.value = catRes.data
   productos.value  = prodRes.data
+  // Arranca con el mes en curso (todo el historial es mucho para cargar de entrada)
+  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  filtroDesde.value = hoy.slice(0, 8) + '01'
+  filtroHasta.value = hoy
   await cargar()
 })
 </script>
