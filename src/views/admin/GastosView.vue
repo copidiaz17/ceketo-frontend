@@ -116,7 +116,13 @@
               <span v-else class="text-gray-300 text-xs font-body">—</span>
             </td>
             <td class="px-6 py-4 text-center">
-              <div class="flex items-center justify-center gap-2">
+              <!-- Gasto generado por una compra: se maneja desde Compras -->
+              <RouterLink v-if="g.compra_id" to="/admin/compras"
+                class="inline-block px-2.5 py-1 rounded-full bg-teal/10 text-teal text-xs font-semibold font-body whitespace-nowrap hover:bg-teal/20"
+                title="Este gasto lo generó una compra. Para corregirlo, anulá la compra y cargala de nuevo.">
+                🧾 Compra #{{ g.compra_id }}
+              </RouterLink>
+              <div v-else class="flex items-center justify-center gap-2">
                 <button
                   @click="abrirModal(g)"
                   class="text-gray-400 hover:text-gray-900 transition-colors text-sm px-2 py-1 rounded-lg hover:bg-gray-100"
@@ -400,6 +406,7 @@ function badgeClass(cat) {
     'Sueldos':       'bg-blue-500/15 text-blue-300 border border-blue-500/20',
     'Mantenimiento': 'bg-orange-500/15 text-orange-300 border border-orange-500/20',
     'Packaging':     'bg-pink-500/15 text-pink-300 border border-pink-500/20',
+    'Mercadería para reventa': 'bg-brand-purple/15 text-brand-purple border border-brand-purple/20',
     'Otros':         'bg-gray-100 text-gray-500',
   }
   return map[cat] || 'bg-gray-100 text-gray-500'

@@ -783,6 +783,7 @@ const stockValorVenta       = ref(0)
 const cajas                 = ref([])
 const resumenMovimientos    = ref({ ingresos_efectivo: 0, egresos_efectivo: 0, ingresos_billetera: 0, egresos_billetera: 0, detalle: [] })
 const gastosPorMedio        = ref({ efectivo: 0, digital: 0, sin_metodo: 0 })
+const compras               = ref([])
 
 // Charts
 const chartBarRef      = ref(null)
@@ -950,6 +951,7 @@ async function cargar() {
       cajas.value                   = e.cajas || []
       resumenMovimientos.value      = e.resumenMovimientos || { ingresos_efectivo: 0, egresos_efectivo: 0, ingresos_billetera: 0, egresos_billetera: 0, detalle: [] }
       gastosPorMedio.value          = e.gastosPorMedio || { efectivo: 0, digital: 0, sin_metodo: 0 }
+      compras.value                 = e.compras || []
     } else {
       console.error('reportes/extras:', extrasResult.reason?.message)
     }
@@ -1082,6 +1084,7 @@ async function exportarExcel() {
       gastos: gastos.value, gastosPorCategoria: gastosPorCategoria.value, gastosPorMedio: gastosPorMedio.value,
       gastosPorDia: gastosPorDia.value, totalGastos: totalGastos.value, ivaTotal: ivaTotal.value,
       lotes: lotes.value, stock: stock.value, cajas: cajas.value, resumenMovimientos: resumenMovimientos.value,
+      compras: compras.value,
     })
   } catch (err) {
     console.error(err)

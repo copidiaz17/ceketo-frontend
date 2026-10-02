@@ -42,9 +42,15 @@
           <span class="flex-1">{{ link.label }}</span>
           <!-- Badge stock bajo -->
           <span
-            v-if="link.badge && stockBajoCount > 0"
+            v-if="link.badge === true && stockBajoCount > 0"
             class="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold"
           >{{ stockBajoCount }}</span>
+          <!-- Badge insumos por reponer (stock en el mínimo o debajo) -->
+          <span
+            v-if="link.badge === 'insumos' && insumosBajos > 0"
+            class="bg-amber-400 text-gray-900 text-xs min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center font-bold"
+            :title="`${insumosBajos} insumo(s) por reponer`"
+          >{{ insumosBajos }}</span>
         </RouterLink>
       </nav>
 
@@ -104,6 +110,7 @@ import axios from 'axios'
 const route  = useRoute()
 const router = useRouter()
 const stockBajoCount = ref(0)
+const insumosBajos   = ref(0)
 const sidebarOpen    = ref(false)
 
 const usuarioActual = localStorage.getItem('ceketo_admin') || ''
@@ -119,12 +126,13 @@ const ALL_LINKS = [
   { to: '/admin/productos',  icon: '🥑', label: 'Productos',      roles: ['admin', 'contenido'], badge: true },
   { to: '/admin/movimientos',icon: '↕️', label: 'Movimientos',    roles: ['admin'] },
   { to: '/admin/stock',      icon: '🗃️', label: 'Stock',          roles: ['admin', 'fabrica', 'ventas'], badge: true },
+  { to: '/admin/compras',    icon: '🧾', label: 'Compras',        roles: ['admin'] },
   { to: '/admin/gastos',     icon: '💸', label: 'Gastos',         roles: ['admin'] },
   { to: '/admin/cuentas',    icon: '🤝', label: 'Cta. Corriente',  roles: ['admin', 'ventas'] },
   { to: '/admin/caja',        icon: '🏧', label: 'Caja',            roles: ['admin'] },
   { to: '/admin/categorias',  icon: '🏷️', label: 'Categorías',     roles: ['admin'] },
   { to: '/admin/reportes',    icon: '📈', label: 'Reportes',        roles: ['admin'] },
-  { to: '/admin/insumos',        icon: '🧪', label: 'Insumos',          roles: ['admin'] },
+  { to: '/admin/insumos',        icon: '🧪', label: 'Insumos',          roles: ['admin'], badge: 'insumos' },
 ]
 
 const navLinks = computed(() => ALL_LINKS.filter(l => l.roles.includes(rolActual)))
@@ -145,5 +153,11 @@ onMounted(async () => {
     const { data } = await axios.get('/api/admin/stock-bajo/count')
     stockBajoCount.value = data.count
   } catch {}
+  if (rolActual === 'admin') {
+    try {
+      const { data } = await axios.get('/api/insumos')
+      insumosBajos.value = data.filter(i => Number(i.stock_minimo) > 0 && Number(i.stock) <= Number(i.stock_minimo)).length
+    } catch {}
+  }
 })
 </script>

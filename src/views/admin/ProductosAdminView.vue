@@ -51,6 +51,7 @@
               <th class="text-left px-4 py-4">Producto</th>
               <th class="text-left px-4 py-4">Categoría</th>
               <th class="text-right px-4 py-4">Precio</th>
+              <th v-if="esAdmin" class="text-right px-4 py-4" title="Costo de la última compra y margen sobre el precio de venta">Costo · margen</th>
               <th class="text-right px-4 py-4">Stock</th>
               <th class="text-center px-4 py-4">Activo</th>
               <th class="text-center px-4 py-4">Acciones</th>
@@ -78,6 +79,14 @@
               <td class="px-4 py-3 text-gray-500">{{ p.categoria?.nombre }}</td>
               <td class="px-4 py-3 text-right text-gray-600">
                 ${{ parseFloat(p.precio).toLocaleString('es-AR') }}
+              </td>
+              <!-- Costo (última compra) y margen: solo lo ve el admin -->
+              <td v-if="esAdmin" class="px-4 py-3 text-right whitespace-nowrap">
+                <template v-if="costos[p.id]">
+                  <span class="text-gray-600">${{ Number(costos[p.id]).toLocaleString('es-AR') }}</span>
+                  <span class="ml-1.5 text-xs font-semibold" :class="margen(p) < 0.2 ? 'text-red-500' : 'text-teal'">{{ Math.round(margen(p) * 100) }}%</span>
+                </template>
+                <span v-else class="text-gray-300">—</span>
               </td>
               <!-- Stock -->
               <td class="px-4 py-3 text-right font-bold"
@@ -159,11 +168,16 @@
             </select>
           </div>
 
-          <!-- Precio + Stock -->
-          <div class="grid grid-cols-2 gap-3">
+          <!-- Precio + Stock (+ costo, solo admin) -->
+          <div class="grid gap-3" :class="esAdmin ? 'grid-cols-3' : 'grid-cols-2'">
             <div>
               <label class="block font-body text-xs text-gray-500 mb-1">Precio ($)</label>
               <input v-model.number="modal.form.precio" type="number" min="0" step="0.01" placeholder="0"
+                class="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors" />
+            </div>
+            <div v-if="esAdmin">
+              <label class="block font-body text-xs text-gray-500 mb-1" title="Se actualiza solo con cada compra; acá se puede corregir">Costo ($)</label>
+              <input v-model.number="modal.form.precio_costo" type="number" min="0" step="0.01" placeholder="—"
                 class="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors" />
             </div>
             <div>
@@ -261,7 +275,19 @@ const filtroCategoria = ref('')
 const busqueda        = ref('')
 const toast           = ref('')
 
-const FORM_VACIO = () => ({ nombre: '', codigo: '', codigo_barras: '', categoria_id: '', precio: 0, stock: 0, activo: true })
+const FORM_VACIO = () => ({ nombre: '', codigo: '', codigo_barras: '', categoria_id: '', precio: 0, precio_costo: null, stock: 0, activo: true })
+
+// Costo de compra (solo admin; no viene en las rutas públicas de productos)
+const esAdmin = localStorage.getItem('ceketo_rol') === 'admin'
+const costos  = ref({})
+const margen  = p => { const pr = Number(p.precio); return pr ? (pr - Number(costos.value[p.id])) / pr : 0 }
+async function cargarCostos() {
+  if (!esAdmin) return
+  try {
+    const { data } = await axios.get('/api/productos/costos')
+    costos.value = Object.fromEntries(data.filter(c => c.precio_costo != null).map(c => [c.id, Number(c.precio_costo)]))
+  } catch { /* sin costos */ }
+}
 
 const modal = ref({ abierto: false, modo: 'crear', productoId: null, form: FORM_VACIO(), error: '', guardando: false, imagenFile: null, imagenPreview: '', imagenActual: '' })
 const eliminarModal = ref({ abierto: false, producto: null, cargando: false })
@@ -296,6 +322,7 @@ function abrirModalEditar(p) {
       codigo_barras: p.codigo_barras || '',
       categoria_id:  p.categoria_id || '',
       precio:        parseFloat(p.precio),
+      precio_costo:  costos.value[p.id] ?? null,
       stock:         p.stock,
       activo:        p.activo,
     },
@@ -348,6 +375,8 @@ async function guardarModal() {
       categoria_id: modal.value.form.categoria_id || null,
       codigo_barras: modal.value.form.codigo_barras || null,
     }
+    if (!esAdmin) delete body.precio_costo
+    else if (body.precio_costo === '' || body.precio_costo === undefined) body.precio_costo = null
     if (modal.value.modo === 'crear') {
       const { data } = await axios.post('/api/productos', body, { headers: { Authorization: `Bearer ${token}` } })
       // Si se eligió imagen, subirla automáticamente a Cloudinary
@@ -371,6 +400,7 @@ async function guardarModal() {
       }
       mostrarToast('✓ Producto actualizado')
     }
+    if (esAdmin) await cargarCostos()
     modal.value.abierto = false
   } catch (err) {
     modal.value.error = err.response?.data?.error || 'Error al guardar'
@@ -506,6 +536,7 @@ onMounted(async () => {
   ])
   productos.value      = prods
   categoriasLista.value = cats
+  cargarCostos()
 })
 </script>
 

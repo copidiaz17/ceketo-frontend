@@ -388,11 +388,12 @@ export async function generarExcelReporte(d) {
     ['Productos vendidos', 'Ranking por categoría y por producto, con participación'],
     ['Formas de pago', 'Montos y operaciones por forma de pago, origen y entrega'],
     ['Gastos', 'Gastos por rubro, forma de pago, proveedor y detalle'],
+    ['Compras', 'Compras de insumos y mercadería: por proveedor y renglón por renglón'],
     ['Producción - resumen', 'Indicadores de producción, por categoría y por día de la semana'],
     ['Producción por día', 'Cada día con los productos elaborados, uno por fila'],
     ['Producción por producto', 'Unidades, días producido, promedio y máximo de cada producto'],
     ['Producto x día', 'Cuadro de producción: un producto por fila y un día por columna'],
-    ['Stock', 'Stock actual por categoría, con estado y valor a precio de venta'],
+    ['Stock', 'Stock actual por categoría, con estado, costo, margen y valor'],
     ['Caja', 'Efectivo y billetera, cajas abiertas y cerradas, movimientos manuales'],
     ['Libro de movimientos', 'Todos los ingresos y egresos en orden, con saldo acumulado'],
   ]
@@ -589,10 +590,13 @@ export async function generarExcelReporte(d) {
 
   // ── PRODUCTOS VENDIDOS ────────────────────────────────────────────────────
   {
-    const ws = crearHoja(wb, ctx, 'Productos vendidos', { titulo: 'PRODUCTOS VENDIDOS', tema: 'naranja', anchos: [8, 14, 44, 11, 14, 16, 13, 13] })
+    const ws = crearHoja(wb, ctx, 'Productos vendidos', { titulo: 'PRODUCTOS VENDIDOS', tema: 'naranja', anchos: [8, 14, 40, 10, 13, 15, 11, 11, 13, 15] })
+    // Costo de compra actual de cada producto (solo los que tienen compras cargadas)
+    const costoDe = Object.fromEntries((d.stock || []).filter(p => n(p.precio_costo) > 0).map(p => [p.codigo, n(p.precio_costo)]))
+    const ganancia = p => costoDe[p.codigo] != null ? n(p.total) - costoDe[p.codigo] * n(p.cantidad) : null
     const totProd = P.categorias.reduce((a, c) => a + c.total, 0)
     seccion(ws, 'Resumen por categoría')
-    const fmC = [null, null, null, 'u', 'u', 'pesos', 'pct', 'pesos']
+    const fmC = [null, null, null, 'u', 'u', 'pesos', 'pct', 'pesos', null, null]
     const hC = encabezado(ws, ['Categoría', '', '', 'Unidades', 'Productos', 'Total', '% ventas', 'Precio prom.'])
     ws.mergeCells(hC.number, 1, hC.number, 3)
     P.categorias.forEach((c, i) => {
@@ -604,20 +608,23 @@ export async function generarExcelReporte(d) {
       ws.mergeCells(rt.number, 1, rt.number, 3)
     } else sinDatos(ws)
 
-    seccion(ws, 'Detalle por producto', 'Ordenado de mayor a menor facturación dentro de cada categoría. "Puesto" es el lugar del producto dentro de su categoría.')
-    const fm = ['centro', 'centro', null, 'u', 'pesos', 'pesos', 'pct', 'pct']
-    encabezado(ws, ['Puesto', 'Código', 'Producto', 'Unidades', 'Precio prom.', 'Total', '% categoría', '% ventas'])
+    seccion(ws, 'Detalle por producto', 'Ordenado de mayor a menor facturación dentro de cada categoría. "Puesto" es el lugar del producto dentro de su categoría. La ganancia estimada usa el costo de la última compra (solo productos que se compran para revender).')
+    const fm = ['centro', 'centro', null, 'u', 'pesos', 'pesos', 'pct', 'pct', 'pesos', 'pesos']
+    encabezado(ws, ['Puesto', 'Código', 'Producto', 'Unidades', 'Precio prom.', 'Total', '% categoría', '% ventas', 'Costo unit.', 'Ganancia est.'])
     P.categorias.forEach(c => {
       banda(ws, `${c.categoria.toUpperCase()}   ·   ${c.productos.length} productos · ${c.unidades.toLocaleString('es-AR')} unidades · $${Math.round(c.total).toLocaleString('es-AR')}`)
       c.productos.forEach((p, i) => fila(ws, [
         i + 1, p.codigo, p.producto, n(p.cantidad), div(n(p.total), n(p.cantidad)), n(p.total), div(n(p.total), c.total), div(n(p.total), totProd),
+        costoDe[p.codigo] ?? null, ganancia(p),
       ], fm, { alt: i % 2 === 1 }))
-      const rt = totalFila(ws, ['', '', `Subtotal ${c.categoria}`, c.unidades, null, c.total, 1, div(c.total, totProd)], fm)
+      const gCat = c.productos.reduce((a, p) => a + (ganancia(p) ?? 0), 0)
+      const rt = totalFila(ws, ['', '', `Subtotal ${c.categoria}`, c.unidades, null, c.total, 1, div(c.total, totProd), null, gCat || null], fm)
       rt.getCell(3).alignment = { horizontal: 'right', vertical: 'middle' }
     })
     if (P.categorias.length) {
       ws.addRow([]).height = 6
-      const rt = totalFila(ws, ['', '', 'TOTAL VENDIDO', P.categorias.reduce((a, c) => a + c.unidades, 0), null, totProd, null, 1], fm, C.naranjaBanda)
+      const gTot = P.categorias.reduce((a, c) => a + c.productos.reduce((b, p) => b + (ganancia(p) ?? 0), 0), 0)
+      const rt = totalFila(ws, ['', '', 'TOTAL VENDIDO', P.categorias.reduce((a, c) => a + c.unidades, 0), null, totProd, null, 1, null, gTot || null], fm, C.naranjaBanda)
       rt.getCell(3).alignment = { horizontal: 'right', vertical: 'middle' }
 
       seccion(ws, 'Gráficos')
@@ -739,6 +746,59 @@ export async function generarExcelReporte(d) {
     }
   }
 
+  // ── COMPRAS ───────────────────────────────────────────────────────────────
+  {
+    const ws = crearHoja(wb, ctx, 'Compras', { titulo: 'COMPRAS', tema: 'azul', anchos: [12, 9, 24, 18, 11, 38, 11, 9, 13, 15, 16] })
+    const compras = d.compras || []
+    if (!compras.length) sinDatos(ws, 'No hay compras cargadas en el período')
+    else {
+      const items = compras.flatMap(c => c.items.map(i => ({ ...i, compra: c })))
+      const suma = (l, f) => l.reduce((a, x) => a + f(x), 0)
+      const tot = suma(compras, c => n(c.total))
+      const tIns = suma(items.filter(i => i.tipo === 'insumo'), i => n(i.subtotal))
+      const tProd = suma(items.filter(i => i.tipo === 'producto'), i => n(i.subtotal))
+      const aCuenta = suma(compras.filter(c => c.condicion === 'cuenta_corriente'), c => n(c.total))
+      tarjetas(ws, [
+        { etiqueta: 'Total comprado', valor: tot, fmt: 'pesos', color: C.azul, detalle: `${compras.length} compras` },
+        { etiqueta: 'Insumos', valor: tIns, fmt: 'pesos', color: C.verde, detalle: 'Materia prima y envases' },
+        { etiqueta: 'Mercadería para reventa', valor: tProd, fmt: 'pesos', color: C.violeta, detalle: 'Productos del Market' },
+        { etiqueta: 'A cuenta', valor: aCuenta, fmt: 'pesos', color: C.naranja, detalle: `Al contado: $${Math.round(tot - aCuenta).toLocaleString('es-AR')}` },
+      ], 4, 2)
+
+      seccion(ws, 'Por proveedor')
+      const fmP = [null, null, null, 'u', null, 'pesos', null, null, 'pesos', 'pesos', 'pct']
+      const hP = encabezado(ws, ['Proveedor', '', '', 'Compras', '', 'Insumos', '', '', 'Reventa', 'Total', '% del total'])
+      ws.mergeCells(hP.number, 1, hP.number, 3); ws.mergeCells(hP.number, 4, hP.number, 5); ws.mergeCells(hP.number, 6, hP.number, 8)
+      const porProv = {}
+      for (const c of compras) {
+        const x = porProv[c.proveedor] ||= { n: 0, ins: 0, prod: 0, tot: 0 }
+        x.n++; x.tot += n(c.total)
+        for (const i of c.items) x[i.tipo === 'insumo' ? 'ins' : 'prod'] += n(i.subtotal)
+      }
+      Object.entries(porProv).sort((a, b) => b[1].tot - a[1].tot).forEach(([p, x], i) => {
+        const rr = fila(ws, [p, '', '', x.n, '', x.ins || null, '', '', x.prod || null, x.tot, div(x.tot, tot)], fmP, { alt: i % 2 === 1 })
+        ws.mergeCells(rr.number, 1, rr.number, 3); ws.mergeCells(rr.number, 4, rr.number, 5); ws.mergeCells(rr.number, 6, rr.number, 8)
+      })
+      const rt = totalFila(ws, ['TOTAL', '', '', compras.length, '', tIns || null, '', '', tProd || null, tot, 1], fmP)
+      ws.mergeCells(rt.number, 1, rt.number, 3); ws.mergeCells(rt.number, 4, rt.number, 5); ws.mergeCells(rt.number, 6, rt.number, 8)
+
+      seccion(ws, 'Detalle renglón por renglón', 'Una fila por cada cosa comprada. Los precios son finales (con IVA).')
+      const fm = ['fecha', 'centro', null, null, 'centro', null, 'dec', 'centro', 'pesos', 'pesos', null]
+      const hD = encabezado(ws, ['Fecha', 'Compra', 'Proveedor', 'Comprobante', 'Tipo', 'Qué se compró', 'Cantidad', 'Unidad', 'Costo unit.', 'Subtotal', 'Pago'])
+      const ini = ws.rowCount + 1
+      const COMP = { factura_a: 'Factura A', factura_b: 'Factura B', factura_c: 'Factura C', ticket: 'Ticket', remito: 'Remito', sin_comprobante: '—' }
+      items.forEach((i, k) => fila(ws, [
+        fechaXL(i.compra.fecha), `#${i.compra.id}`, i.compra.proveedor,
+        `${COMP[i.compra.tipo_comprobante] || ''}${i.compra.nro_comprobante ? ' ' + i.compra.nro_comprobante : ''}`,
+        i.tipo === 'insumo' ? 'Insumo' : 'Reventa', i.descripcion, n(i.cantidad), i.unidad, n(i.costo_unitario), n(i.subtotal),
+        i.compra.condicion === 'cuenta_corriente' ? 'A cuenta' : labelMetodo(i.compra.metodo_pago),
+      ], fm, { alt: k % 2 === 1 }))
+      filtro(ws, hD.number, ini, ws.rowCount, 11)
+      ws.addRow([]).height = 6
+      totalFila(ws, ['TOTAL', '', '', '', '', `${items.length} renglones`, null, '', null, tot, ''], fm)
+    }
+  }
+
   // ── PRODUCCIÓN (4 hojas) ──────────────────────────────────────────────────
   {
     const { totU, totV, fechas, porDia, categorias, productos } = PR
@@ -841,7 +901,7 @@ export async function generarExcelReporte(d) {
 
   // ── STOCK ─────────────────────────────────────────────────────────────────
   {
-    const ws = crearHoja(wb, ctx, 'Stock', { titulo: 'STOCK ACTUAL', tema: 'naranja', anchos: [14, 46, 10, 14, 14, 16] })
+    const ws = crearHoja(wb, ctx, 'Stock', { titulo: 'STOCK ACTUAL', tema: 'naranja', anchos: [14, 42, 9, 11, 13, 13, 10, 15, 15] })
     const stock = d.stock || []
     if (!stock.length) sinDatos(ws, 'No se pudo obtener el stock')
     else {
@@ -853,10 +913,17 @@ export async function generarExcelReporte(d) {
         { etiqueta: 'Unidades en stock', valor: stock.reduce((a, p) => a + Math.max(n(p.stock), 0), 0), fmt: 'u', color: C.naranja },
         { etiqueta: 'Sin stock', valor: sin, fmt: 'u', color: C.rojo, detalle: `${bajo} con stock bajo (1 a 3)` },
       ], 3, 2)
-      tarjetas(ws, [{ etiqueta: 'Valor a precio de venta', valor: valor, fmt: 'pesos', color: C.verde, detalle: 'Stock actual × precio de venta' }], 3, 2)
-      seccion(ws, 'Detalle por categoría', 'Es el stock de HOY (no depende del período elegido). Los productos sin stock aparecen primero en cada categoría.')
-      const fm = ['centro', null, 'u', 'centro', 'pesos', 'pesos']
-      const hR = encabezado(ws, ['Código', 'Producto', 'Stock', 'Estado', 'Precio venta', 'Valor'])
+      const conCosto = stock.filter(p => n(p.precio_costo) > 0)
+      const valorCosto = conCosto.reduce((a, p) => a + Math.max(n(p.stock), 0) * n(p.precio_costo), 0)
+      const valorVentaConCosto = conCosto.reduce((a, p) => a + Math.max(n(p.stock), 0) * n(p.precio), 0)
+      tarjetas(ws, [
+        { etiqueta: 'Valor a precio de venta', valor: valor, fmt: 'pesos', color: C.verde, detalle: 'Stock actual × precio de venta' },
+        { etiqueta: 'Valor al costo', valor: valorCosto, fmt: 'pesos', color: C.azul, detalle: `${conCosto.length} productos con costo cargado (por compras)` },
+        { etiqueta: 'Ganancia potencial', valor: valorVentaConCosto - valorCosto, fmt: 'pesos', color: C.verde, detalle: 'De los productos con costo, si se vende todo' },
+      ], 3, 2)
+      seccion(ws, 'Detalle por categoría', 'Es el stock de HOY (no depende del período elegido). Los productos sin stock aparecen primero en cada categoría. El costo es el de la última compra.')
+      const fm = ['centro', null, 'u', 'centro', 'pesos', 'pesos', 'pct', 'pesos', 'pesos']
+      const hR = encabezado(ws, ['Código', 'Producto', 'Stock', 'Estado', 'Precio venta', 'Costo', 'Margen', 'Valor venta', 'Valor costo'])
       congelar(ws, hR.number)
       const porCat = {}
       for (const p of stock) (porCat[p.categoria?.nombre || 'Sin categoría'] ||= []).push(p)
@@ -864,19 +931,23 @@ export async function generarExcelReporte(d) {
         lista.sort((a, b) => n(a.stock) - n(b.stock) || a.nombre.localeCompare(b.nombre))
         const u = lista.reduce((a, p) => a + Math.max(n(p.stock), 0), 0)
         const v = lista.reduce((a, p) => a + Math.max(n(p.stock), 0) * n(p.precio), 0)
+        const vc = lista.reduce((a, p) => a + Math.max(n(p.stock), 0) * n(p.precio_costo), 0)
         banda(ws, `${c.toUpperCase()}   ·   ${lista.length} productos · ${u} unidades · ${lista.filter(p => n(p.stock) <= 0).length} sin stock`)
         lista.forEach((p, i) => {
           const s = n(p.stock)
           const estado = s <= 0 ? 'Sin stock' : s <= 3 ? 'Bajo' : 'OK'
-          const r = fila(ws, [p.codigo, p.nombre, s, estado, n(p.precio), Math.max(s, 0) * n(p.precio)], fm, { alt: i % 2 === 1 })
+          const costo = n(p.precio_costo) > 0 ? n(p.precio_costo) : null
+          const r = fila(ws, [p.codigo, p.nombre, s, estado, n(p.precio), costo, costo && n(p.precio) ? (n(p.precio) - costo) / n(p.precio) : null,
+            Math.max(s, 0) * n(p.precio), costo ? Math.max(s, 0) * costo : null], fm, { alt: i % 2 === 1 })
+          if (costo && n(p.precio) && (n(p.precio) - costo) / n(p.precio) < 0.2) r.getCell(7).font = { size: 10, bold: true, color: { argb: 'FF' + C.rojo } }
           const col = s <= 0 ? C.rojo : s <= 3 ? C.naranja : C.verde
           r.getCell(4).font = { size: 10, bold: true, color: { argb: 'FF' + col } }
           if (s <= 0) r.getCell(3).font = { size: 10, bold: true, color: { argb: 'FF' + C.rojo } }
         })
-        totalFila(ws, ['', `Subtotal ${c}`, u, '', null, v], fm)
+        totalFila(ws, ['', `Subtotal ${c}`, u, '', null, null, null, v, vc || null], fm)
         ws.addRow([]).height = 6
       })
-      totalFila(ws, ['', 'TOTAL', stock.reduce((a, p) => a + Math.max(n(p.stock), 0), 0), '', null, valor], fm, C.naranjaBanda)
+      totalFila(ws, ['', 'TOTAL', stock.reduce((a, p) => a + Math.max(n(p.stock), 0), 0), '', null, null, null, valor, valorCosto || null], fm, C.naranjaBanda)
     }
   }
 

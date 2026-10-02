@@ -109,7 +109,8 @@
 
           <!-- Insumos -->
           <div class="bg-gray-50 rounded-xl p-4 mb-4">
-            <p class="font-body text-sm font-semibold text-gray-700 mb-3">🧪 Insumos utilizados</p>
+            <p class="font-body text-sm font-semibold text-gray-700 mb-1">🧪 Insumos utilizados</p>
+            <p class="font-body text-xs text-gray-400 mb-3">Lo que cargues acá se descuenta del stock de insumos al guardar.</p>
             <div class="flex gap-2 mb-3">
               <select
                 v-model="insumoSel"
@@ -117,7 +118,7 @@
               >
                 <option value="">— Seleccionar insumo —</option>
                 <option v-for="ins in catalogoInsumos" :key="ins.id" :value="ins.id">
-                  {{ ins.nombre }}
+                  {{ ins.nombre }} (hay {{ Number(ins.stock ?? 0).toLocaleString('es-AR') }} {{ ins.unidad }})
                 </option>
               </select>
               <div class="flex items-center gap-1">

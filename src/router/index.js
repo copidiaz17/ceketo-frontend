@@ -52,6 +52,7 @@ const router = createRouter({
         { path: 'movimientos', name: 'admin-movimientos', component: () => import('../views/admin/MovimientosView.vue') },
         { path: 'stock',       name: 'admin-stock',       component: () => import('../views/admin/StockView.vue') },
         { path: 'gastos',      name: 'admin-gastos',      component: () => import('../views/admin/GastosView.vue') },
+        { path: 'compras',     name: 'admin-compras',     component: () => import('../views/admin/ComprasView.vue') },
         { path: 'categorias',  name: 'admin-categorias',  component: () => import('../views/admin/CategoriasView.vue') },
         { path: 'reportes',    name: 'admin-reportes',    component: () => import('../views/admin/ReportesView.vue') },
         { path: 'cuentas',     name: 'admin-cuentas',     component: () => import('../views/admin/CuentasCorrientesView.vue') },
