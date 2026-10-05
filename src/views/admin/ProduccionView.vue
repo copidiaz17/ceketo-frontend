@@ -486,17 +486,15 @@ async function confirmarProduccion() {
     const lote_id = crypto.randomUUID()
     const fechaLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
 
+    // Productos + horas + insumos van en UNA sola llamada: se graban todos juntos o ninguno
+    // (así no puede quedar la producción grabada sin los insumos y que alguien la vuelva a cargar)
+    const tieneCostos = (costos.value.horas > 0 && costos.value.costo_hora > 0) || costos.value.insumos.length > 0
     await axios.post('/api/produccion', {
       lote_id,
       fecha: fechaLocal,
       items: lote.value.map(i => ({ producto_id: i.producto_id, cantidad: i.cantidad })),
       nota: nota.value || undefined,
-    }, { headers })
-
-    // Guardar costos si se cargaron horas o insumos
-    const tieneCostos = (costos.value.horas > 0 && costos.value.costo_hora > 0) || costos.value.insumos.length > 0
-    if (tieneCostos) {
-      await axios.post(`/api/lote-costos/${lote_id}`, {
+      costos: tieneCostos ? {
         horas:      costos.value.horas,
         costo_hora: costos.value.costo_hora,
         insumos:    costos.value.insumos.map(i => ({
@@ -504,8 +502,8 @@ async function confirmarProduccion() {
           cantidad:       i.cantidad,
           costo_unitario: i.costo_unitario,
         })),
-      }, { headers })
-    }
+      } : undefined,
+    }, { headers })
 
     mensajeOk.value = `✓ ${lote.value.length} producto(s) registrado(s) correctamente`
     lote.value  = []
