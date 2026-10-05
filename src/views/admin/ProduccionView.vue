@@ -1,12 +1,13 @@
 <template>
-  <div class="p-8">
+  <div class="p-4 sm:p-6 lg:p-8">
     <!-- Header -->
     <div class="mb-8">
       <h1 class="font-display text-3xl font-bold text-gray-900">Carga de Producción</h1>
       <p class="font-body text-gray-500 mt-1">Registrá los productos que llegan de fábrica al negocio</p>
     </div>
 
-    <div class="grid lg:grid-cols-2 gap-8">
+    <!-- grid-cols-1 (= minmax(0,1fr)): sin esto la columna se estira con los nombres largos y la página se corta en el celular -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
       <!-- Formulario de carga -->
       <div class="bg-white border border-gray-200 rounded-2xl p-6">
         <h2 class="font-display text-lg font-semibold text-gray-900 mb-5">Agregar ítem</h2>
@@ -111,31 +112,33 @@
           <div class="bg-gray-50 rounded-xl p-4 mb-4">
             <p class="font-body text-sm font-semibold text-gray-700 mb-1">🧪 Insumos utilizados</p>
             <p class="font-body text-xs text-gray-400 mb-3">Lo que cargues acá se descuenta del stock de insumos al guardar.</p>
-            <div class="flex gap-2 mb-3">
+            <!-- Insumo en una línea (los nombres son largos) y abajo cantidad + botón: así el botón no se sale del recuadro -->
+            <div class="mb-3 space-y-2">
               <select
                 v-model="insumoSel"
-                class="flex-1 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+                class="w-full min-w-0 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
               >
-                <option value="">— Seleccionar insumo —</option>
+                <option value="">— Elegí el insumo —</option>
                 <option v-for="ins in catalogoInsumos" :key="ins.id" :value="ins.id">
                   {{ ins.nombre }} (hay {{ Number(ins.stock ?? 0).toLocaleString('es-AR') }} {{ ins.unidad }})
                 </option>
               </select>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-2">
                 <input
                   v-model.number="insumoQty"
                   type="number" min="0.001"
                   :step="insumoSelObj?.unidad === 'unidad' ? 1 : 0.001"
-                  placeholder="0"
-                  class="w-24 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+                  placeholder="Cantidad"
+                  @keydown.enter.prevent="agregarInsumo"
+                  class="flex-1 min-w-[6rem] px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
                 />
-                <span class="font-body text-xs text-gray-400 w-10 text-left">{{ insumoSelObj?.unidad || '' }}</span>
+                <span class="font-body text-sm text-gray-500 w-12 shrink-0">{{ insumoSelObj?.unidad || '' }}</span>
+                <button
+                  @click="agregarInsumo"
+                  :disabled="!insumoSel || !insumoQty"
+                  class="shrink-0 px-4 py-2 bg-teal text-white rounded-lg font-body text-sm font-semibold hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >+ Agregar insumo</button>
               </div>
-              <button
-                @click="agregarInsumo"
-                :disabled="!insumoSel || !insumoQty"
-                class="px-4 py-2 bg-teal text-white rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >+ Agregar</button>
             </div>
             <div v-if="costos.insumos.length === 0" class="text-center py-2 text-gray-400 font-body text-xs">Sin insumos cargados</div>
             <div v-else class="space-y-2">
@@ -308,33 +311,34 @@
         <div class="bg-gray-50 rounded-xl p-4 mb-4">
           <h3 class="font-body text-sm font-semibold text-gray-700 mb-3">🧪 Insumos utilizados</h3>
 
-          <!-- Agregar insumo -->
-          <div class="flex gap-2 mb-3">
+          <!-- Insumo en una línea (los nombres son largos) y abajo cantidad + botón: así el botón no se sale del recuadro -->
+          <div class="mb-3 space-y-2">
             <select
               v-model="insumoSel"
-              class="flex-1 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+              class="w-full min-w-0 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
               @change="insumoSel && (insumoQty = 1)"
             >
-              <option value="">— Seleccionar insumo —</option>
+              <option value="">— Elegí el insumo —</option>
               <option v-for="ins in catalogoInsumos" :key="ins.id" :value="ins.id">
-                {{ ins.nombre }}
+                {{ ins.nombre }} (hay {{ Number(ins.stock ?? 0).toLocaleString('es-AR') }} {{ ins.unidad }})
               </option>
             </select>
-            <div class="flex items-center gap-1">
+            <div class="flex items-center gap-2">
               <input
                 v-model.number="insumoQty"
                 type="number" min="0.001"
                 :step="insumoSelObj?.unidad === 'unidad' ? 1 : 0.001"
-                placeholder="0"
-                class="w-24 px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
+                placeholder="Cantidad"
+                @keydown.enter.prevent="agregarInsumo"
+                class="flex-1 min-w-[6rem] px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal transition-colors"
               />
-              <span class="font-body text-xs text-gray-400 w-10 text-left">{{ insumoSelObj?.unidad || '' }}</span>
+              <span class="font-body text-sm text-gray-500 w-12 shrink-0">{{ insumoSelObj?.unidad || '' }}</span>
+              <button
+                @click="agregarInsumo"
+                :disabled="!insumoSel || !insumoQty"
+                class="shrink-0 px-4 py-2 bg-teal text-white rounded-lg font-body text-sm font-semibold hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >+ Agregar insumo</button>
             </div>
-            <button
-              @click="agregarInsumo"
-              :disabled="!insumoSel || !insumoQty"
-              class="px-4 py-2 bg-teal text-white rounded-lg font-body text-sm font-medium hover:bg-teal/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >+ Agregar</button>
           </div>
 
           <!-- Lista de insumos cargados -->
