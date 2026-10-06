@@ -8,12 +8,24 @@
                      : 'Lo que hay disponible de cada insumo. Baja solo cuando cargan los insumos de cada lote en Producción.' }}
         </p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
+        <button v-if="esAdmin" @click="abrirConteo"
+          class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-body text-sm font-medium hover:bg-gray-50">📋 Carga inicial / conteo</button>
         <RouterLink v-if="esAdmin" to="/admin/compras"
           class="px-5 py-2.5 rounded-xl border border-teal/40 text-teal font-body text-sm font-medium hover:bg-teal/5">🧾 Cargar compra</RouterLink>
         <button @click="abrirModal()"
           class="bg-keto-orange text-gray-900 px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-keto-orange/80 transition-colors">+ Nuevo insumo</button>
       </div>
+    </div>
+
+    <!-- Aviso: todavía no se cargó el stock inicial -->
+    <div v-if="esAdmin && !cargando && activos.length && activos.every(i => Number(i.stock) === 0)"
+      class="mb-6 flex flex-wrap items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+      <p class="font-body text-sm text-amber-900">
+        <b>Falta la carga inicial.</b> Todos los insumos están en 0. Contá lo que hay en la fábrica y cargalo de una vez;
+        a partir de ahí el stock sube con <b>Compras</b> y baja con lo que se usa en <b>Producción</b>.
+      </p>
+      <button @click="abrirConteo" class="px-4 py-2 rounded-xl bg-amber-500 text-white font-body text-sm font-semibold hover:bg-amber-600">📋 Hacer la carga inicial</button>
     </div>
 
     <!-- Resumen -->
@@ -139,6 +151,78 @@
     </div>
   </div>
 
+  <!-- Modal carga inicial / conteo general: todos los insumos en una planilla -->
+  <div v-if="conteo" class="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-3xl my-6">
+      <div class="flex justify-between items-start gap-3 mb-2">
+        <div>
+          <h2 class="font-display text-xl font-bold text-gray-900">Carga inicial / conteo de insumos</h2>
+          <p class="font-body text-sm text-gray-500 mt-1">
+            Escribí cuánto hay <b>contado</b> de cada insumo. Lo que dejes vacío no se toca.
+            El costo es opcional (sirve para valorizar el stock hasta la primera compra).
+          </p>
+        </div>
+        <button @click="conteo = null" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+      </div>
+      <div class="mb-3">
+        <label class="lbl">Motivo</label>
+        <select v-model="conteo.motivo" class="campo">
+          <option>Carga inicial</option>
+          <option>Conteo de fin de mes</option>
+          <option>Conteo general</option>
+        </select>
+      </div>
+      <div class="border border-gray-200 rounded-xl overflow-hidden">
+        <table class="w-full font-body text-sm">
+          <thead>
+            <tr class="bg-gray-50 text-gray-500 text-xs">
+              <th class="text-left px-3 py-2">Insumo</th>
+              <th class="text-right px-3 py-2">El sistema dice</th>
+              <th class="text-left px-3 py-2 w-36">Hay ahora</th>
+              <th class="text-left px-3 py-2 w-36">Costo por unidad</th>
+              <th class="text-right px-3 py-2">Diferencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="f in conteo.filas" :key="f.id" class="border-t border-gray-100">
+              <td class="px-3 py-2 text-gray-900 font-medium">{{ f.nombre }}</td>
+              <td class="px-3 py-2 text-right text-gray-500 whitespace-nowrap">{{ fmtCant(f.stock) }} {{ f.unidad }}</td>
+              <td class="px-3 py-2">
+                <div class="flex items-center gap-1">
+                  <input v-model="f.stock_nuevo" type="number" min="0" step="0.001" placeholder="—"
+                    class="w-24 px-2 py-1.5 rounded-lg border border-gray-200 bg-white focus:outline-none focus:border-teal" />
+                  <span class="text-xs text-gray-400">{{ f.unidad }}</span>
+                </div>
+              </td>
+              <td class="px-3 py-2">
+                <div class="flex items-center gap-1">
+                  <span class="text-xs text-gray-400">$</span>
+                  <input v-model="f.costo_unitario" type="number" min="0" step="0.01" :placeholder="Number(f.costo_actual) ? fmt0(f.costo_actual) : '—'"
+                    class="w-24 px-2 py-1.5 rounded-lg border border-gray-200 bg-white focus:outline-none focus:border-teal" />
+                </div>
+              </td>
+              <td class="px-3 py-2 text-right whitespace-nowrap font-semibold"
+                :class="difConteo(f) === null ? 'text-gray-300' : difConteo(f) < 0 ? 'text-red-500' : difConteo(f) > 0 ? 'text-teal' : 'text-gray-400'">
+                {{ difConteo(f) === null ? '—' : (difConteo(f) > 0 ? '+' : '') + fmtCant(difConteo(f)) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-if="error" class="text-red-500 text-sm font-body mt-3">{{ error }}</p>
+      <div class="flex flex-wrap items-center justify-between gap-3 mt-5">
+        <span class="font-body text-sm text-gray-500">{{ cambiosConteo }} insumo{{ cambiosConteo === 1 ? '' : 's' }} con datos cargados</span>
+        <div class="flex gap-3">
+          <button @click="conteo = null" class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-body text-sm">Cancelar</button>
+          <button @click="guardarConteo" :disabled="guardando || !cambiosConteo"
+            class="px-6 py-2.5 bg-teal text-white font-body text-sm font-semibold rounded-xl hover:bg-teal/85 disabled:opacity-40">
+            {{ guardando ? 'Guardando...' : 'Guardar todo' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal ajuste de stock -->
   <div v-if="ajuste" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
     <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-md">
@@ -210,6 +294,34 @@ const error     = ref('')
 const soloReponer = ref(false)
 const ajuste    = ref(null)
 const movs      = ref(null)
+const conteo    = ref(null)   // { motivo, filas: [{ id, nombre, unidad, stock, costo_actual, stock_nuevo, costo_unitario }] }
+
+const vacio = v => v === '' || v === null || v === undefined
+const difConteo = f => vacio(f.stock_nuevo) ? null : Math.round((Number(f.stock_nuevo) - Number(f.stock)) * 1000) / 1000
+const cambiosConteo = computed(() => conteo.value ? conteo.value.filas.filter(f => !vacio(f.stock_nuevo) || !vacio(f.costo_unitario)).length : 0)
+
+function abrirConteo() {
+  error.value = ''
+  const primeraVez = activos.value.every(i => Number(i.stock) === 0)
+  conteo.value = {
+    motivo: primeraVez ? 'Carga inicial' : 'Conteo general',
+    filas: activos.value.map(i => ({ id: i.id, nombre: i.nombre, unidad: i.unidad, stock: i.stock, costo_actual: i.costo_unitario, stock_nuevo: '', costo_unitario: '' })),
+  }
+}
+async function guardarConteo() {
+  error.value = ''
+  const items = conteo.value.filas
+    .filter(f => !vacio(f.stock_nuevo) || !vacio(f.costo_unitario))
+    .map(f => ({ id: f.id, stock_nuevo: vacio(f.stock_nuevo) ? null : Number(f.stock_nuevo), costo_unitario: vacio(f.costo_unitario) ? null : Number(f.costo_unitario) }))
+  guardando.value = true
+  try {
+    await axios.post('/api/insumos/conteo', { motivo: conteo.value.motivo, items })
+    conteo.value = null
+    await cargar()
+  } catch (err) {
+    error.value = err.response?.data?.error || 'No se pudo guardar'
+  } finally { guardando.value = false }
+}
 const form = ref({ nombre: '', unidad: 'kg', costo_unitario: 0, stock_minimo: 0 })
 
 const TIPOS = {
