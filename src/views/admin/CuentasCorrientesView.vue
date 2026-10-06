@@ -6,9 +6,20 @@
         <h1 class="font-display text-3xl font-bold text-gray-900">Cuentas Corrientes</h1>
         <p class="font-body text-gray-500 mt-1">Clientes y proveedores que operan en cuenta</p>
       </div>
-      <button @click="abrirModalCuenta()" class="flex items-center gap-2 bg-teal text-white px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors">
-        + Nueva cuenta
-      </button>
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Informe general de todas las cuentas -->
+        <button @click="informeGeneral('excel')" :disabled="!!generando"
+          class="px-4 py-2.5 rounded-xl bg-green-600 text-white font-body text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50">
+          {{ generando === 'g-excel' ? 'Generando...' : '📊 Informe Excel' }}
+        </button>
+        <button @click="informeGeneral('pdf')" :disabled="!!generando"
+          class="px-4 py-2.5 rounded-xl border border-brand-green text-brand-green font-body text-sm font-medium hover:bg-brand-green hover:text-white transition-colors disabled:opacity-50">
+          {{ generando === 'g-pdf' ? 'Generando...' : '📄 Informe PDF' }}
+        </button>
+        <button @click="abrirModalCuenta()" class="flex items-center gap-2 bg-teal text-white px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-teal/80 transition-colors">
+          + Nueva cuenta
+        </button>
+      </div>
     </div>
 
     <!-- Tabs cliente / proveedor -->
@@ -148,6 +159,24 @@
             </p>
             <p class="font-body text-xs text-gray-400">{{ saldoLabelDetalle }}</p>
           </div>
+        </div>
+
+        <!-- Estado de cuenta (Excel / PDF), con período opcional -->
+        <div class="px-6 py-3 border-b border-gray-200 bg-white">
+          <p class="font-body text-xs text-gray-500 mb-2">Estado de cuenta <span class="text-gray-400">(sin fechas = todos los movimientos)</span></p>
+          <div class="flex flex-wrap items-end gap-2">
+            <label class="font-body text-xs text-gray-400">Desde
+              <input v-model="periodo.desde" type="date" class="block mt-0.5 px-2 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:border-teal" />
+            </label>
+            <label class="font-body text-xs text-gray-400">Hasta
+              <input v-model="periodo.hasta" type="date" class="block mt-0.5 px-2 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-800 focus:outline-none focus:border-teal" />
+            </label>
+            <button @click="estadoCuenta('excel')" :disabled="!!generando"
+              class="px-3 py-2 rounded-lg bg-green-600 text-white font-body text-sm font-medium hover:bg-green-700 disabled:opacity-50">📊 Excel</button>
+            <button @click="estadoCuenta('pdf')" :disabled="!!generando"
+              class="px-3 py-2 rounded-lg border border-brand-green text-brand-green font-body text-sm font-medium hover:bg-brand-green hover:text-white disabled:opacity-50">📄 PDF</button>
+          </div>
+          <p v-if="errorInforme" class="font-body text-xs text-red-500 mt-2">{{ errorInforme }}</p>
         </div>
 
         <!-- Botón nuevo movimiento -->
@@ -293,6 +322,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { excelGeneral, pdfGeneral, excelEstado, pdfEstado } from '@/utils/informesCuentas'
 
 const cuentas      = ref([])
 const productos    = ref([])
@@ -302,6 +332,35 @@ const detalle      = ref(null)
 const guardandoMov = ref(false)
 const prodSelId    = ref('')
 const prodCant     = ref(1)
+const generando    = ref('')            // qué informe se está armando ('g-excel', 'e-pdf'...)
+const periodo      = ref({ desde: '', hasta: '' })
+const errorInforme = ref('')
+
+// Informe general: todas las cuentas (clientes y proveedores) con sus saldos
+async function informeGeneral(formato) {
+  generando.value = 'g-' + formato
+  try {
+    const { data } = await axios.get('/api/cuentas/informe')
+    if (formato === 'excel') await excelGeneral(data)
+    else pdfGeneral(data)
+  } catch (e) {
+    alert(e.response?.data?.error || 'No se pudo generar el informe: ' + e.message)
+  } finally { generando.value = '' }
+}
+
+// Estado de cuenta de la cuenta abierta en el panel
+async function estadoCuenta(formato) {
+  errorInforme.value = ''
+  const { desde, hasta } = periodo.value
+  if (desde && hasta && desde > hasta) { errorInforme.value = 'La fecha "desde" es posterior a "hasta"'; return }
+  generando.value = 'e-' + formato
+  try {
+    if (formato === 'excel') await excelEstado(detalle.value.cuenta, detalle.value.movimientos, desde, hasta)
+    else pdfEstado(detalle.value.cuenta, detalle.value.movimientos, desde, hasta)
+  } catch (e) {
+    errorInforme.value = 'No se pudo generar: ' + e.message
+  } finally { generando.value = '' }
+}
 
 const tabs = [
   { value: 'cliente',    label: 'Clientes' },
