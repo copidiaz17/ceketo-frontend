@@ -8,8 +8,8 @@
                      : 'Lo que hay disponible de cada insumo. Baja solo cuando cargan los insumos de cada lote en Producción.' }}
         </p>
       </div>
-      <div v-if="esAdmin" class="flex gap-2">
-        <RouterLink to="/admin/compras"
+      <div class="flex gap-2">
+        <RouterLink v-if="esAdmin" to="/admin/compras"
           class="px-5 py-2.5 rounded-xl border border-teal/40 text-teal font-body text-sm font-medium hover:bg-teal/5">🧾 Cargar compra</RouterLink>
         <button @click="abrirModal()"
           class="bg-keto-orange text-gray-900 px-5 py-2.5 rounded-xl font-body font-medium text-sm hover:bg-keto-orange/80 transition-colors">+ Nuevo insumo</button>
@@ -108,12 +108,15 @@
           <label class="lbl">Nombre *</label>
           <input v-model="form.nombre" type="text" placeholder="Ej: Harina de almendras" class="campo" />
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid gap-3" :class="esAdmin ? 'grid-cols-2' : 'grid-cols-1'">
           <div>
-            <label class="lbl">Unidad</label>
-            <input v-model="form.unidad" type="text" placeholder="kg, litro, unidad..." class="campo" />
+            <label class="lbl">Unidad (en qué se mide)</label>
+            <input v-model="form.unidad" type="text" list="unidades-insumo" placeholder="kg, litro, unidad..." class="campo" />
+            <datalist id="unidades-insumo">
+              <option value="kg" /><option value="g" /><option value="litro" /><option value="ml" /><option value="unidad" /><option value="paquete" />
+            </datalist>
           </div>
-          <div>
+          <div v-if="esAdmin">
             <label class="lbl">Costo por {{ form.unidad || 'unidad' }} ($)</label>
             <input v-model.number="form.costo_unitario" type="number" min="0" step="0.01" class="campo" />
           </div>
@@ -122,7 +125,8 @@
           <label class="lbl">Stock mínimo ({{ form.unidad || 'unidad' }}) — avisa cuando hay que reponer</label>
           <input v-model.number="form.stock_minimo" type="number" min="0" step="0.001" placeholder="0 = sin aviso" class="campo" />
         </div>
-        <p class="font-body text-xs text-gray-400">El costo se actualiza solo con cada compra. El stock se mueve con compras, producción o "Ajustar stock".</p>
+        <p v-if="esAdmin" class="font-body text-xs text-gray-400">El costo se actualiza solo con cada compra. El stock se mueve con compras, producción o "Ajustar stock".</p>
+        <p v-else class="font-body text-xs text-gray-400">Arranca con stock 0. Sube cuando la administración carga la compra y baja cuando lo usan en un lote.</p>
       </div>
       <p v-if="error" class="text-red-500 text-sm font-body mt-3">{{ error }}</p>
       <div class="flex gap-3 mt-6">
@@ -252,8 +256,9 @@ async function guardar() {
   if (!form.value.nombre.trim()) { error.value = 'El nombre es obligatorio'; return }
   guardando.value = true
   try {
-    if (editando.value) await axios.put(`/api/insumos/${editando.value.id}`, form.value)
-    else await axios.post('/api/insumos', form.value)
+    const datos = esAdmin ? form.value : { nombre: form.value.nombre, unidad: form.value.unidad, stock_minimo: form.value.stock_minimo }
+    if (editando.value) await axios.put(`/api/insumos/${editando.value.id}`, datos)
+    else await axios.post('/api/insumos', datos)
     cerrarModal()
     await cargar()
   } catch (err) {
