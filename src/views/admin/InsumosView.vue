@@ -9,7 +9,7 @@
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button v-if="esAdmin" @click="abrirConteo"
+        <button @click="abrirConteo"
           class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-body text-sm font-medium hover:bg-gray-50">📋 Carga inicial / conteo</button>
         <RouterLink v-if="esAdmin" to="/admin/compras"
           class="px-5 py-2.5 rounded-xl border border-teal/40 text-teal font-body text-sm font-medium hover:bg-teal/5">🧾 Cargar compra</RouterLink>
@@ -19,7 +19,7 @@
     </div>
 
     <!-- Aviso: todavía no se cargó el stock inicial -->
-    <div v-if="esAdmin && !cargando && activos.length && activos.every(i => Number(i.stock) === 0)"
+    <div v-if="!cargando && activos.length && activos.every(i => Number(i.stock) === 0)"
       class="mb-6 flex flex-wrap items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
       <p class="font-body text-sm text-amber-900">
         <b>Falta la carga inicial.</b> Todos los insumos están en 0. Contá lo que hay en la fábrica y cargalo de una vez;
@@ -104,7 +104,7 @@
     </p>
     <p v-else class="font-body text-xs text-gray-400 mt-3">
       📜 Tocá el historial para ver qué entró (compras) y qué se usó en cada lote.
-      Si al contar no coincide con lo que hay en la fábrica, avisale a la administración para que lo ajuste.
+      Si al contar no coincide con lo que hay en la fábrica, cargalo con "📋 Carga inicial / conteo".
     </p>
   </div>
 
@@ -159,7 +159,8 @@
           <h2 class="font-display text-xl font-bold text-gray-900">Carga inicial / conteo de insumos</h2>
           <p class="font-body text-sm text-gray-500 mt-1">
             Escribí cuánto hay <b>contado</b> de cada insumo. Lo que dejes vacío no se toca.
-            El costo es opcional (sirve para valorizar el stock hasta la primera compra).
+            <template v-if="esAdmin">El costo es opcional (sirve para valorizar el stock hasta la primera compra).</template>
+            <template v-else>Queda registrado con tu usuario en el historial de cada insumo.</template>
           </p>
         </div>
         <button @click="conteo = null" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
@@ -179,7 +180,7 @@
               <th class="text-left px-3 py-2">Insumo</th>
               <th class="text-right px-3 py-2">El sistema dice</th>
               <th class="text-left px-3 py-2 w-36">Hay ahora</th>
-              <th class="text-left px-3 py-2 w-36">Costo por unidad</th>
+              <th v-if="esAdmin" class="text-left px-3 py-2 w-36">Costo por unidad</th>
               <th class="text-right px-3 py-2">Diferencia</th>
             </tr>
           </thead>
@@ -194,7 +195,7 @@
                   <span class="text-xs text-gray-400">{{ f.unidad }}</span>
                 </div>
               </td>
-              <td class="px-3 py-2">
+              <td v-if="esAdmin" class="px-3 py-2">
                 <div class="flex items-center gap-1">
                   <span class="text-xs text-gray-400">$</span>
                   <input v-model="f.costo_unitario" type="number" min="0" step="0.01" :placeholder="Number(f.costo_actual) ? fmt0(f.costo_actual) : '—'"
@@ -312,7 +313,7 @@ async function guardarConteo() {
   error.value = ''
   const items = conteo.value.filas
     .filter(f => !vacio(f.stock_nuevo) || !vacio(f.costo_unitario))
-    .map(f => ({ id: f.id, stock_nuevo: vacio(f.stock_nuevo) ? null : Number(f.stock_nuevo), costo_unitario: vacio(f.costo_unitario) ? null : Number(f.costo_unitario) }))
+    .map(f => ({ id: f.id, stock_nuevo: vacio(f.stock_nuevo) ? null : Number(f.stock_nuevo), costo_unitario: !esAdmin || vacio(f.costo_unitario) ? null : Number(f.costo_unitario) }))
   guardando.value = true
   try {
     await axios.post('/api/insumos/conteo', { motivo: conteo.value.motivo, items })
