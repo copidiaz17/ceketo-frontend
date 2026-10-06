@@ -3,9 +3,12 @@
     <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
       <div>
         <h1 class="font-display text-3xl font-bold text-gray-900">Insumos</h1>
-        <p class="font-body text-gray-500 mt-1">Stock de materia prima y envases. Sube con las compras y baja con lo que se usa en producción.</p>
+        <p class="font-body text-gray-500 mt-1">
+          {{ esAdmin ? 'Stock de materia prima y envases. Sube con las compras y baja con lo que se usa en producción.'
+                     : 'Lo que hay disponible de cada insumo. Baja solo cuando cargan los insumos de cada lote en Producción.' }}
+        </p>
       </div>
-      <div class="flex gap-2">
+      <div v-if="esAdmin" class="flex gap-2">
         <RouterLink to="/admin/compras"
           class="px-5 py-2.5 rounded-xl border border-teal/40 text-teal font-body text-sm font-medium hover:bg-teal/5">🧾 Cargar compra</RouterLink>
         <button @click="abrirModal()"
@@ -14,7 +17,7 @@
     </div>
 
     <!-- Resumen -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 gap-4 mb-6" :class="esAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'">
       <div class="bg-white border border-gray-200 rounded-2xl p-5">
         <p class="font-body text-xs text-gray-500 mb-1">Insumos activos</p>
         <p class="font-display text-2xl font-bold text-gray-900">{{ activos.length }}</p>
@@ -29,7 +32,7 @@
         <p class="font-body text-xs text-gray-500 mb-1">Sin stock</p>
         <p class="font-display text-2xl font-bold" :class="sinStock ? 'text-red-500' : 'text-gray-900'">{{ sinStock }}</p>
       </div>
-      <div class="bg-white border border-gray-200 rounded-2xl p-5">
+      <div v-if="esAdmin" class="bg-white border border-gray-200 rounded-2xl p-5">
         <p class="font-body text-xs text-gray-500 mb-1">Valor del stock</p>
         <p class="font-display text-2xl font-bold text-teal">${{ fmt0(valorStock) }}</p>
         <p class="font-body text-xs text-gray-400 mt-1">Al costo de la última compra</p>
@@ -49,8 +52,8 @@
               <th class="th text-left">Insumo</th>
               <th class="th text-right">Stock</th>
               <th class="th text-right">Mínimo</th>
-              <th class="th text-right">Costo (última compra)</th>
-              <th class="th text-right">Valor en stock</th>
+              <th v-if="esAdmin" class="th text-right">Costo (última compra)</th>
+              <th v-if="esAdmin" class="th text-right">Valor en stock</th>
               <th class="th text-center">Estado</th>
               <th class="th text-center">Acciones</th>
             </tr>
@@ -64,8 +67,8 @@
               <td class="px-5 py-3.5 text-right font-body text-sm text-gray-500 whitespace-nowrap">
                 {{ Number(ins.stock_minimo) > 0 ? fmtCant(ins.stock_minimo) + ' ' + ins.unidad : '—' }}
               </td>
-              <td class="px-5 py-3.5 text-right font-body text-sm text-gray-700 whitespace-nowrap">${{ fmt(ins.costo_unitario) }} <span class="text-gray-400">/{{ ins.unidad }}</span></td>
-              <td class="px-5 py-3.5 text-right font-body text-sm text-gray-700">${{ fmt0(Math.max(Number(ins.stock), 0) * Number(ins.costo_unitario)) }}</td>
+              <td v-if="esAdmin" class="px-5 py-3.5 text-right font-body text-sm text-gray-700 whitespace-nowrap">${{ fmt(ins.costo_unitario) }} <span class="text-gray-400">/{{ ins.unidad }}</span></td>
+              <td v-if="esAdmin" class="px-5 py-3.5 text-right font-body text-sm text-gray-700">${{ fmt0(Math.max(Number(ins.stock), 0) * Number(ins.costo_unitario)) }}</td>
               <td class="px-5 py-3.5 text-center">
                 <span v-if="!ins.activo" class="pill bg-gray-100 text-gray-400">Inactivo</span>
                 <span v-else-if="Number(ins.stock) <= 0" class="pill bg-red-100 text-red-600">Sin stock</span>
@@ -73,19 +76,23 @@
                 <span v-else class="pill bg-teal/10 text-teal">OK</span>
               </td>
               <td class="px-5 py-3.5 text-center whitespace-nowrap">
-                <button @click="abrirAjuste(ins)" class="accion" title="Ajustar stock (conteo)">📦</button>
+                <button v-if="esAdmin" @click="abrirAjuste(ins)" class="accion" title="Ajustar stock (conteo)">📦</button>
                 <button @click="verMovimientos(ins)" class="accion" title="Historial de movimientos">📜</button>
-                <button @click="abrirModal(ins)" class="accion" title="Editar">✏️</button>
-                <button @click="toggleActivo(ins)" class="accion" :title="ins.activo ? 'Desactivar' : 'Activar'">{{ ins.activo ? '🔒' : '🔓' }}</button>
+                <button v-if="esAdmin" @click="abrirModal(ins)" class="accion" title="Editar">✏️</button>
+                <button v-if="esAdmin" @click="toggleActivo(ins)" class="accion" :title="ins.activo ? 'Desactivar' : 'Activar'">{{ ins.activo ? '🔒' : '🔓' }}</button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-    <p class="font-body text-xs text-gray-400 mt-3">
+    <p v-if="esAdmin" class="font-body text-xs text-gray-400 mt-3">
       📦 Ajustar stock: cuando cuenten lo que hay en la fábrica, cargan lo que contaron y queda registrada la diferencia.
       En Producción, los insumos que se cargan en cada lote se descuentan solos.
+    </p>
+    <p v-else class="font-body text-xs text-gray-400 mt-3">
+      📜 Tocá el historial para ver qué entró (compras) y qué se usó en cada lote.
+      Si al contar no coincide con lo que hay en la fábrica, avisale a la administración para que lo ajuste.
     </p>
   </div>
 
@@ -188,6 +195,8 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
+// Admin: todo. Fábrica: solo mirar el stock y el historial (sin costos, sin editar ni ajustar)
+const esAdmin   = localStorage.getItem('ceketo_rol') === 'admin'
 const insumos   = ref([])
 const cargando  = ref(false)
 const modal     = ref(false)
@@ -223,7 +232,7 @@ const difAjuste  = computed(() => ajuste.value ? Math.round(((Number(ajuste.valu
 async function cargar() {
   cargando.value = true
   try {
-    const { data } = await axios.get('/api/insumos/todos')
+    const { data } = await axios.get(esAdmin ? '/api/insumos/todos' : '/api/insumos')
     insumos.value = data
   } finally { cargando.value = false }
 }

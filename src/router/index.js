@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-const FABRICA_ALLOWED = ['/admin/produccion', '/admin/stock', '/admin/configuracion']
+const FABRICA_ALLOWED = ['/admin/produccion', '/admin/stock', '/admin/insumos', '/admin/configuracion']
 const VENTAS_ALLOWED  = ['/admin/ventas', '/admin/cuentas', '/admin/stock', '/admin/configuracion']
 // Community manager: solo Productos (y su propia clave en Configuración)
 const CONTENIDO_ALLOWED = ['/admin/productos', '/admin/configuracion']

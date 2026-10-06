@@ -132,7 +132,7 @@ const ALL_LINKS = [
   { to: '/admin/caja',        icon: '🏧', label: 'Caja',            roles: ['admin'] },
   { to: '/admin/categorias',  icon: '🏷️', label: 'Categorías',     roles: ['admin'] },
   { to: '/admin/reportes',    icon: '📈', label: 'Reportes',        roles: ['admin'] },
-  { to: '/admin/insumos',        icon: '🧪', label: 'Insumos',          roles: ['admin'], badge: 'insumos' },
+  { to: '/admin/insumos',        icon: '🧪', label: 'Insumos',          roles: ['admin', 'fabrica'], badge: 'insumos' },
 ]
 
 const navLinks = computed(() => ALL_LINKS.filter(l => l.roles.includes(rolActual)))
@@ -153,7 +153,7 @@ onMounted(async () => {
     const { data } = await axios.get('/api/admin/stock-bajo/count')
     stockBajoCount.value = data.count
   } catch {}
-  if (rolActual === 'admin') {
+  if (rolActual === 'admin' || rolActual === 'fabrica') {
     try {
       const { data } = await axios.get('/api/insumos')
       insumosBajos.value = data.filter(i => Number(i.stock_minimo) > 0 && Number(i.stock) <= Number(i.stock_minimo)).length
