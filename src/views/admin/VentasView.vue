@@ -371,7 +371,7 @@
             <button
               v-for="metodo in metodosPago"
               :key="metodo.value"
-              @click="metodoPagoSeleccionado = metodo.value"
+              @click="metodoPagoSeleccionado = metodo.value; if (metodoPago2 === metodo.value) metodoPago2 = ''"
               class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
               :class="metodoPagoSeleccionado === metodo.value
                 ? 'bg-teal border-teal text-white'
@@ -383,8 +383,8 @@
           </div>
         </div>
 
-        <!-- Cliente (solo cta corriente en primer método) -->
-        <div v-if="metodoPagoSeleccionado === 'cuenta_corriente'">
+        <!-- Cliente: si cualquiera de los dos medios es cuenta corriente -->
+        <div v-if="usaCuentaCorriente">
           <label class="block font-body text-xs text-gray-500 mb-1">Cliente *</label>
           <select
             v-model="cuentaSeleccionada"
@@ -397,7 +397,7 @@
 
         <!-- Toggle pago dividido -->
         <button
-          v-if="metodoPagoSeleccionado && metodoPagoSeleccionado !== 'cuenta_corriente'"
+          v-if="metodoPagoSeleccionado"
           @click="pagoDoble = !pagoDoble; metodoPago2 = ''; montoPago2 = ''"
           class="w-full py-2 rounded-xl border-2 font-body text-sm transition-all duration-200"
           :class="pagoDoble ? 'border-teal bg-teal/10 text-teal font-semibold' : 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400'"
@@ -410,7 +410,7 @@
           <label class="block font-body text-xs text-gray-500">2° método</label>
           <div class="grid grid-cols-3 gap-2">
             <button
-              v-for="metodo in metodosPago.filter(m => m.value !== 'cuenta_corriente' && m.value !== metodoPagoSeleccionado)"
+              v-for="metodo in metodosPago.filter(m => m.value !== metodoPagoSeleccionado)"
               :key="metodo.value"
               @click="metodoPago2 = metodo.value"
               class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all duration-200"
@@ -424,11 +424,15 @@
           </div>
           <div v-if="metodoPago2">
             <label class="block font-body text-xs text-gray-500 mb-1">Monto con {{ metodosPago.find(m=>m.value===metodoPago2)?.label }}</label>
-            <input
-              v-model.number="montoPago2"
-              type="number" min="1" :max="totalFinal - 1" placeholder="0"
-              class="w-full px-3 py-2 rounded-xl bg-white border border-teal/30 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
-            />
+            <div class="flex gap-2">
+              <input
+                v-model.number="montoPago2"
+                type="number" min="1" :max="totalFinal - 1" placeholder="0"
+                class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-white border border-teal/30 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
+              />
+              <button type="button" @click="montoPago2 = Math.round(totalFinal / 2)"
+                class="px-3 py-2 rounded-xl border border-teal/40 text-teal font-body text-xs font-semibold hover:bg-teal/10">Mitad</button>
+            </div>
             <p v-if="montoPago2 > 0" class="font-body text-xs text-gray-400 mt-1">
               {{ metodosPago.find(m=>m.value===metodoPagoSeleccionado)?.label }}: ${{ (totalFinal - montoPago2).toLocaleString('es-AR') }} ·
               {{ metodosPago.find(m=>m.value===metodoPago2)?.label }}: ${{ Number(montoPago2).toLocaleString('es-AR') }}
@@ -520,7 +524,7 @@
           <button
             @click="confirmarVenta"
             :disabled="!metodoPagoSeleccionado || enviandoVenta
-              || (metodoPagoSeleccionado === 'cuenta_corriente' && !cuentaSeleccionada)
+              || (usaCuentaCorriente && !cuentaSeleccionada)
               || (pagoDoble && (!metodoPago2 || !montoPago2 || montoPago2 <= 0 || montoPago2 >= totalFinal))"
             class="flex-1 py-2.5 bg-keto-orange text-gray-800 font-body font-semibold rounded-xl hover:bg-keto-orange/80 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >{{ enviandoVenta ? 'Procesando...' : 'Confirmar' }}</button>
@@ -770,7 +774,7 @@
             <button
               v-for="metodo in metodosPago"
               :key="metodo.value"
-              @click="editPago.metodo_pago = metodo.value; editPago.metodo_pago2 = ''; editPago.monto_pago2 = ''"
+              @click="editPago.metodo_pago = metodo.value; if (editPago.metodo_pago2 === metodo.value) { editPago.metodo_pago2 = ''; editPago.monto_pago2 = '' }"
               class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all"
               :class="editPago.metodo_pago === metodo.value ? 'bg-teal border-teal text-white' : 'border-gray-200 text-gray-500 hover:border-teal/50'"
             >
@@ -779,11 +783,11 @@
           </div>
         </div>
 
-        <div v-if="editPago.metodo_pago && editPago.metodo_pago !== 'cuenta_corriente'" class="space-y-2">
+        <div v-if="editPago.metodo_pago" class="space-y-2">
           <label class="block font-body text-xs text-gray-500">2° método (opcional)</label>
           <div class="grid grid-cols-3 gap-2">
             <button
-              v-for="metodo in metodosPago.filter(m => m.value !== 'cuenta_corriente' && m.value !== editPago.metodo_pago)"
+              v-for="metodo in metodosPago.filter(m => m.value !== editPago.metodo_pago)"
               :key="metodo.value"
               @click="editPago.metodo_pago2 = editPago.metodo_pago2 === metodo.value ? '' : metodo.value"
               class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl border-2 font-body text-xs transition-all"
@@ -799,6 +803,18 @@
             class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal"
           />
         </div>
+
+        <!-- Cliente: si la venta pasa a tener una parte en cuenta corriente -->
+        <div v-if="editPago.metodo_pago === 'cuenta_corriente' || editPago.metodo_pago2 === 'cuenta_corriente'">
+          <label class="block font-body text-xs text-gray-500 mb-1">Cliente de la cuenta corriente</label>
+          <select v-model="editPago.cuenta_id"
+            class="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 font-body text-sm focus:outline-none focus:border-teal">
+            <option value="">— El mismo de antes —</option>
+            <option v-for="c in clientesCta" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+          </select>
+          <p class="font-body text-xs text-gray-400 mt-1">La parte a cuenta se carga (o se corrige) en la cuenta de ese cliente.</p>
+        </div>
+        <p v-if="editPago.error" class="font-body text-xs text-red-500">{{ editPago.error }}</p>
 
         <div class="flex gap-3 pt-2">
           <button
@@ -901,7 +917,7 @@ const metodoPago2            = ref('')
 const montoPago2             = ref('')
 const dineroRecibido         = ref(null)
 const modalEditarPago        = ref(false)
-const editPago               = ref({ metodo_pago: '', metodo_pago2: '', monto_pago2: '', guardando: false })
+const editPago               = ref({ metodo_pago: '', metodo_pago2: '', monto_pago2: '', cuenta_id: '', error: '', guardando: false })
 const descuentoPct           = ref(0)
 const costoEnvio             = ref(0)
 const fechaVenta             = ref('')
@@ -909,6 +925,9 @@ const hoyISO                 = new Date().toLocaleDateString('en-CA', { timeZone
 const filtroFecha            = ref(hoyISO)
 const clientesCta            = ref([])
 const cuentaSeleccionada     = ref('')
+// Cuenta corriente como 1° o 2° medio (en un pago dividido solo esa parte va a la cuenta del cliente)
+const usaCuentaCorriente     = computed(() =>
+  metodoPagoSeleccionado.value === 'cuenta_corriente' || (pagoDoble.value && metodoPago2.value === 'cuenta_corriente'))
 const categoriaActiva        = ref('')
 // Pedidos web en estado "pendiente". Se separan en dos listas según si ya llegó el WhatsApp
 // del cliente (si el backend todavía no manda el dato, cuentan como llegados: igual que antes).
@@ -1239,7 +1258,7 @@ async function confirmarVenta() {
       descuento:     descuentoPct.value || 0,
       costo_envio:   costoEnvio.value || 0,
       fecha:         fechaVenta.value !== hoyISO ? fechaVenta.value : undefined,
-      cuenta_id:     metodoPagoSeleccionado.value === 'cuenta_corriente' ? (cuentaSeleccionada.value || undefined) : undefined,
+      cuenta_id:     usaCuentaCorriente.value ? (cuentaSeleccionada.value || undefined) : undefined,
       sena_aplicada: senaAplicada.value || undefined,
       nota:          senaAplicada.value ? `Entrega encargo #${pedidoActivo.value.id} (seña en venta #${pedidoActivo.value.sena_venta_id})` : undefined,
       items: carrito.value.map(i => ({
@@ -1370,6 +1389,8 @@ function abrirEditarPago(v) {
     metodo_pago:  v.metodo_pago  || '',
     metodo_pago2: v.metodo_pago2 || '',
     monto_pago2:  v.monto_pago2  ? parseFloat(v.monto_pago2) : '',
+    cuenta_id: '',
+    error: '',
     guardando: false,
   }
   modalEditarPago.value = true
@@ -1377,6 +1398,7 @@ function abrirEditarPago(v) {
 
 async function guardarEditarPago() {
   if (!editPago.value.metodo_pago || !ventaDetalle.value) return
+  editPago.value.error = ''
   editPago.value.guardando = true
   try {
     const token = localStorage.getItem('ceketo_token')
@@ -1384,6 +1406,7 @@ async function guardarEditarPago() {
       metodo_pago:  editPago.value.metodo_pago,
       metodo_pago2: editPago.value.metodo_pago2 || undefined,
       monto_pago2:  editPago.value.monto_pago2  || undefined,
+      cuenta_id:    editPago.value.cuenta_id    || undefined,
     }, { headers: { Authorization: `Bearer ${token}` } })
     // Actualizar venta en el historial localmente
     const idx = historialVentas.value.findIndex(v => v.id === ventaDetalle.value.id)
@@ -1397,7 +1420,7 @@ async function guardarEditarPago() {
     ventaDetalle.value.monto_pago2  = editPago.value.monto_pago2  || null
     modalEditarPago.value = false
   } catch (err) {
-    alert(err.response?.data?.error || 'Error al actualizar')
+    editPago.value.error = err.response?.data?.error || 'Error al actualizar'
   } finally { editPago.value.guardando = false }
 }
 
